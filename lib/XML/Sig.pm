@@ -447,11 +447,22 @@ XML::Sig - A toolkit to help sign and verfify XML Signatures
 
 =item B<sign($xml)>
 
-Foo
+When given a string of XML, it will return the same string with a signature
+generated from the key provided when the XML::Sig object was initialized. 
+
+This method presumes that there is one and only one element in your XML
+document with an ID (case sensitive) attribute. This is the element that will
+be the basis for the signature. It will also correspond to the URI attribute
+in the Reference element that will be contained by the signature. If no ID
+attribute can be found on an element, the signature will not be created.
 
 =item B<verify($xml)>
 
-Foo
+Returns true or false based upon whether the signature is valid or not. 
+
+When using XML::Sig exclusively to verify a signature, no key needs to be
+specified during initialization given that the public key should be
+transmitted with the signature.
 
 =cut
 
@@ -464,15 +475,22 @@ File::Download object.
 
 =item B<key>
 
-Not documented yet.
+The path to a file containing the contents of a private key. This option
+is used only when generating signatures.
 
 =item B<canonicalizer>
 
-Not documented yet.
+The XML canonicalization library to use. Options currently are:
 
-=item B<sig_method>
+* XML::CanonicalizerXML (default)
+* XML::Canonicalizer
 
-Accepted values: native or x509.
+=item B<x509>
+
+Takes a true (1) or false (0) value and indicates how you want the 
+signature to be encoded. When true, an X509 certificate will be 
+encoded in the signature. Otherwise the native encoding format for
+RSA and DSA will be used.
 
 =cut
 
@@ -480,7 +498,7 @@ Accepted values: native or x509.
 
 Fetch the newest and greatest perl version:
 
-   my $xml = "<xml string />";
+   my $xml = '<foo ID="abc">123</foo>';
    my $signer = XML::Sig->new({
      canonicalizer => 'XML-CanonizeXML',
      key => 'path/to/private.key',
@@ -493,7 +511,10 @@ Fetch the newest and greatest perl version:
 
 =head1 AUTHORS and CREDITS
 
-Gisle Aas <gisle@aas.no> - original B<lwp-download> script
-Byrne Reese <byrne@majordojo.com> - perl module wrapper
+Author: Byrne Reese <byrne@majordojo.com>
+
+Thanks to Manni Heumann who wrote Google::SAML::Response from 
+which this module borrows heavily in order to create digital 
+signatures.
 
 =cut
