@@ -1,0 +1,6 @@
+.git*
+XML-Sig*
+META.yml
+MANIFEST*
+^*~$
+^Makefile$
