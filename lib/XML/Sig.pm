@@ -4,7 +4,7 @@ package XML::Sig;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-$VERSION = '0.1';
+$VERSION = '0.2';
 
 use base qw(Class::Accessor);
 XML::Sig->mk_accessors(qw(canonicalizer key));
@@ -80,8 +80,15 @@ sub sign {
 
     $canonical        = $self->_canonicalize_xml( $signed_info );
 
-    my $bin_signature = $self->{key_obj}->sign( $canonical );
-    my $signature     = encode_base64( $bin_signature, "\n" );
+    my $signature;
+    if ($self->{key_type} eq 'dsa') {
+	# DSA only permits the signing of 20 bytes or less, hence the sha1
+	my $bin_signature  = $self->{key_obj}->sign( sha1($canonical) );
+	$signature     = encode_base64( $bin_signature, "\n" );
+    } else {
+	my $bin_signature = $self->{key_obj}->sign( $canonical );
+	$signature     = encode_base64( $bin_signature, "\n" );
+    }
 
     # With the signature value and the signedinfo element, we create
     # a Signature element:
@@ -99,12 +106,6 @@ sub verify {
     
     $self->{ parser } = XML::XPath->new( xml => $xml );
 
-# 1. Verify the signature of the <SignedInfo> element. To do so, recalculate the 
-#    digest of the <SignedInfo> element (using the digest algorithm specified in 
-#    the <SignatureMethod> element) and use the public verification key to verify 
-#    that the value of the <SignatureValue> element is correct for the digest of 
-#    the <SignedInfo> element.
-
     my $signature                = _trim($self->{parser}->findvalue('//Signature/SignatureValue'));
     my $signed_info              = $self->_get_node_as_text('//Signature/SignedInfo');
     my $signed_info_canon        = $self->_canonicalize_xml( $signed_info );
@@ -117,16 +118,11 @@ sub verify {
 	return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
     }
     elsif ($keyinfo_node = $self->{parser}->find('//Signature/KeyInfo/KeyValue/DSAKeyValue')) {
-	print STDERR "DSA Key found.\n";
 	return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
     }
     else {
 	die "Unrecognized key type in signature.";
     }
-
-# 2. If this step passes, recalculate the digests of the references contained 
-#    within the <SignedInfo> element and compare them to the digest values 
-#    expressed in each <Reference> element's corresponding <DigestValue> element.
 
     my $digest_method = $self->{parser}->findvalue('//Signature/SignedInfo/Reference/DigestMethod/@Algorithm');
     my $digest = _trim($self->{parser}->findvalue('//Signature/SignedInfo/Reference/DigestValue'));
@@ -134,10 +130,6 @@ sub verify {
     my $signed_xml    = $self->_get_signed_xml();
     my $canonical     = $self->_transform( $signed_xml );
     my $digest_bin    = sha1( $canonical ); 
-
-#    print STDERR "Checking to see if Digests match...\n";
-#    print STDERR "   From XML:  $digest\n";
-#    print STDERR "   Generated: ".encode_base64($digest_bin)."\n";
 
     return 1 if ($digest eq _trim(encode_base64($digest_bin)));
     return 0;
@@ -218,8 +210,28 @@ sub _verify_x509 {
 
 sub _verify_dsa {
     my $self = shift;
-    my ($context,$digest) = @_;
+    my ($context,$canonical,$sig) = @_;
 
+    eval {
+        require Crypt::OpenSSL::DSA;
+    };
+
+    # Generate Public Key from XML
+    my $p = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/P')));
+    my $q = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/Q')));
+    my $g = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/G')));
+    my $y = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/Y')));
+    my $dsa_pub = Crypt::OpenSSL::DSA->new();
+    $dsa_pub->set_p($p);
+    $dsa_pub->set_q($q);
+    $dsa_pub->set_g($g);
+    $dsa_pub->set_pub_key($y);
+
+    # Decode signature and verify
+    my $bin_signature = decode_base64($sig);
+    # DSA signatures are limited to a message body of 20 characters, so a sha1 digest is taken
+    return 1 if ($dsa_pub->verify( sha1($canonical),  $bin_signature ));
+    return 0;
 }
 
 sub _get_node {
