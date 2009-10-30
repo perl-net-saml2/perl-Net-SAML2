@@ -447,11 +447,145 @@ __END__
 
 =head1 NAME
 
-XML::Sig - A toolkit to help sign and verfify XML Signatures
+XML::Sig - A toolkit to help sign and verify XML Digital Signatures.
 
 =head1 DESCRIPTION
 
+This perl module provides two primary capabilities: given an XML string, create
+and insert a digital signature, or if one is already present in the string verify 
+it -- all in accordance with the W3C standard governing XML signatures.
+
+=head1 ABOUT DIGITAL SIGNATURES
+
+Just as one might want to send an email message that is cryptographically signed
+in order to give the recipient the means to independently verify who sent the email,
+one might also want to sign an XML document. This is especially true in the 
+scenario where an XML document is received in an otherwise unauthenticated 
+context, e.g. SAML.
+
+However XML provides a challenge that email does not. In XML, two documents can be 
+byte-wise inequivalent, and semanticaly equivalent at the same time. For example:
+
+    <?xml version="1.0"?>
+    <foo>
+      <bar />
+    </foo>
+
+    And:
+
+    <?xml version="1.0"?>
+    <foo>
+      <bar></bar>
+    </foo>
+
+Each of these document express the same thing, or in other words they "mean"
+the same thing. However if you were to strictly sign the raw text of these 
+documents, they would each produce different signatures. 
+
+XML Signatures on the other hand will produce the same signature for each of 
+the documents above. Therefore an XML document can be written and rewritten by 
+different parties and still be able to have someone at the end of the line 
+verify a signature the document may contain.
+
+There is a specially subscribed methodology for how this process should be
+executed and involves transforming the XML into its canonical form so a 
+signature can be reliably inserted or extracted for verification. This
+module implements that process.
+
+=head2 EXAMPLE SIGNATURE
+
+Below is a sample XML signature to give you some sense of what they look like.
+First let's look at the original XML document, prior to being signed:
+
+  <?xml version="1.0"?>
+  <foo ID="abc">
+    <bar>123</bar>
+  </foo>
+
+Now, let's insert a signature:
+
+  <?xml version="1.0"?>
+  <foo ID="abc">
+    <bar>123</bar>
+    <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+      <SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+        <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments" />
+        <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />
+        <Reference URI="#abc">
+          <Transforms>
+            <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+          </Transforms>
+          <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+          <DigestValue>9kpmrvv3peVJpNSTRycrV+jeHVY=</DigestValue>
+        </Reference>
+      </SignedInfo>
+      <SignatureValue>
+        HXUBnMgPJf//j4ihaWnaylNwAR5AzDFY83HljFIlLmTqX1w1C72ZTuRObvYve8TNEbVsQlTQkj4R
+        hiY0pgIMQUb75GLYFtc+f0YmBZf5rCWY3NWzo432D3ogAvpEzYXEQPmicWe2QozQhybaz9/wrYki
+        XiXY+57fqCkf7aT8Bb6G+fn7Aj8gnZFLkmKxwCdyGsIZOIZdQ8MWpeQrifxBR0d8W1Zm6ix21WNv
+        ONt575h7VxLKw8BDhNPS0p8CS3hOnSk29stpiDMCHFPxAwrbKVL1kGDLaLZn1q8nNRmH8oFxG15l
+        UmS3JXDZAss8gZhU7g9T4XllCqjrAvzPLOFdeQ==
+      </SignatureValue>
+      <KeyInfo>
+        <KeyValue>
+          <RSAKeyValue>
+            <Modulus>
+              1b+m37u3Xyawh2ArV8txLei251p03CXbkVuWaJu9C8eHy1pu87bcthi+T5WdlCPKD7KGtkKn9vq
+              i4BJBZcG/Y10e8KWVlXDLg9gibN5hb0Agae3i1cCJTqqnQ0Ka8w1XABtbxTimS1B0aO1zYW6d+U
+              Yl0xIeAOPsGMfWeu1NgLChZQton1/NrJsKwzMaQy1VI8m4gUleit9Z8mbz9bNMshdgYEZ9oC4bH
+              n/SnA4FvQl1fjWyTpzL/aWF/bEzS6Qd8IBk7yhcWRJAGdXTWtwiX4mXb4h/2sdrSNvyOsd/shCf
+              OSMsf0TX+OdlbH079AsxOwoUjlzjuKdCiFPdU6yAJw==
+            </Modulus>
+            <Exponent>Iw==</Exponent>
+          </RSAKeyValue>
+        </KeyValue>
+      </KeyInfo>
+    </Signature>
+  </foo>
+
+=head1 PREREQUISITES
+
+=over
+
+=item L<Digest::SHA1>
+
+=item L<XML::XPath>
+
+=item L<MIME::Base64>
+
+=item L<Crypt::OpenSSL::X509>
+
+=item L<Crypt::OpenSSL::RSA>
+
+=cut
+
 =head1 USAGE
+
+=head2 SUPPORTED ALGORITHMS & TRANSFORMS
+
+This module supports the following signature methods:
+
+=over 
+
+=item DSA
+
+=item RSA
+
+=item RSA encoded as x509
+
+=cut
+
+This module supports the following canonicalization methods and transforms:
+
+=over 
+
+=item EXC-X14N#
+
+=item EXC-X14#WithComments
+
+=item Enveloped Signature
+
+=cut
 
 =head2 METHODS
 
@@ -494,8 +628,13 @@ is used only when generating signatures.
 
 The XML canonicalization library to use. Options currently are:
 
-* XML::CanonicalizerXML (default)
-* XML::Canonicalizer
+=over
+
+=item XML::CanonicalizerXML (default)
+
+=item XML::Canonicalizer
+
+=cut
 
 =item B<x509>
 
@@ -520,6 +659,10 @@ Fetch the newest and greatest perl version:
    $signer->verify($signed) 
      or die "Signature Invalid.";
    print "Signature valid.\n";
+
+=head1 SEE ALSO
+
+L<http://www.w3.org/TR/xmldsig-core/>
 
 =head1 AUTHORS and CREDITS
 
