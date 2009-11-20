@@ -4,7 +4,7 @@ package XML::Sig;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-$VERSION = '0.2';
+$VERSION = '0.2.1';
 
 use base qw(Class::Accessor);
 XML::Sig->mk_accessors(qw(canonicalizer key));
@@ -185,6 +185,17 @@ sub _verify_rsa {
     return 0;
 }
 
+sub _clean_x509 {
+    my $self = shift;
+    my ($cert) = @_;
+    $cert =~ s/\n//g;
+#    my $n = 64;    # $n is group size.
+#    my @parts = unpack "a$n" x ((length($cert)/$n)-0) . "a*", $cert;
+#    $cert = join("\n",@parts);
+    $cert = "-----BEGIN PUBLIC KEY-----\n" . $cert . "\n-----END PUBLIC KEY-----\n";
+    return $cert;
+}
+
 sub _verify_x509 {
     my $self = shift;
     my ($context,$canonical,$sig) = @_;
@@ -197,7 +208,8 @@ sub _verify_x509 {
     # Generate Public Key from XML
     my $certificate = _trim($self->{parser}->findvalue('//Signature/KeyInfo/X509Data/X509Certificate'));
     # This is added because the X509 parser requires it for self-identification
-    $certificate = "-----BEGIN PUBLIC KEY-----\n" . $certificate . "\n-----END PUBLIC KEY-----\n";
+    $certificate = $self->_clean_x509($certificate);
+
     my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($certificate);
 
     # Decode signature and verify
@@ -374,6 +386,8 @@ sub _load_key {
             }
 
             return 1;
+	} elsif ( $text =~ m/BEGIN PRIVATE KEY/ ) {
+	    $self->_load_rsa_key( $text );
         } elsif ($text =~ m/BEGIN CERTIFICATE/) {
 	    $self->_load_x509_key( $text );
 	}
