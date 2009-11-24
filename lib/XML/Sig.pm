@@ -648,7 +648,7 @@ The XML canonicalization library to use. Options currently are:
 
 =item XML::Canonicalizer
 
-=cut
+=back
 
 =item B<x509>
 
@@ -657,7 +657,7 @@ signature to be encoded. When true, an X509 certificate will be
 encoded in the signature. Otherwise the native encoding format for
 RSA and DSA will be used.
 
-=cut
+=back
 
 =head1 EXAMPLE
 
