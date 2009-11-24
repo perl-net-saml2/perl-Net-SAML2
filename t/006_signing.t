@@ -44,7 +44,7 @@ ok( $is_valid3 == 1 );
 
 my $sig4 = XML::Sig->new( { key => 't/pkcs8.private.key' } );
 isa_ok( $sig4, 'XML::Sig' );
-my $signed4 = $sig->sign($xml);
+my $signed4 = $sig4->sign($xml);
 ok( encode_base64( $signed4,'' ), $signed4_b64 );
 my $is_valid4 = $sig4->verify( $signed4 );
 ok( $is_valid4 == 1);
