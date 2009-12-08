@@ -12,6 +12,8 @@ WriteMakefile(
     'DEFINE'	=> '',     # e.g., '-DHAVE_SOMETHING' 
     'INC'	=> '',     # e.g., '-I/usr/include/other' 
     'PREREQ_PM' => {
+        'Test::Exception' => 0,
+        'File::Which' => 0,
         'Class::Accessor' => 0,
         'XML::XPath' => 0,
         'Digest::SHA1' => 0,

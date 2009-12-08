@@ -5,3 +5,5 @@ MANIFEST
 MANIFEST.bak
 pm_to_blib
 *.zip
+*.gz
+*.tar
