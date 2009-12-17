@@ -463,6 +463,23 @@ __END__
 
 XML::Sig - A toolkit to help sign and verify XML Digital Signatures.
 
+=head1 SYNOPSIS
+
+   my $xml = '<foo ID="abc">123</foo>';
+   my $signer = XML::Sig->new({
+     canonicalizer => 'XML::CanonicalizeXML',
+     key => 'path/to/private.key',
+   });
+   
+   # create a signature
+   my $signed = $signer->sign($xml);
+   print "Signed XML: $signed\n";
+   
+   # verify a signature
+   $signer->verify($signed) 
+     or die "Signature Invalid.";
+   print "Signature valid.\n";
+
 =head1 DESCRIPTION
 
 This perl module provides two primary capabilities: given an XML string, create
@@ -658,21 +675,6 @@ encoded in the signature. Otherwise the native encoding format for
 RSA and DSA will be used.
 
 =back
-
-=head1 EXAMPLE
-
-Fetch the newest and greatest perl version:
-
-   my $xml = '<foo ID="abc">123</foo>';
-   my $signer = XML::Sig->new({
-     canonicalizer => 'XML-CanonizeXML',
-     key => 'path/to/private.key',
-   });
-   my $signed = $signer->sign($xml);
-   print "Signed XML: $signed\n";
-   $signer->verify($signed) 
-     or die "Signature Invalid.";
-   print "Signature valid.\n";
 
 =head1 SEE ALSO
 
