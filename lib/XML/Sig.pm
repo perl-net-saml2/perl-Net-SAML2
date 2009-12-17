@@ -678,6 +678,10 @@ Fetch the newest and greatest perl version:
 
 L<http://www.w3.org/TR/xmldsig-core/>
 
+=head1 VERSION CONTROL
+
+L<http://github.com/byrnereese/perl-XML-Sig>
+
 =head1 AUTHORS and CREDITS
 
 Author: Byrne Reese <byrne@majordojo.com>
