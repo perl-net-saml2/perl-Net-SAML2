@@ -586,6 +586,8 @@ Now, let's insert a signature:
 
 =item L<Crypt::OpenSSL::X509>
 
+=item L<Crypt::OpenSSL::Bignum>
+
 =item L<Crypt::OpenSSL::RSA>
 
 =cut

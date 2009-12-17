@@ -18,6 +18,7 @@ WriteMakefile(
         'XML::XPath' => 0,
         'Digest::SHA1' => 0,
         'MIME::Base64' => 0,
+        'Crypt::OpenSSL::Bignum' => 0,
         'Crypt::OpenSSL::X509' => 0,
         'Crypt::OpenSSL::RSA' => 0,
         'Crypt::OpenSSL::DSA' => 0,
