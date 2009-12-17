@@ -20,7 +20,7 @@ SKIP: {
     my $output = `xmlsec1 --version`;
     skip "xmlsec1 not correctly installed", 6 if $?;
 
-    my $xml = '<?xml version="1.0">'."\n".'<foo><bar>123</bar></foo>';
+    my $xml = '<?xml version="1.0"?>'."\n".'<foo ID="1"><bar>123</bar></foo>';
     my $sig = XML::Sig->new( { key => 't/rsa.private.key' } );
     my $signed = $sig->sign($xml);
     ok( $signed, "Got XML for the response" );
