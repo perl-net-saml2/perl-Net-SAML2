@@ -105,6 +105,8 @@ sub sign {
 
 sub verify {
     my $self = shift;
+    delete $self->{signer_cert};
+    
     my ($xml) = @_;
 
     $self->{ parser } = XML::XPath->new( xml => $xml );
@@ -153,6 +155,11 @@ sub verify {
 
     return 1 if ($digest eq _trim(encode_base64($digest_bin)));
     return 0;
+}
+
+sub signer_cert {
+    my $self = shift;
+    return $self->{signer_cert};
 }
 
 sub _get_xml_to_sign {
@@ -233,7 +240,12 @@ sub _verify_x509 {
     # Decode signature and verify
     my $bin_signature = decode_base64($sig);
 
-    return 1 if ($rsa_pub->verify( $canonical,  $bin_signature ));
+    # If successful verify, store the signer's cert for validation
+    if ($rsa_pub->verify( $canonical,  $bin_signature )) {
+        $self->{signer_cert} = $cert;
+        return 1;
+    }
+
     return 0;
 }
 
@@ -691,6 +703,13 @@ Returns true or false based upon whether the signature is valid or not.
 When using XML::Sig exclusively to verify a signature, no key needs to be
 specified during initialization given that the public key should be
 transmitted with the signature.
+
+=item B<signer_cert()>
+
+Following a successful verify with an X509 certificate, returns the
+signer's certificate as embedded in the XML document for verification
+against a CA certificate. The certificate is returned as a
+Crypt::OpenSSL::X509 object.
 
 =cut
 

@@ -20,5 +20,6 @@ my $xml;
 my $sig = XML::Sig->new({ x509 => 1 });
 my $ret = $sig->verify($xml);
 ok($ret);
+ok($sig->signer_cert);
 
 done_testing;
