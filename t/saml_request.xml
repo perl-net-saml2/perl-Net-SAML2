@@ -1,0 +1,9 @@
+<samlp:ArtifactResolve
+    xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+    ID="_cce4ee769ed970b501d680f697989d14"
+    IssueInstant="2010-09-18T17:33:01Z"
+    Version="2.0">
+  <saml:Issuer>http://dev/cgi-bin/zxidhlo.pl?o=B</saml:Issuer>
+  <samlp:Artifact>AAQAALN+k3vq4G80Xko1XPLwwxsvPbU/JPFWdERp73EBAjuV4yT7ce9UMDQ=</samlp:Artifact>
+</samlp:ArtifactResolve>
