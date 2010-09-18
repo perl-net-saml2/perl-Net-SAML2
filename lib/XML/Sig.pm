@@ -188,11 +188,7 @@ sub _verify_rsa {
 sub _clean_x509 {
     my $self = shift;
     my ($cert) = @_;
-    $cert =~ s/\n//g;
-#    my $n = 64;    # $n is group size.
-#    my @parts = unpack "a$n" x ((length($cert)/$n)-0) . "a*", $cert;
-#    $cert = join("\n",@parts);
-    $cert = "-----BEGIN PUBLIC KEY-----\n" . $cert . "\n-----END PUBLIC KEY-----\n";
+    $cert = "-----BEGIN CERTIFICATE-----\n" . $cert . "\n-----END CERTIFICATE-----\n";
     return $cert;
 }
 
@@ -210,7 +206,8 @@ sub _verify_x509 {
     # This is added because the X509 parser requires it for self-identification
     $certificate = $self->_clean_x509($certificate);
 
-    my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($certificate);
+    my $cert = Crypt::OpenSSL::X509->new_from_string($certificate);
+    my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
 
     # Decode signature and verify
     my $bin_signature = decode_base64($sig);
