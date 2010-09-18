@@ -103,29 +103,46 @@ sub sign {
 sub verify {
     my $self = shift;
     my ($xml) = @_;
-    
-    $self->{ parser } = XML::XPath->new( xml => $xml );
 
-    my $signature                = _trim($self->{parser}->findvalue('//Signature/SignatureValue'));
-    my $signed_info              = $self->_get_node_as_text('//Signature/SignedInfo');
-    my $signed_info_canon        = $self->_canonicalize_xml( $signed_info );
+    $self->{ parser } = XML::XPath->new( xml => $xml );
+    $self->{ parser }->set_namespace('dsig', 'http://www.w3.org/2000/09/xmldsig#');
+
+    my $signature = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:SignatureValue'));
+    my $signed_info_node = $self->_get_node('//dsig:Signature/dsig:SignedInfo');
+
+    my $signature_node = $self->_get_node('//dsig:Signature');
+    my $ns;
+    if (defined $signature_node && ref $signature_node) {
+	    $ns = $signature_node->getNamespaces->[0];
+	    $self->{dsig_prefix} = ($ns->getPrefix eq '#default') ? '' : $ns->getPrefix;
+    }
+    else {
+	    die "no Signature node?";
+    }
+    
+    if (scalar @{ $signed_info_node->getNamespaces } == 0) {
+	$signed_info_node->appendNamespace($ns);
+    }
+    
+    my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
+    my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
 
     my $keyinfo_node;
-    if ($keyinfo_node = $self->{parser}->find('//Signature/KeyInfo/X509Data')) {
+    if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
 	return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
     } 
-    elsif ($keyinfo_node = $self->{parser}->find('//Signature/KeyInfo/KeyValue/RSAKeyValue')) {
+    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
 	return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
     }
-    elsif ($keyinfo_node = $self->{parser}->find('//Signature/KeyInfo/KeyValue/DSAKeyValue')) {
+    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
 	return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
     }
     else {
 	die "Unrecognized key type in signature.";
     }
 
-    my $digest_method = $self->{parser}->findvalue('//Signature/SignedInfo/Reference/DigestMethod/@Algorithm');
-    my $digest = _trim($self->{parser}->findvalue('//Signature/SignedInfo/Reference/DigestValue'));
+    my $digest_method = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm');
+    my $digest = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestValue'));
     
     my $signed_xml    = $self->_get_signed_xml();
     my $canonical     = $self->_transform( $signed_xml );
@@ -146,7 +163,7 @@ sub _get_xml_to_sign {
 
 sub _get_signed_xml {
     my $self = shift;
-    my $id = $self->{parser}->findvalue('//Signature/SignedInfo/Reference/@URI');
+    my $id = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/@URI');
     $id =~ s/^#//;
     $self->{'sign_id'} = $id;
     my $xpath = "//*[\@ID='$id']";
@@ -156,7 +173,7 @@ sub _get_signed_xml {
 sub _transform {
     my $self = shift;
     my ($xml) = @_;
-    foreach my $node ($self->{parser}->find('//Transform/@Algorithm')->get_nodelist) {
+    foreach my $node ($self->{parser}->find('//dsig:Transform/@Algorithm')->get_nodelist) {
 	my $alg = $node->getNodeValue;
 	if ($alg eq TRANSFORM_ENV_SIG) { $xml = $self->_transform_env_sig($xml); }
 	elsif ($alg eq TRANSFORM_EXC_C14N) { $xml = $self->_canonicalize_xml($xml,0); }
@@ -202,7 +219,8 @@ sub _verify_x509 {
     };
 
     # Generate Public Key from XML
-    my $certificate = _trim($self->{parser}->findvalue('//Signature/KeyInfo/X509Data/X509Certificate'));
+    my $certificate = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate'));
+
     # This is added because the X509 parser requires it for self-identification
     $certificate = $self->_clean_x509($certificate);
 
@@ -260,7 +278,11 @@ sub _get_node_as_text {
 sub _transform_env_sig {
     my $self = shift;
     my ($str) = @_;
-    $str =~ s/(<Signature(.*?)>(.*?)\<\/Signature>)//igs;
+    my $prefix = '';
+    if (defined $self->{dsig_prefix} && length $self->{dsig_prefix}) {
+        $prefix = $self->{dsig_prefix} . ':';
+    }
+    $str =~ s/(<${prefix}Signature(.*?)>(.*?)\<\/${prefix}Signature>)//igs;
     return $str;
 }
 
