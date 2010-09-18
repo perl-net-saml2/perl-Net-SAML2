@@ -159,8 +159,8 @@ sub _transform {
     foreach my $node ($self->{parser}->find('//Transform/@Algorithm')->get_nodelist) {
 	my $alg = $node->getNodeValue;
 	if ($alg eq TRANSFORM_ENV_SIG) { $xml = $self->_transform_env_sig($xml); }
-	elsif ($alg eq TRANSFORM_EXC_C14N) { $xml = $self->_canonicalize($xml,0); }
-	elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) { $xml = $self->canonicalize($xml,1); }
+	elsif ($alg eq TRANSFORM_EXC_C14N) { $xml = $self->_canonicalize_xml($xml,0); }
+	elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) { $xml = $self->_canonicalize_xml($xml,1); }
 	else { die "Unsupported transform: $alg"; }
     }
     return $xml;
