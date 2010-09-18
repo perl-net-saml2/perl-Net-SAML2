@@ -28,15 +28,12 @@ ok( encode_base64( $signed,'' ), $signed_b64 );
 my $is_valid = $sig->verify( $signed );
 ok( $is_valid == 1);
 
-my $sig2 = XML::Sig->new( { key => 't/rsa.private.key', x509 => 1 } );
+my $sig2 = XML::Sig->new( { key => 't/rsa.private.key', cert => 't/rsa.cert.pem', x509 => 1 } );
 isa_ok( $sig2, 'XML::Sig' );
 my $signed2 = $sig2->sign($xml);
 ok( encode_base64( $signed2,'' ), $signed2_b64 );
-TODO: {
-local $TODO = 'OpenSSL base64 decode problem';
-my $is_valid2 = eval { $sig2->verify( $signed2 ) } || 0;
+my $is_valid2 = $sig2->verify( $signed2 );
 ok( $is_valid2 == 1 );
-}
 
 my $sig3 = XML::Sig->new( { key => 't/dsa.private.key' } );
 isa_ok( $sig3, 'XML::Sig' );

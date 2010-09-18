@@ -36,7 +36,7 @@ sub new {
     my $class = shift;
     my $params = shift;
     my $self = {};
-    foreach my $prop ( qw/ key / ) {
+    foreach my $prop ( qw/ key cert / ) {
         if ( exists $params->{ $prop } ) {
             $self->{ $prop } = $params->{ $prop };
         }
@@ -50,6 +50,9 @@ sub new {
     $self->{ 'x509' } = exists $params->{ x509 } ? 1 : 0;
     if ( exists $params->{ 'key' } ) {
 	$self->_load_key( $params->{ 'key' } );
+    }
+    if ( exists $params->{ 'cert' } ) {
+	$self->_load_cert( $params->{ 'cert' } );
     }
     return $self;
 }
@@ -336,11 +339,7 @@ sub _load_rsa_key {
         $self->{ key_obj }  = $rsaKey;
         $self->{ key_type } = 'rsa';
 
-	if ($self->{'x509'}) {
-	    my $cert = $rsaKey->get_public_key_x509_string();
-	    $cert =~ s/-----[^-]*-----//gm;
-	    $self->{KeyInfo} = "<KeyInfo><X509Data><X509Certificate>\n"._trim($cert)."\n</X509Certificate></X509Data></KeyInfo>";
-	} else {
+	if (!$self->{ x509 }) {
 	    my $bigNum = ( $rsaKey->get_key_parameters() )[1];
 	    my $bin = $bigNum->to_bin();
 	    my $exp = encode_base64( $bin, '' );
@@ -369,9 +368,6 @@ sub _load_x509_key {
     if ( $x509Key ) {
         $x509Key->use_pkcs1_padding();
         $self->{ key_obj } = $x509Key;
-        my $cert = $x509Key->pubkey;
-	$cert =~ s/^-----[^-]*-----\n$//gm;
-        $self->{KeyInfo} = "<KeyInfo><X509Data><X509Certificate>\n$cert\n</X509Certificate></X509Data></KeyInfo>";
         $self->{key_type} = 'x509';
     }
     else {
@@ -382,6 +378,40 @@ sub _load_x509_key {
 sub _set_key_info {
     my $self = shift;
 
+}
+
+sub _load_cert {
+    my $self = shift;
+
+    eval {
+	require Crypt::OpenSSL::X509;
+    };
+
+    confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certs." if $@;
+
+    my $file = $self->{ cert };
+    if ( open my $CERT, '<', $file ) {
+        my $text = '';
+        local $/ = undef;
+        $text = <$CERT>;
+        close $CERT;
+        
+        my $cert = Crypt::OpenSSL::X509->new_from_string($text);
+        if ( $cert ) {
+            $self->{ cert_obj } = $cert;
+            my $cert_text = $cert->as_string;
+	    $cert_text =~ s/-----[^-]*-----//gm;
+	    $self->{KeyInfo} = "<KeyInfo><X509Data><X509Certificate>\n"._trim($cert_text)."\n</X509Certificate></X509Data></KeyInfo>";
+        }
+        else {
+            confess "Could not load certificate from $file";
+        }
+    }
+    else {
+        confess "Could not find certificate file $file";
+    }
+
+    return;
 }
 
 sub _load_key {
@@ -676,6 +706,13 @@ File::Download object.
 The path to a file containing the contents of a private key. This option
 is used only when generating signatures.
 
+=item B<cert>
+
+The path to a file containing a PEM-formatted X509 certificate. This
+option is used only when generating signatures with the "x509"
+option. This certificate will be embedded in the signed document, and
+should match the private key used for the signature.
+
 =item B<canonicalizer>
 
 The XML canonicalization library to use. Options currently are:
@@ -690,9 +727,9 @@ The XML canonicalization library to use. Options currently are:
 
 =item B<x509>
 
-Takes a true (1) or false (0) value and indicates how you want the 
-signature to be encoded. When true, an X509 certificate will be 
-encoded in the signature. Otherwise the native encoding format for
+Takes a true (1) or false (0) value and indicates how you want the
+signature to be encoded. When true, the X509 certificate supplied will
+be encoded in the signature. Otherwise the native encoding format for
 RSA and DSA will be used.
 
 =back
