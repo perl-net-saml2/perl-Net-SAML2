@@ -510,7 +510,7 @@ sub _canonicalize_xml {
     elsif ( $self->{ canonicalizer } eq 'XML::CanonicalizeXML' ) {
         require XML::CanonicalizeXML;
         my $xpath = '<XPath>(//. | //@* | //namespace::*)</XPath>';
-	return XML::CanonicalizeXML::canonicalize( $xml, $xpath, [], 0, $comments );
+	return XML::CanonicalizeXML::canonicalize( $xml, $xpath, [], 1, $comments );
     }
     else {
         confess "Unknown XML canonicalizer module.";
