@@ -17,6 +17,6 @@ my $sig = XML::Sig->new( { key => 't/rsa.private.key' } );
 isa_ok( $sig, 'XML::Sig' );
 
 isa_ok( $sig->{ key_obj }, 'Crypt::OpenSSL::RSA', 'Key object is valid' );
-is( index( $sig->{KeyInfo}, $modulus ), 41, 'Modulus is correct' );
-is( index( $sig->{KeyInfo}, $exponent), 405, 'Exponent is correct' );
+is( index( $sig->{KeyInfo}, $modulus ), 166, 'Modulus is correct' );
+is( index( $sig->{KeyInfo}, $exponent), 576, 'Exponent is correct' );
 

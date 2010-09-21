@@ -198,9 +198,9 @@ sub _verify_rsa {
     my ($context,$canonical,$sig) = @_;
 
     # Generate Public Key from XML
-    my $mod = _trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/RSAKeyValue/Modulus'));
+    my $mod = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Modulus'));
     my $modBin = decode_base64( $mod );
-    my $exp = _trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/RSAKeyValue/Exponent'));
+    my $exp = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Exponent'));
     my $expBin = decode_base64( $exp );
     my $n = Crypt::OpenSSL::Bignum->new_from_bin($modBin);
     my $e = Crypt::OpenSSL::Bignum->new_from_bin($expBin);
@@ -259,10 +259,10 @@ sub _verify_dsa {
     };
 
     # Generate Public Key from XML
-    my $p = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/P')));
-    my $q = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/Q')));
-    my $g = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/G')));
-    my $y = decode_base64(_trim($self->{parser}->findvalue('//Signature/KeyInfo/KeyValue/DSAKeyValue/Y')));
+    my $p = decode_base64(_trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:P')));
+    my $q = decode_base64(_trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:Q')));
+    my $g = decode_base64(_trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:G')));
+    my $y = decode_base64(_trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:Y')));
     my $dsa_pub = Crypt::OpenSSL::DSA->new();
     $dsa_pub->set_p($p);
     $dsa_pub->set_q($q);
@@ -327,7 +327,16 @@ sub _load_dsa_key {
         my $q = encode_base64( $dsa_key->get_q(), '' );
         my $y = encode_base64( $dsa_key->get_pub_key(), '' );
 
-        $self->{KeyInfo} = "<KeyInfo><KeyValue><DSAKeyValue><P>$p</P><Q>$q</Q><G>$g</G><Y>$y</Y></DSAKeyValue></KeyValue></KeyInfo>";
+        $self->{KeyInfo} = "<dsig:KeyInfo>
+                             <dsig:KeyValue>
+                              <dsig:DSAKeyValue>
+                               <dsig:P>$p</dsig:P>
+                               <dsig:Q>$q</dsig:Q>
+                               <dsig:G>$g</dsig:G>
+                               <dsig:Y>$y</dsig:Y>
+                              </dsig:DSAKeyValue>
+                             </dsig:KeyValue>
+                            </dsig:KeyInfo>";
         $self->{key_type} = 'dsa';
     }
     else {
@@ -359,7 +368,14 @@ sub _load_rsa_key {
 	    $bigNum = ( $rsaKey->get_key_parameters() )[0];
 	    $bin = $bigNum->to_bin();
 	    my $mod = encode_base64( $bin, '' );
-	    $self->{KeyInfo} = "<KeyInfo><KeyValue><RSAKeyValue><Modulus>$mod</Modulus><Exponent>$exp</Exponent></RSAKeyValue></KeyValue></KeyInfo>";
+	    $self->{KeyInfo} = "<dsig:KeyInfo>
+                                 <dsig:KeyValue>
+                                  <dsig:RSAKeyValue>
+                                   <dsig:Modulus>$mod</dsig:Modulus>
+                                   <dsig:Exponent>$exp</dsig:Exponent>
+                                  </dsig:RSAKeyValue>
+                                 </dsig:KeyValue>
+                                </dsig:KeyInfo>";
 	}
     }
     else {
@@ -413,7 +429,7 @@ sub _load_cert {
             $self->{ cert_obj } = $cert;
             my $cert_text = $cert->as_string;
 	    $cert_text =~ s/-----[^-]*-----//gm;
-	    $self->{KeyInfo} = "<KeyInfo><X509Data><X509Certificate>\n"._trim($cert_text)."\n</X509Certificate></X509Data></KeyInfo>";
+	    $self->{KeyInfo} = "<dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>\n"._trim($cert_text)."\n</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo>";
         }
         else {
             confess "Could not load certificate from $file";
@@ -466,35 +482,35 @@ sub _load_key {
 sub _signature_xml {
     my $self = shift;
     my ($signed_info,$signature_value) = @_;
-    return qq{<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    return qq{<dsig:Signature xmlns:dsig="http://www.w3.org/2000/09/xmldsig#">
             $signed_info
-            <SignatureValue>$signature_value</SignatureValue>
+            <dsig:SignatureValue>$signature_value</dsig:SignatureValue>
             $self->{KeyInfo}
-        </Signature>};
+        </dsig:Signature>};
 }
 
 sub _signedinfo_xml {
     my $self = shift;
     my ($digest_xml) = @_;
 
-    return qq{<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
-                <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments" />
-                <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#$self->{key_type}-sha1" />
+    return qq{<dsig:SignedInfo xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+                <dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments" />
+                <dsig:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#$self->{key_type}-sha1" />
                 $digest_xml
-            </SignedInfo>};
+            </dsig:SignedInfo>};
 }
 
 sub _reference_xml {
     my $self = shift;
     my ($digest) = @_;
     my $id = $self->{sign_id};
-    return qq{<Reference URI="#$id">
-                        <Transforms>
-                            <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
-                        </Transforms>
-                        <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-                        <DigestValue>$digest</DigestValue>
-                    </Reference>};
+    return qq{<dsig:Reference URI="#$id">
+                        <dsig:Transforms>
+                            <dsig:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+                        </dsig:Transforms>
+                        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+                        <dsig:DigestValue>$digest</dsig:DigestValue>
+                    </dsig:Reference>};
 }
 
 sub _canonicalize_xml {
