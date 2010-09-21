@@ -507,6 +507,7 @@ sub _reference_xml {
     return qq{<dsig:Reference URI="#$id">
                         <dsig:Transforms>
                             <dsig:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />
+                            <dsig:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
                         </dsig:Transforms>
                         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
                         <dsig:DigestValue>$digest</dsig:DigestValue>
