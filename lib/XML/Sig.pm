@@ -36,7 +36,7 @@ sub new {
     my $class = shift;
     my $params = shift;
     my $self = {};
-    foreach my $prop ( qw/ key cert / ) {
+    foreach my $prop ( qw/ key cert cert_text / ) {
         if ( exists $params->{ $prop } ) {
             $self->{ $prop } = $params->{ $prop };
         }
@@ -52,7 +52,10 @@ sub new {
 	$self->_load_key( $params->{ 'key' } );
     }
     if ( exists $params->{ 'cert' } ) {
-	$self->_load_cert( $params->{ 'cert' } );
+	$self->_load_cert_file( $params->{ 'cert' } );
+    }
+    if ( exists $params->{ 'cert_text' } ) {
+	$self->_load_cert_text( $params->{ 'cert_text' } );
     }
     return $self;
 }
@@ -132,18 +135,25 @@ sub verify {
     my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
     my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
 
-    my $keyinfo_node;
-    if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
-	return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
-    } 
-    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
-	return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
-    }
-    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
-	return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
+    if (defined $self->{cert_obj}) {
+	    # use the provided cert to verify
+	    return 0 unless $self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature);
     }
     else {
-	die "Unrecognized key type in signature.";
+	    # extract the certficate or key from the document
+	    my $keyinfo_node;
+	    if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
+		    return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
+	    } 
+	    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
+		    return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
+	    }
+	    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
+		    return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
+	    }
+	    else {
+		    die "Unrecognized key type or no KeyInfo in document";
+	    }
     }
 
     my $digest_method = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm');
@@ -224,17 +234,27 @@ sub _verify_x509 {
     my ($context,$canonical,$sig) = @_;
 
     eval {
-	require Crypt::OpenSSL::X509;
-        require Crypt::OpenSSL::RSA;
+        require Crypt::OpenSSL::X509;
     };
+    confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certificates" if $@;
 
     # Generate Public Key from XML
     my $certificate = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate'));
 
     # This is added because the X509 parser requires it for self-identification
     $certificate = $self->_clean_x509($certificate);
-
+        
     my $cert = Crypt::OpenSSL::X509->new_from_string($certificate);
+    return $self->_verify_x509_cert($cert, $canonical, $sig);
+}
+
+sub _verify_x509_cert {
+    my $self = shift;
+    my ($cert, $canonical, $sig) = @_;
+
+    eval {
+        require Crypt::OpenSSL::RSA;
+    };
     my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
 
     # Decode signature and verify
@@ -408,7 +428,7 @@ sub _set_key_info {
 
 }
 
-sub _load_cert {
+sub _load_cert_file {
     my $self = shift;
 
     eval {
@@ -437,6 +457,30 @@ sub _load_cert {
     }
     else {
         confess "Could not find certificate file $file";
+    }
+
+    return;
+}
+
+sub _load_cert_text {
+    my $self = shift;
+
+    eval {
+	require Crypt::OpenSSL::X509;
+    };
+
+    confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certs." if $@;
+
+    my $text = $self->{ cert_text };
+    my $cert = Crypt::OpenSSL::X509->new_from_string($text);
+    if ( $cert ) {
+        $self->{ cert_obj } = $cert;
+	my $cert_text = $cert->as_string;
+	$cert_text =~ s/-----[^-]*-----//gm;
+	$self->{KeyInfo} = "<dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>\n"._trim($cert_text)."\n</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo>";
+    }
+    else {
+	    confess "Could not load certificate from given text.";
     }
 
     return;
