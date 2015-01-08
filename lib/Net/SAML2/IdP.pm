@@ -33,8 +33,8 @@ Constructor
 has 'entityid'       => (isa => Str, is => 'ro', required => 1);
 has 'cacert'         => (isa => Str, is => 'ro', required => 1);
 has 'sso_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'slo_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'art_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
+has 'slo_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0);
+has 'art_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0);
 has 'certs'          => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'formats'        => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'default_format' => (isa => Str, is => 'ro', required => 1);
@@ -167,7 +167,7 @@ binding. Binding name should be the full URI.
 
 sub slo_url {
     my ($self, $binding) = @_;
-    return $self->slo_urls->{$binding};
+    return $self->slo_urls ? $self->slo_urls->{$binding} : undef;
 }
 
 =head2 art_url($binding)
@@ -179,7 +179,7 @@ binding. Binding name should be the full URI.
 
 sub art_url {
     my ($self, $binding) = @_;
-    return $self->art_urls->{$binding};
+    return $self->art_urls ? $self->art_urls->{$binding} : undef;
 }
 
 =head2 cert($use)
