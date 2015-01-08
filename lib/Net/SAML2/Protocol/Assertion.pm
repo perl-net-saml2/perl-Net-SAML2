@@ -26,7 +26,7 @@ has 'nameid'     => (isa => Str, is => 'ro', required => 1);
 has 'not_before' => (isa => DateTime, is => 'ro', required => 1);
 has 'not_after'  => (isa => DateTime, is => 'ro', required => 1);
 has 'audience'   => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
-has 'xpath'      => (isa => 'XML::Xpath', is => 'ro', required => 1);
+has 'xpath'      => (isa => 'XML::XPath', is => 'ro', required => 1);
 
 =head1 METHODS
 
@@ -67,7 +67,7 @@ sub new_from_xml {
         audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience')->value,
         not_before     => $not_before,
         not_after      => $not_after,
-				xpath          => $xpath,
+        xpath          => $xpath,
     );
         
     return $self;
