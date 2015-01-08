@@ -29,6 +29,7 @@ No arguments.
 
 =cut
 
+has 'cert_text' => (isa => Str, is => 'ro', required => 0);
 has 'cacert' => (isa => Str, is => 'ro', required => 1);
 
 =head2 handle_response($response)
@@ -43,12 +44,15 @@ sub handle_response {
 
     # unpack and check the signature
     my $xml = decode_base64($response);
-    my $x = Net::SAML2::XML::Sig->new({ x509 => 1 });
+    my $xml_opts = { x509 => 1 };
+    $xml_opts{ cert_text } = $self->cert_text if ($self->cert_text);
+    my $x = Net::SAML2::XML::Sig->new($xml_opts);
     my $ret = $x->verify($xml);
     die "signature check failed" unless $ret;
 
-    # verify the signing certificate
     my $cert = $x->signer_cert;
+    die "Certificate not provided and not in SAML Response, cannot validate" unless $cert;
+
     my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
     $ret = $ca->verify($cert);
 
