@@ -3,6 +3,7 @@ use Moose;
 use MooseX::Types::Moose qw /Str /;
 use MooseX::Types::URI qw/ Uri /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
+use XML::Writer;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
