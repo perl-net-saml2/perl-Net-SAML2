@@ -34,8 +34,12 @@ Arguments:
 =cut
 
 has 'issuer'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'destination'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
+has 'destination'   => (isa => Uri, is => 'ro', required => 0, coerce => 1);
+has 'nameid' => (isa => NonEmptySimpleStr, is => 'ro', required => 0);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has 'assertion_url' => (isa => Uri, is => 'ro', required => 0, coerce => 1);
+has 'protocol_binding' => (isa => Uri, is => 'ro', required => 0, coerce => 1);
+has 'provider_name' => (isa => Str, is => 'ro', required => 0);
 
 =head2 as_xml()
 
@@ -45,30 +49,53 @@ Returns the AuthnRequest as XML.
 
 sub as_xml {
     my ($self) = @_;
-
-    my $x = XML::Generator->new(':pretty');
-    my $saml  = ['saml' => 'urn:oasis:names:tc:SAML:2.0:assertion'];
-    my $samlp = ['samlp' => 'urn:oasis:names:tc:SAML:2.0:protocol'];
-
-    $x->xml(
-        $x->AuthnRequest(
-            $samlp,
-            { Destination => $self->destination,
-              ID => $self->id,
-              IssueInstant => $self->issue_instant,
-              ProviderName => "My SP's human readable name.",
-              Version => '2.0' },
-            $x->Issuer(
-                $saml,
-                $self->issuer,
-            ),
-            $x->NameIDPolicy(
-                $samlp,
-                { AllowCreate => '1',
-                  Format => $self->nameid_format },
-            )
-        )
+    my $saml = 'urn:oasis:names:tc:SAML:2.0:assertion';
+    my $samlp = 'urn:oasis:names:tc:SAML:2.0:protocol';
+    my $x = XML::Writer->new( 
+        OUTPUT => 'self', 
+        NAMESPACES => 1,
+        PREFIX_MAP => {
+            $saml => 'saml2',
+            $samlp => 'saml2p'
+        }
     );
+
+   my $req_atts = {
+            ID => $self->id,
+            IssueInstant => $self->issue_instant,
+            Version => '2.0',
+        };
+
+        my $protocol_bindings = {
+            'HTTP-POST' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
+        };
+
+        my $att_map = {
+            'assertion_url' => 'AssertionConsumerServiceURL',
+            'protocol_binding' => 'ProtocolBinding',
+            'provider_name' => 'ProviderName',
+            'destination' => 'Destination'
+        };
+
+        foreach my $opt ( qw(assertion_url protocol_binding provider_name destination) ) {
+            if ($self->$opt()) {
+                if ( $opt eq 'protocol_binding' ) {
+                    $req_atts->{ $att_map->{$opt} } = $protocol_bindings->{ $self->$opt() };
+                } else {
+                    $req_atts->{ $att_map->{$opt} } = $self->$opt();
+                }
+            }
+        }
+
+    $x->startTag([$samlp, 'AuthnRequest'], %$req_atts);
+    $x->dataElement([$saml, 'Issuer'], $self->issuer);
+    if ($self->nameid) {
+        $x->startTag([$saml, 'Subject']);
+        $x->dataElement([$saml, 'NameID'], undef, NameQualifier => $self->nameid);
+        $x->endTag(); # Subject
+    }
+    $x->endTag(); #AuthnRequest
+    $x->end();
 }
 
 __PACKAGE__->meta->make_immutable;

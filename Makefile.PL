@@ -10,6 +10,7 @@ all_from 'lib/Net/SAML2.pm';
 
 requires 'XML::XPath';
 requires 'XML::Generator';
+requires 'XML::Writer';
 requires 'Crypt::OpenSSL::RSA';
 requires 'Crypt::OpenSSL::X509';
 requires 'Crypt::OpenSSL::Random';
