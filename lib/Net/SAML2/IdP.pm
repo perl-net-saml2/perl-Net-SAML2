@@ -38,7 +38,7 @@ has 'entityid'       => (isa => Str, is => 'ro', required => 1);
 has 'cacert'         => (isa => Str, is => 'ro', required => 1);
 has 'sso_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'slo_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'art_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
+has 'art_urls'       => (isa => HashRef[Str], is => 'ro', required => 0);
 has 'certs'          => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'formats'        => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'default_format' => (isa => Str, is => 'ro', required => 1);
@@ -128,7 +128,7 @@ sub new_from_xml {
         entityid       => $xpath->findvalue('//md:EntityDescriptor/@entityID')->value,
         sso_urls       => $data->{SSO},
         slo_urls       => $data->{SLO},
-        art_urls       => $data->{Art},
+        art_urls       => $data->{Art} || {},
         certs          => $data->{Cert},
         formats        => $data->{NameIDFormat},
         default_format => $data->{DefaultFormat},
@@ -144,6 +144,7 @@ sub BUILD {
         
     for my $use (keys %{ $self->certs }) {
         my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
+## BUGBUG this is failing for valid things ...
         unless ($ca->verify($cert)) {
             die "can't verify IdP '$use' cert";
         }

@@ -1,4 +1,8 @@
 package Net::SAML2::Binding::POST;
+
+use strict;
+use warnings;
+
 use Moose;
 use MooseX::Types::Moose qw/ Str /;
 
