@@ -26,6 +26,7 @@ has 'nameid'     => (isa => Str,               is => 'ro', required => 1);
 has 'not_before' => (isa => DateTime,          is => 'ro', required => 1);
 has 'not_after'  => (isa => DateTime,          is => 'ro', required => 1);
 has 'audience'   => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has 'in_response_to' => (isa => Str,           is => 'ro', required => 1);
 
 =head1 METHODS
 
@@ -89,6 +90,7 @@ sub new_from_xml {
             ->value,
         not_before => $not_before,
         not_after  => $not_after,
+        in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo')->value,
     );
 
     return $self;
