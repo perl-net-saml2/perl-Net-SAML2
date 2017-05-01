@@ -29,8 +29,17 @@ Constructor. Creates an instance of the AuthnRequest object.
 
 Arguments:
 
- * issuer - the SP's identity URI
- * destination - the IdP's identity URI
+=over
+
+=item B<issuer>
+
+SP's identity URI
+
+=item B<destination>
+
+IdP's identity URI
+
+=back
 
 =cut
 
@@ -42,7 +51,7 @@ has 'assertion_url' => (isa => Uri, is => 'ro', required => 0, coerce => 1);
 has 'protocol_binding' => (isa => Uri, is => 'ro', required => 0, coerce => 1);
 has 'provider_name' => (isa => Str, is => 'ro', required => 0);
 
-=head2 as_xml()
+=head2 as_xml( )
 
 Returns the AuthnRequest as XML.
 

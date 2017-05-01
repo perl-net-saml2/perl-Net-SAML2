@@ -30,14 +30,10 @@ requires 'MooseX::Types::DateTime';
 
 # XML::Sig's deps
 requires 'Class::Accessor';
-requires 'Digest::SHA1';
+requires 'Digest::SHA';
 requires 'Crypt::OpenSSL::Bignum';
 requires 'Crypt::OpenSSL::DSA';
 requires 'XML::CanonicalizeXML';
-
-author_requires 'Test::NoTabs';
-author_requires 'Test::Pod' => '1.14';
-author_requires 'Test::Pod::Coverage' => '1.04';
 
 test_requires 'Test::More' => '0.88';
 test_requires 'Dancer' => '1.2000';
@@ -48,7 +44,5 @@ resources
      license     => "http://dev.perl.org/licenses",
      bugtracker  => "http://rt.cpan.org/NoAuth/Bugs.html?Dist=Net-SAML2",
      repository  => "http://github.com/chrisa/perl-Net-SAML2";
-
-author_tests 't/author';
 
 WriteAll;
