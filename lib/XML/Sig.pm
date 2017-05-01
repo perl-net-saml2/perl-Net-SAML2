@@ -118,69 +118,77 @@ sub verify {
     $self->{ parser }->set_namespace('dsig', 'http://www.w3.org/2000/09/xmldsig#');
     $self->{ parser }->set_namespace('ec', 'http://www.w3.org/2001/10/xml-exc-c14n#');
 
-    my $signature = _trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:SignatureValue'));
-    my $signed_info_node = $self->_get_node('/descendant::dsig:Signature[1]/dsig:SignedInfo');
+    my $signature_nodeset = $self->{parser}->findnodes('//dsig:Signature');
 
-    my $signature_node = $self->_get_node('/descendant::dsig:Signature[1]');
-    my $ns;
-    if (defined $signature_node && ref $signature_node) {
+    while (my $signature_node = $signature_nodeset->shift()) {
+
+        my $value = $self->{parser}->findvalue('dsig:SignatureValue', $signature_node);
+
+        my $signature = _trim($self->{parser}->findvalue('dsig:SignatureValue', $signature_node));
+        my $signed_info_node = $self->_get_node('dsig:SignedInfo', $signature_node);
+
+        my $ns;
+        if (defined $signature_node && ref $signature_node) {
             $ns = $signature_node->getNamespaces->[0];
             $self->{dsig_prefix} = ($ns->getPrefix eq '#default') ? '' : $ns->getPrefix;
-    }
-    else {
+        }
+        else {
             die "no Signature node?";
-    }
+        }
     
-    if (scalar @{ $signed_info_node->getNamespaces } == 0) {
-        $signed_info_node->appendNamespace($ns);
-    }
+        if (scalar @{ $signed_info_node->getNamespaces } == 0) {
+            $signed_info_node->appendNamespace($ns);
+        }
     
-    my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
-    my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
+        my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
+        my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
+        my $digest_method = $self->{parser}->findvalue('dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm', $signature_node);
+        $digest_method =~ s/^.*[#]//;
+
+        if(Digest::SHA->can($digest_method)) {
+            my $rsa_hash = "use_$digest_method" . "_hash";
+            $self->{rsa_hash} =  "use_$digest_method" . "_hash";
+            $self->{digest_method} = \&$digest_method;
+        }
+        else {
+            die("Can't handle $digest_method");
+        }
 
 
-    my $digest_method = $self->{parser}->findvalue('dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm', $signature_node);
-    $digest_method =~ s/^.*[#]//;
-
-    if(Digest::SHA->can($digest_method)) {
-        my $rsa_hash = "use_$digest_method" . "_hash";
-        $self->{rsa_hash} =  "use_$digest_method" . "_hash";
-        $self->{digest_method} = \&$digest_method;
-    }
-    else {
-        die("Can't handle $digest_method");
-    }
-
-
-    if (defined $self->{cert_obj}) {
+        if (defined $self->{cert_obj}) {
             # use the provided cert to verify
-            return 0 unless $self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature);
-    }
-    else {
+            unless ($self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature)) {
+                print STDERR "not verified by x509\n";
+                return 0;
+            }
+        }
+        else {
             # extract the certficate or key from the document
             my $keyinfo_node;
-            if ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:X509Data')) {
+            if ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:X509Data', $signature_node)) {
                     return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon, $signature);
             } 
-            elsif ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
+            elsif ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue', $signature_node)) {
                     return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
             }
-            elsif ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
+            elsif ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue', $signature_node)) {
                     return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
             }
             else {
-                    die "Unrecognized key type or no KeyInfo in document";
+                die "Unrecognized key type or no KeyInfo in document";
             }
+        }
+
+        my $digest_method = $self->{parser}->findvalue('dsig:Reference/dsig:DigestMethod/@Algorithm', $signed_info_node);
+        my $refdigest     = _trim($self->{parser}->findvalue('dsig:Reference/dsig:DigestValue', $signed_info_node));
+    
+        my $signed_xml    = $self->_get_signed_xml( $signature_node );
+        my $canonical     = $self->_transform( $signed_xml, $signature_node );
+        my $digest    = $self->{digest_method}->($canonical);
+        return 0 unless ($refdigest eq _trim(encode_base64($digest));
     }
-
-    my $digest = _trim($self->{parser}->findvalue('dsig:SignedInfo/dsig:Reference/dsig:DigestValue', $signature_node));
-
-    my $signed_xml    = $self->_get_signed_xml($signature_node);
-    my $canonical     = $self->_transform($signed_xml, $signature_node);
-    my $digest_bin    = $self->{digest_method}->($canonical);
-
-    return 1 if ($digest eq _trim(encode_base64($digest_bin)));
-    return 0;
+    
+    return 1;
 }
 
 sub signer_cert {
@@ -199,7 +207,7 @@ sub _get_xml_to_sign {
 
 sub _get_signed_xml {
     my $self = shift;
-    my $context = shift;
+    my ($context) = @_;
 
     my $id = $self->{parser}->findvalue('dsig:SignedInfo/dsig:Reference/@URI', $context);
     $id =~ s/^#//;
@@ -250,9 +258,9 @@ sub _verify_rsa {
     my ($context,$canonical,$sig) = @_;
 
     # Generate Public Key from XML
-    my $mod = _trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Modulus'));
+    my $mod = _trim($self->{parser}->findvalue('dsig:Modulus', $context));
     my $modBin = decode_base64( $mod );
-    my $exp = _trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Exponent'));
+    my $exp = _trim($self->{parser}->findvalue('dsig:Exponent', $context));
     my $expBin = decode_base64( $exp );
     my $n = Crypt::OpenSSL::Bignum->new_from_bin($modBin);
     my $e = Crypt::OpenSSL::Bignum->new_from_bin($expBin);
@@ -297,12 +305,13 @@ sub _verify_x509 {
     confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certificates" if $@;
 
     # Generate Public Key from XML
-    my $certificate = _trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate'));
+    my $certificate = _trim($self->{parser}->findvalue('dsig:X509Certificate', $context));
 
     # This is added because the X509 parser requires it for self-identification
     $certificate = $self->_clean_x509($certificate);
 
     my $cert = Crypt::OpenSSL::X509->new_from_string($certificate);
+
     return $self->_verify_x509_cert($cert, $canonical, $sig);
 }
 
@@ -338,10 +347,10 @@ sub _verify_dsa {
     };
 
     # Generate Public Key from XML
-    my $p = decode_base64(_trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:P')));
-    my $q = decode_base64(_trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:Q')));
-    my $g = decode_base64(_trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:G')));
-    my $y = decode_base64(_trim($self->{parser}->findvalue('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue/dsig:Y')));
+    my $p = decode_base64(_trim($self->{parser}->findvalue('dsig:P', $context)));
+    my $q = decode_base64(_trim($self->{parser}->findvalue('dsig:Q', $context)));
+    my $g = decode_base64(_trim($self->{parser}->findvalue('dsig:G', $context)));
+    my $y = decode_base64(_trim($self->{parser}->findvalue('dsig:Y', $context)));
     my $dsa_pub = Crypt::OpenSSL::DSA->new();
     $dsa_pub->set_p($p);
     $dsa_pub->set_q($q);
@@ -357,8 +366,13 @@ sub _verify_dsa {
 
 sub _get_node {
     my $self = shift;
-    my ($xpath) = @_;
-    my $nodeset = $self->{parser}->find($xpath);
+    my ($xpath, $context) = @_;
+    my $nodeset;
+    if ($context) {
+         $nodeset = $self->{parser}->find($xpath, $context);
+    } else {
+         $nodeset = $self->{parser}->find($xpath);
+    }
     foreach my $node ($nodeset->get_nodelist) {
         return $node; 
     }
@@ -376,7 +390,12 @@ sub _transform_env_sig {
     if (defined $self->{dsig_prefix} && length $self->{dsig_prefix}) {
         $prefix = $self->{dsig_prefix} . ':';
     }
+
+    # This removes the first Signature tag from the XML - even if there is another XML tree with another Signature inside and that comes first.
+    # TODO: Remove the outermost Signature only.
+
     $str =~ s/(<${prefix}Signature(.*?)>(.*?)\<\/${prefix}Signature>)//is;
+
     return $str;
 }
 
@@ -596,7 +615,7 @@ sub _signedinfo_xml {
     my $self = shift;
     my ($digest_xml) = @_;
 
-    return qq{<dsig:SignedInfo xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
+    return qq{<dsig:SignedInfo xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#">
                 <dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments" />
                 <dsig:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#$self->{key_type}-sha1" />
                 $digest_xml
@@ -626,9 +645,7 @@ sub _canonicalize_xml {
     if ( $self->{canonicalizer} eq 'XML::Canonical' ) {
         require XML::Canonical;
 
-        # XML::Canonical doesn't support a prefix list, so
-        # InclusiveNamespaces will have no effect
-
+        # TODO - pass prefixlist in here if X::C supports it
         my $xmlcanon = XML::Canonical->new( comments => $comments );
         return $xmlcanon->canonicalize_string( $xml );
     }
