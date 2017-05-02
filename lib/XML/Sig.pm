@@ -164,28 +164,33 @@ sub verify {
         }
         else {
             # extract the certficate or key from the document
-            my $keyinfo_node;
-            if ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:X509Data', $signature_node)) {
-                    return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon, $signature);
-            } 
-            elsif ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue', $signature_node)) {
-                    return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
+            my %verify_dispatch = (
+                'X509Data' => '_verify_x509',
+                'RSAKeyValue' => '_verify_rsa',
+                'DSAKeyValue' => '_verify_dsa',
+            );
+            my $keyinfo_nodeset;
+            foreach my $key_info_sig_type ( qw/X509Data RSAKeyValue DSAKeyValue/ ) {
+                $keyinfo_nodeset = $self->{parser}->find("/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:$key_info_sig_type", $signature_node);
+                if ( $keyinfo_nodeset->size ) {
+                    my $verify_method = $verify_dispatch{$key_info_sig_type};
+                    if ( ! $self->$verify_method($keyinfo_nodeset->get_node(0), $signed_info_canon, $signature) ) {
+                        print STDERR "Failed to verify using $verify_method\n";
+                        return 0;
+                    } 
+                    last;
+                }
             }
-            elsif ($keyinfo_node = $self->{parser}->find('/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue', $signature_node)) {
-                    return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
-            }
-            else {
-                die "Unrecognized key type or no KeyInfo in document";
-            }
+            die "Unrecognized key type or no KeyInfo in document" unless ( $keyinfo_nodeset && $keyinfo_nodeset->size > 0);
         }
 
-        my $digest_method = $self->{parser}->findvalue('dsig:Reference/dsig:DigestMethod/@Algorithm', $signed_info_node);
+        #my $digest_method = $self->{parser}->findvalue('dsig:Reference/dsig:DigestMethod/@Algorithm', $signed_info_node);
         my $refdigest     = _trim($self->{parser}->findvalue('dsig:Reference/dsig:DigestValue', $signed_info_node));
     
         my $signed_xml    = $self->_get_signed_xml( $signature_node );
         my $canonical     = $self->_transform( $signed_xml, $signature_node );
         my $digest    = $self->{digest_method}->($canonical);
-        return 0 unless ($refdigest eq _trim(encode_base64($digest));
+        return 0 unless ($refdigest eq _trim(encode_base64($digest)));
     }
     
     return 1;
