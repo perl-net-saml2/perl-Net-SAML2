@@ -7,7 +7,7 @@ use warnings;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-$VERSION = '0.23_01';
+$VERSION = '0.23_02';
 
 use base qw(Class::Accessor);
 XML::Sig->mk_accessors(qw(canonicalizer key));
@@ -190,7 +190,7 @@ sub verify {
         my $signed_xml    = $self->_get_signed_xml( $signature_node );
         my $canonical     = $self->_transform( $signed_xml, $signature_node );
         my $digest    = $self->{digest_method}->($canonical);
-        return 0 unless ($refdigest eq _trim(encode_base64($digest)));
+        return 0 unless ($refdigest eq _trim(encode_base64($digest, '')));
     }
     
     return 1;
