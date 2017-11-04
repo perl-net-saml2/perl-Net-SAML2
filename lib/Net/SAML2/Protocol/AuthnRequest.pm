@@ -35,6 +35,14 @@ Arguments:
 
 SP's identity URI
 
+=item B<issuer_namequalifier>
+
+NameQualifier attribute for Issuer
+
+=item B<issuer_format>
+
+Format attribute for Issuer
+
 =item B<destination>
 
 IdP's identity URI
@@ -44,6 +52,8 @@ IdP's identity URI
 =cut
 
 has 'issuer'        => (isa => Uri, is => 'rw', required => 1, coerce => 1);
+has 'issuer_namequalifier' => (isa => Str, is => 'rw', required => 0);
+has 'issuer_format' => (isa => Str, is => 'rw', required => 0);
 has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'nameid' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'rw', required => 1);
@@ -75,7 +85,9 @@ sub as_xml {
             IssueInstant => $self->issue_instant,
             Version => '2.0',
         };
-
+        
+        my $issuer_attrs = {};
+        
         my $protocol_bindings = {
             'HTTP-POST' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
         };
@@ -84,21 +96,26 @@ sub as_xml {
             'assertion_url' => 'AssertionConsumerServiceURL',
             'protocol_binding' => 'ProtocolBinding',
             'provider_name' => 'ProviderName',
-            'destination' => 'Destination'
+            'destination' => 'Destination',
+            'issuer_namequalifier' => 'NameQualifier',
+            'issuer_format' => 'Format',
         };
 
-        foreach my $opt ( qw(assertion_url protocol_binding provider_name destination) ) {
-            if ($self->$opt()) {
+        foreach my $opt ( qw(assertion_url protocol_binding provider_name destination
+            issuer_namequalifier issuer_format) ) {
+            if (defined (my $val = $self->$opt())) {
                 if ( $opt eq 'protocol_binding' ) {
-                    $req_atts->{ $att_map->{$opt} } = $protocol_bindings->{ $self->$opt() };
+                    $req_atts->{ $att_map->{$opt} } = $protocol_bindings->{$val};
+                } elsif ($opt eq 'issuer_namequalifier' || $opt eq 'issuer_format') {
+                    $issuer_attrs->{ $att_map->{$opt} } = $val;
                 } else {
-                    $req_atts->{ $att_map->{$opt} } = $self->$opt();
+                    $req_atts->{ $att_map->{$opt} } = $val;
                 }
             }
         }
 
     $x->startTag([$samlp, 'AuthnRequest'], %$req_atts);
-    $x->dataElement([$saml, 'Issuer'], $self->issuer);
+    $x->dataElement([$saml, 'Issuer'], $self->issuer, %$issuer_attrs);
     if ($self->nameid) {
         $x->startTag([$saml, 'Subject']);
         $x->dataElement([$saml, 'NameID'], undef, NameQualifier => $self->nameid);
