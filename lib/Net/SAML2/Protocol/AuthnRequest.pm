@@ -47,6 +47,16 @@ Format attribute for Issuer
 
 Format attribute for NameIDPolicy
 
+=item B<AuthnContextClassRef>, B<AuthnContextDeclRef>
+
+Each one is an arrayref containing values for AuthnContextClassRef and AuthnContextDeclRef.
+If any is populated, the RequestedAuthnContext will be included in the request.
+
+=item B<RequestedAuthnContext_Comparison>
+
+Value for the I<Comparison> attribute in case I<RequestedAuthnContext> is included
+(see above). Default value is I<exact>.
+
 =item B<destination>
 
 IdP's identity URI
@@ -65,6 +75,11 @@ has 'nameidpolicy_format' => (isa => Str, is => 'rw', required => 0);
 has 'assertion_url' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'protocol_binding' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'provider_name' => (isa => Str, is => 'rw', required => 0);
+
+# RequestedAuthnContext:
+has 'AuthnContextClassRef' => (isa => ArrayRef[Str], is => 'rw', required => 0);
+has 'AuthnContextDeclRef' => (isa => ArrayRef[Str], is => 'rw', required => 0);
+has 'RequestedAuthnContext_Comparison' => (isa => Str, is => 'rw', required => 0, default => 'exact');
 
 =head2 as_xml( )
 
@@ -129,6 +144,16 @@ sub as_xml {
     if ($self->nameidpolicy_format) {
         $x->dataElement([$saml, 'NameIDPolicy'], undef,
             Format => $self->nameidpolicy_format);
+    }
+    if (@{$self->AuthnContextClassRef} || @{$self->AuthnContextDeclRef}) {
+        $x->startTag([$saml, 'RequestedAuthnContext'], Comparison => $self->RequestedAuthnContext_Comparison);
+        foreach my $ref (@{$self->AuthnContextClassRef}) {
+            $x->dataElement([$saml, 'AuthnContextClassRef'], $ref);
+        }
+        foreach my $ref (@{$self->AuthnContextDeclRef}) {
+            $x->dataElement([$saml, 'AuthnContextDeclRef'], $ref);
+        }
+        $x->endTag(); # RequestedAuthnContext
     }
     $x->endTag(); #AuthnRequest
     $x->end();
