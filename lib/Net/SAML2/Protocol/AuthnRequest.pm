@@ -94,6 +94,7 @@ sub as_xml {
     my $x = XML::Writer->new( 
         OUTPUT => 'self', 
         NAMESPACES => 1,
+        FORCED_NS_DECLS => 1,
         PREFIX_MAP => {
             $saml => 'saml2',
             $samlp => 'saml2p'
@@ -142,11 +143,11 @@ sub as_xml {
         $x->endTag(); # Subject
     }
     if ($self->nameidpolicy_format) {
-        $x->dataElement([$saml, 'NameIDPolicy'], undef,
+        $x->dataElement([$samlp, 'NameIDPolicy'], undef,
             Format => $self->nameidpolicy_format);
     }
     if (@{$self->AuthnContextClassRef} || @{$self->AuthnContextDeclRef}) {
-        $x->startTag([$saml, 'RequestedAuthnContext'], Comparison => $self->RequestedAuthnContext_Comparison);
+        $x->startTag([$samlp, 'RequestedAuthnContext'], Comparison => $self->RequestedAuthnContext_Comparison);
         foreach my $ref (@{$self->AuthnContextClassRef}) {
             $x->dataElement([$saml, 'AuthnContextClassRef'], $ref);
         }
