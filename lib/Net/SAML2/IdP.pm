@@ -124,8 +124,11 @@ sub new_from_xml {
         $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor'))
     {
         my $use = $key->getAttribute('use') || 'signing';
-        my($text)
-            = $key->findvalue('ds:KeyInfo/ds:X509Data/ds:X509Certificate')
+        
+        # We can't select by ds:KeyInfo/ds:X509Data/ds:X509Certificate
+        # because of https://rt.cpan.org/Public/Bug/Display.html?id=8784
+        my ($text)
+            = $key->findvalue("//*[local-name()='X509Certificate']")
             =~ /^\s*(.+?)\s*$/s;
 
         # rewrap the base64 data from the metadata; it may not
