@@ -43,13 +43,13 @@ IdP's identity URI
 
 =cut
 
-has 'issuer'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'destination'   => (isa => Uri, is => 'ro', required => 0, coerce => 1);
-has 'nameid' => (isa => NonEmptySimpleStr, is => 'ro', required => 0);
-has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
-has 'assertion_url' => (isa => Uri, is => 'ro', required => 0, coerce => 1);
-has 'protocol_binding' => (isa => Uri, is => 'ro', required => 0, coerce => 1);
-has 'provider_name' => (isa => Str, is => 'ro', required => 0);
+has 'issuer'        => (isa => Uri, is => 'rw', required => 1, coerce => 1);
+has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
+has 'nameid' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
+has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'rw', required => 1);
+has 'assertion_url' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
+has 'protocol_binding' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
+has 'provider_name' => (isa => Str, is => 'rw', required => 0);
 
 =head2 as_xml( )
 
