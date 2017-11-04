@@ -77,8 +77,8 @@ has 'protocol_binding' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'provider_name' => (isa => Str, is => 'rw', required => 0);
 
 # RequestedAuthnContext:
-has 'AuthnContextClassRef' => (isa => 'ArrayRef[Str]', is => 'rw', required => 0);
-has 'AuthnContextDeclRef' => (isa => 'ArrayRef[Str]', is => 'rw', required => 0);
+has 'AuthnContextClassRef' => (isa => 'ArrayRef[Str]', is => 'rw', required => 0, default => sub {[]});
+has 'AuthnContextDeclRef' => (isa => 'ArrayRef[Str]', is => 'rw', required => 0, default => sub {[]});
 has 'RequestedAuthnContext_Comparison' => (isa => Str, is => 'rw', required => 0, default => 'exact');
 
 =head2 as_xml( )
