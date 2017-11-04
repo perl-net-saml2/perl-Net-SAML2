@@ -43,6 +43,10 @@ NameQualifier attribute for Issuer
 
 Format attribute for Issuer
 
+=item B<nameidpolicy_format>
+
+Format attribute for NameIDPolicy
+
 =item B<destination>
 
 IdP's identity URI
@@ -57,6 +61,7 @@ has 'issuer_format' => (isa => Str, is => 'rw', required => 0);
 has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'nameid' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'rw', required => 1);
+has 'nameidpolicy_format' => (isa => Str, is => 'rw', required => 0);
 has 'assertion_url' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'protocol_binding' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'provider_name' => (isa => Str, is => 'rw', required => 0);
@@ -120,6 +125,10 @@ sub as_xml {
         $x->startTag([$saml, 'Subject']);
         $x->dataElement([$saml, 'NameID'], undef, NameQualifier => $self->nameid);
         $x->endTag(); # Subject
+    }
+    if ($self->nameidpolicy_format) {
+        $x->dataElement([$saml, 'NameIDPolicy'], undef,
+            Format => $self->nameidpolicy_format);
     }
     $x->endTag(); #AuthnRequest
     $x->end();
