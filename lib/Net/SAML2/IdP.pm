@@ -167,8 +167,9 @@ sub BUILD {
     for my $use (keys %{$self->certs}) {
         my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
 ## BUGBUG this is failing for valid things ...
-        unless($ca->verify($cert)) {
-            die "can't verify IdP '$use' cert";
+        eval { $ca->verify($cert) };
+        if ($@) {
+            warn "Can't verify IdP '$use' cert: $@\n";
         }
     }
 }
