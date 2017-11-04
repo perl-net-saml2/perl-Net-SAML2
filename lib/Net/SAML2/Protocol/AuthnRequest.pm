@@ -94,7 +94,7 @@ sub as_xml {
     my $x = XML::Writer->new( 
         OUTPUT => 'self', 
         NAMESPACES => 1,
-        FORCED_NS_DECLS => 1,
+        FORCED_NS_DECLS => [$saml, $samlp],
         PREFIX_MAP => {
             $saml => 'saml2',
             $samlp => 'saml2p'
