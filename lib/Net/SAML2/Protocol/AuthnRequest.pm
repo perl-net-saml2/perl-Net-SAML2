@@ -1,6 +1,6 @@
 package Net::SAML2::Protocol::AuthnRequest;
 use Moose;
-use MooseX::Types::Moose qw /Str /;
+use MooseX::Types::Moose qw /Str Int/;
 use MooseX::Types::URI qw/ Uri /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use XML::Writer;
@@ -73,6 +73,8 @@ has 'nameid' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'rw', required => 1);
 has 'nameidpolicy_format' => (isa => Str, is => 'rw', required => 0);
 has 'assertion_url' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
+has 'assertion_index' => (isa => Int, is => 'rw', required => 0);
+has 'attribute_index' => (isa => Int, is => 'rw', required => 0);
 has 'protocol_binding' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'provider_name' => (isa => Str, is => 'rw', required => 0);
 
@@ -115,6 +117,8 @@ sub as_xml {
 
         my $att_map = {
             'assertion_url' => 'AssertionConsumerServiceURL',
+            'assertion_index' => 'AssertionConsumerServiceIndex',
+            'attribute_index' => 'AttributeConsumingServiceIndex',
             'protocol_binding' => 'ProtocolBinding',
             'provider_name' => 'ProviderName',
             'destination' => 'Destination',
@@ -122,7 +126,8 @@ sub as_xml {
             'issuer_format' => 'Format',
         };
 
-        foreach my $opt ( qw(assertion_url protocol_binding provider_name destination
+        foreach my $opt ( qw(assertion_url assertion_index protocol_binding
+            attribute_index provider_name destination
             issuer_namequalifier issuer_format) ) {
             if (defined (my $val = $self->$opt())) {
                 if ( $opt eq 'protocol_binding' ) {
@@ -134,7 +139,7 @@ sub as_xml {
                 }
             }
         }
-
+    
     $x->startTag([$samlp, 'AuthnRequest'], %$req_atts);
     $x->dataElement([$saml, 'Issuer'], $self->issuer, %$issuer_attrs);
     if ($self->nameid) {

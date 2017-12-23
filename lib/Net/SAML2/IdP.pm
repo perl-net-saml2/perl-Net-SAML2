@@ -35,7 +35,7 @@ Constructor
 =cut
 
 has 'entityid'       => (isa => Str, is => 'ro', required => 1);
-has 'cacert'         => (isa => Str, is => 'ro', required => 1);
+has 'cacert'         => (isa => 'Maybe[Str]', is => 'ro', required => 1);
 has 'sso_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'slo_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0);
 has 'art_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0);
@@ -165,14 +165,17 @@ sub new_from_xml {
 
 sub BUILD {
     my($self) = @_;
-    my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+    
+    if ($self->cacert) {
+        my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
 
-    for my $use (keys %{$self->certs}) {
-        my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
-## BUGBUG this is failing for valid things ...
-        eval { $ca->verify($cert) };
-        if ($@) {
-            warn "Can't verify IdP '$use' cert: $@\n";
+        for my $use (keys %{$self->certs}) {
+            my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
+            ## BUGBUG this is failing for valid things ...
+            eval { $ca->verify($cert) };
+            if ($@) {
+                warn "Can't verify IdP '$use' cert: $@\n";
+            }
         }
     }
 }

@@ -44,7 +44,7 @@ path to the CA certificate for verification
 =cut
 
 has 'cert_text' => (isa => Str, is => 'ro', required => 0);
-has 'cacert' => (isa => Str, is => 'ro', required => 1);
+has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 0);
 
 =head2 handle_response( $response )
 
@@ -63,17 +63,20 @@ sub handle_response {
     my $x = Net::SAML2::XML::Sig->new($xml_opts);
     my $ret = $x->verify($xml);
     die "signature check failed" unless $ret;
-
-    my $cert = $x->signer_cert;
-    die "Certificate not provided and not in SAML Response, cannot validate" unless $cert;
-
-    my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
-    $ret = $ca->verify($cert);
-
-    if ($ret) {
-        return sprintf("%s (verified)", $cert->subject);
+    
+    if ($self->cacert) {
+        my $cert = $x->signer_cert
+            or die "Certificate not provided and not in SAML Response, cannot validate";
+    
+        my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+        if ($ca->verify($cert)) {
+            return sprintf("%s (verified)", $cert->subject);
+        } else {
+            return 0;
+        }
     }
-    return;
+    
+    return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
