@@ -60,8 +60,10 @@ sub new_from_xml {
     for my $node (
         $xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute'))
     {
-        my @values = $node->findnodes('saml:AttributeValue');
-        $attributes->{$node->getAttribute('Name')} = [map {$_->string_value} @values];
+        # We can't select by saml:AttributeValue
+        # because of https://rt.cpan.org/Public/Bug/Display.html?id=8784
+        my @values = $node->findnodes("*[local-name()='AttributeValue']");
+        $attributes->{$node->getAttribute('Name')} = [map $_->string_value, @values];
     }
 
     my $not_before;
