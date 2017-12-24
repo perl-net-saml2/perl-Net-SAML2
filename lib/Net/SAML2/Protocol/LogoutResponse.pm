@@ -48,8 +48,6 @@ request ID we're responding to
 
 =cut
 
-has 'issuer'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'destination' => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'status'      => (isa => Str, is => 'ro', required => 1);
 has 'response_to' => (isa => Str, is => 'ro', required => 1);
 

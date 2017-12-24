@@ -1,6 +1,7 @@
 package Net::SAML2::Role::ProtocolMessage;
 use Moose::Role;
 use MooseX::Types::Moose qw/ Str /;
+use MooseX::Types::URI qw/ Uri /;
 use DateTime::Format::XSD;
 use Crypt::OpenSSL::Random;
 use XML::Generator;
@@ -20,6 +21,10 @@ implementation.
 
 has 'id'            => (isa => Str, is => 'ro', required => 1);
 has 'issue_instant' => (isa => Str, is => 'ro', required => 1);
+has 'issuer'        => (isa => Uri, is => 'rw', required => 1, coerce => 1);
+has 'issuer_namequalifier' => (isa => Str, is => 'rw', required => 0);
+has 'issuer_format' => (isa => Str, is => 'rw', required => 0);
+has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 
 around 'BUILDARGS' => sub {
     my $orig = shift;
@@ -35,6 +40,24 @@ around 'BUILDARGS' => sub {
         
     return \%args;
 };
+
+=head1 CONSTRUCTOR ARGUMENTS
+
+=item B<issuer>
+
+URI of issuer
+
+=item B<issuer_namequalifier>
+
+NameQualifier attribute for Issuer
+
+=item B<issuer_format>
+
+Format attribute for Issuer
+
+=item B<destination>
+
+URI of Destination
 
 =head1 METHODS
 

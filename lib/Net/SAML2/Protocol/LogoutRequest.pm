@@ -55,8 +55,6 @@ IdP's identity URI
 has 'session'       => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'nameid'        => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
-has 'issuer'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'destination'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 
 =head2 new_from_xml( ... )
 

@@ -54,7 +54,8 @@ sub new_from_xml {
     my($class, %args) = @_;
 
     my $xpath = XML::XPath->new(xml => $args{xml});
-    $xpath->set_namespace('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
+    $xpath->set_namespace('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
+    $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
     my $attributes = {};
     for my $node (
@@ -85,6 +86,8 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
+        issuer         => $xpath->findvalue('//saml:Issuer')->value,
+        destination    => $xpath->findvalue('/samlp:Response/@Destination')->value,
         attributes     => $attributes,
         session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex')->value,
         nameid         => $xpath->findvalue('//saml:Subject/saml:NameID')->value,

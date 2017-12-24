@@ -31,18 +31,6 @@ Arguments:
 
 =over
 
-=item B<issuer>
-
-SP's identity URI
-
-=item B<issuer_namequalifier>
-
-NameQualifier attribute for Issuer
-
-=item B<issuer_format>
-
-Format attribute for Issuer
-
 =item B<nameidpolicy_format>
 
 Format attribute for NameIDPolicy
@@ -57,18 +45,10 @@ If any is populated, the RequestedAuthnContext will be included in the request.
 Value for the I<Comparison> attribute in case I<RequestedAuthnContext> is included
 (see above). Default value is I<exact>.
 
-=item B<destination>
-
-IdP's identity URI
-
 =back
 
 =cut
 
-has 'issuer'        => (isa => Uri, is => 'rw', required => 1, coerce => 1);
-has 'issuer_namequalifier' => (isa => Str, is => 'rw', required => 0);
-has 'issuer_format' => (isa => Str, is => 'rw', required => 0);
-has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'nameid' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'rw', required => 1);
 has 'nameidpolicy_format' => (isa => Str, is => 'rw', required => 0);
