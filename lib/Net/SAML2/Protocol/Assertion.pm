@@ -86,7 +86,7 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
-        issuer         => $xpath->findvalue('//saml:Issuer')->value,
+        issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer')->value,
         destination    => $xpath->findvalue('/samlp:Response/@Destination')->value,
         attributes     => $attributes,
         session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex')->value,
@@ -122,11 +122,14 @@ Assertions validity period as specified in its Conditions element.
 =cut
 
 sub valid {
-    my($self, $audience) = @_;
+    my ($self, $audience, $in_response_to) = @_;
 
     return 0 unless defined $audience;
     return 0 unless($audience eq $self->audience);
-
+    
+    return 0 unless !defined $in_response_to
+        or $in_response_to eq $self->in_response_to;
+    
     my $now = DateTime::->now;
 
     # not_before is "NotBefore" element - exact match is ok
