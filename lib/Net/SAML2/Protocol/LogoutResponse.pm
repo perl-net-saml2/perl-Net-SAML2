@@ -49,6 +49,7 @@ request ID we're responding to
 =cut
 
 has 'status'      => (isa => Str, is => 'ro', required => 1);
+has 'substatus'   => (isa => Str, is => 'ro', required => 0);
 has 'response_to' => (isa => Str, is => 'ro', required => 1);
 
 =head2 new_from_xml( ... )
@@ -79,6 +80,7 @@ sub new_from_xml {
         session     => $xpath->findvalue('/samlp:LogoutResponse/samlp:SessionIndex')->value,
         issuer      => $xpath->findvalue('/samlp:LogoutResponse/saml:Issuer')->value,
         status      => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value')->value,
+        substatus   => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value')->value,
     );
 
     return $self;

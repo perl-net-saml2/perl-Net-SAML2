@@ -86,6 +86,7 @@ sub status_uri {
         success   => 'urn:oasis:names:tc:SAML:2.0:status:Success',
         requester => 'urn:oasis:names:tc:SAML:2.0:status:Requester',
         responder => 'urn:oasis:names:tc:SAML:2.0:status:Responder',
+        partial   => 'urn:oasis:names:tc:SAML:2.0:status:PartialLogout',
     };
 
     if (exists $statuses->{$status}) {
