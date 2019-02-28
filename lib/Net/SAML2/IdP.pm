@@ -120,6 +120,13 @@ sub new_from_xml {
         }
     }
 
+    # NameIDFormat is an optional field and not provided in all metadata xml
+    # Microsoft in particular does not provide this field
+    if(!defined($data->{NameIDFormat})){
+        $data->{NameIDFormat}->{unspecified} = 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified';
+        $data->{DefaultFormat} = 'unspecified' unless exists $data->{DefaultFormat};
+    }
+    
     for my $key (
         $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor'))
     {
