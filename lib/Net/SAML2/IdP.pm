@@ -2,6 +2,7 @@ package Net::SAML2::IdP;
 use Moose;
 use MooseX::Types::Moose qw/ Str Object HashRef ArrayRef /;
 use MooseX::Types::URI qw/ Uri /;
+use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head1 NAME
 
@@ -59,7 +60,7 @@ sub new_from_url {
 
     my $res = $ua->request($req);
     die "no metadata" unless $res->is_success;
-    my $xml = $res->content;
+    my $xml = no_comments($res->content);
 
     return $class->new_from_xml(xml => $xml, cacert => $args{cacert});
 }
@@ -74,7 +75,7 @@ document.
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $xpath = XML::XPath->new(xml => $args{xml});
+    my $xpath = XML::XPath->new(xml => no_comments($args{xml}));
     $xpath->set_namespace('md', 'urn:oasis:names:tc:SAML:2.0:metadata');
     $xpath->set_namespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
