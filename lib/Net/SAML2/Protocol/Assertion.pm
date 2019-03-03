@@ -5,6 +5,7 @@ use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
 use DateTime::Format::XSD;
+use Net::SAML2::XML::Util;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -53,7 +54,8 @@ XML data
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $xpath = XML::XPath->new(xml => $args{xml});
+    my $xpath = XML::XPath->new(xml => no_comments($args{xml}->no_comments()));
+
     $xpath->set_namespace('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
     $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
@@ -139,5 +141,23 @@ sub valid {
 
     return 1;
 }
+
+#=head2 no_comments( $xml )
+
+#Returns the XML passed as plain XML with the comments removed
+
+#This is to remediate CVE-2017-11427 XML Comments can allow for
+#authentication bypass in SAML2 implementations
+
+#=cut
+
+#sub no_comments {
+#    my ($self, $xml) = @_;
+#
+#    # Remove comments from XML to mitigate XML comment auth bypass
+#    my $tidy_obj = XML::Tidy->new(xml => $xml);
+#    $tidy_obj->prune('//comment()');
+    #    return $tidy_obj->toString();
+    #}
 
 1;
