@@ -6,6 +6,7 @@ supporting the Web Browser SSO profile.
 Major dependencies:
 
  * XML::XPath
+ * XML::Tidy
  * Crypt::OpenSSL::RSA
  * Crypt::OpenSSL::X509
  * Crypt::OpenSSL::VerifyX509
