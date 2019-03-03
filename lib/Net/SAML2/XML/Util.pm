@@ -1,5 +1,22 @@
 package Net::SAML2::XML::Util;
 
+use strict;
+use warnings;
+
+use XML::Tidy;
+
+# use 'our' on v5.6.0
+use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
+
+$DEBUG = 0;
+$VERSION = '0.23_02';
+
+# We are exporting functions
+use base qw/Exporter/;
+
+# Export list - to allow fine tuning of export table
+@EXPORT_OK = qw( no_comments );
+
 =head1 NAME
 
 Net::SAML2::XML::Util - XML Util class.
@@ -22,7 +39,7 @@ authentication bypass in SAML2 implementations
 =cut
 
 sub no_comments {
-    my ($self, $xml) = @_;
+    my $xml = shift;
 
     # Remove comments from XML to mitigate XML comment auth bypass
     my $tidy_obj = XML::Tidy->new(xml => $xml);
@@ -30,4 +47,4 @@ sub no_comments {
     return $tidy_obj->toString();
 }
 
-__PACKAGE__->meta->make_immutable;
+1;
