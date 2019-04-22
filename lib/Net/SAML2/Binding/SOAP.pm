@@ -2,6 +2,7 @@ package Net::SAML2::Binding::SOAP;
 use Moose;
 use MooseX::Types::Moose qw/ Str Object /;
 use MooseX::Types::URI qw/ Uri /;
+use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head1 NAME
 
@@ -124,7 +125,7 @@ sub handle_response {
     my $subject = sprintf("%s (verified)", $cert->subject);
 
     # parse the SOAP response and return the payload
-    my $parser = XML::XPath->new( xml => $response );
+    my $parser = XML::XPath->new( xml => no_comments($response) );
     $parser->set_namespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
     $parser->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
         
@@ -143,7 +144,7 @@ Accepts a string containing the complete SOAP request.
 sub handle_request {
     my ($self, $request) = @_;
         
-    my $parser = XML::XPath->new( xml => $request );
+    my $parser = XML::XPath->new( xml => no_comments($request) );
     $parser->set_namespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
     $parser->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 

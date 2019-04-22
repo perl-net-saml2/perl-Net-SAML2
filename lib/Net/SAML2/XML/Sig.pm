@@ -177,7 +177,7 @@ sub verify {
                     if ( ! $self->$verify_method($keyinfo_nodeset->get_node(0), $signed_info_canon, $signature) ) {
                         print STDERR "Failed to verify using $verify_method\n";
                         return 0;
-                    } 
+                    }
                     last;
                 }
             }
@@ -192,7 +192,7 @@ sub verify {
         my $digest    = $self->{digest_method}->($canonical);
         return 0 unless ($refdigest eq _trim(encode_base64($digest, '')));
     }
-    
+
     return 1;
 }
 

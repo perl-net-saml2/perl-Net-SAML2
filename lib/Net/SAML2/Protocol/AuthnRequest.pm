@@ -73,8 +73,8 @@ sub as_xml {
     my ($self) = @_;
     my $saml = 'urn:oasis:names:tc:SAML:2.0:assertion';
     my $samlp = 'urn:oasis:names:tc:SAML:2.0:protocol';
-    my $x = XML::Writer->new( 
-        OUTPUT => 'self', 
+    my $x = XML::Writer->new(
+        OUTPUT => 'self',
         NAMESPACES => 1,
         FORCED_NS_DECLS => [$saml, $samlp],
         PREFIX_MAP => {
@@ -88,9 +88,9 @@ sub as_xml {
             IssueInstant => $self->issue_instant,
             Version => '2.0',
         };
-        
+
         my $issuer_attrs = {};
-        
+
         my $protocol_bindings = {
             'HTTP-POST' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
         };
@@ -119,7 +119,7 @@ sub as_xml {
                 }
             }
         }
-    
+
     $x->startTag([$samlp, 'AuthnRequest'], %$req_atts);
     $x->dataElement([$saml, 'Issuer'], $self->issuer, %$issuer_attrs);
     if ($self->nameid) {

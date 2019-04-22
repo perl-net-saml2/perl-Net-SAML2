@@ -9,6 +9,7 @@ name 'Net-SAML2';
 all_from 'lib/Net/SAML2.pm';
 
 requires 'XML::XPath';
+requires 'XML::Tidy';
 requires 'XML::Generator';
 requires 'XML::Writer';
 requires 'Crypt::OpenSSL::RSA';

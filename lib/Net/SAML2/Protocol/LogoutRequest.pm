@@ -2,6 +2,7 @@ package Net::SAML2::Protocol::LogoutRequest;
 use Moose;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use MooseX::Types::URI qw/ Uri /;
+use Net::SAML2::XML::Util qw/ no_comments /;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -75,7 +76,7 @@ XML data
 sub new_from_xml {
     my ($class, %args) = @_;
 
-    my $xpath = XML::XPath->new( xml => $args{xml} );
+    my $xpath = XML::XPath->new( xml => no_comments($args{xml}) );
     $xpath->set_namespace('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
     $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
