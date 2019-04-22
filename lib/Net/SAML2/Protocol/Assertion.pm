@@ -128,7 +128,7 @@ sub valid {
 
     return 0 unless defined $audience;
     return 0 unless($audience eq $self->audience);
- 
+
     return 0 unless !defined $in_response_to
         or $in_response_to eq $self->in_response_to;
 
