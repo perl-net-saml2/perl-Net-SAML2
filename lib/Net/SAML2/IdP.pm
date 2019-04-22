@@ -127,12 +127,12 @@ sub new_from_xml {
         $data->{NameIDFormat}->{unspecified} = 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified';
         $data->{DefaultFormat} = 'unspecified' unless exists $data->{DefaultFormat};
     }
-    
+ 
     for my $key (
         $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor'))
     {
         my $use = $key->getAttribute('use') || 'signing';
-        
+ 
         # We can't select by ds:KeyInfo/ds:X509Data/ds:X509Certificate
         # because of https://rt.cpan.org/Public/Bug/Display.html?id=8784
         my ($text)
@@ -173,7 +173,7 @@ sub new_from_xml {
 
 sub BUILD {
     my($self) = @_;
-    
+ 
     if ($self->cacert) {
         my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
 

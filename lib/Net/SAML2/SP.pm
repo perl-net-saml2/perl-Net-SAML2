@@ -37,7 +37,7 @@ base for all SP service URLs
 
 =item B<id>
 
-SP's identity URI. 
+SP's identity URI.
 
 =item B<cert>
 
