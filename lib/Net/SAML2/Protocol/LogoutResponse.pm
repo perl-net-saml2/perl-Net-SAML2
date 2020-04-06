@@ -65,6 +65,8 @@ Arguments:
 
 XML data
 
+=back
+
 =cut
 
 sub new_from_xml {

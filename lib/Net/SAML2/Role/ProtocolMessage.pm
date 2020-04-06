@@ -43,6 +43,8 @@ around 'BUILDARGS' => sub {
 
 =head1 CONSTRUCTOR ARGUMENTS
 
+=over
+
 =item B<issuer>
 
 URI of issuer
@@ -58,6 +60,8 @@ Format attribute for Issuer
 =item B<destination>
 
 URI of Destination
+
+=back
 
 =head1 METHODS
 
