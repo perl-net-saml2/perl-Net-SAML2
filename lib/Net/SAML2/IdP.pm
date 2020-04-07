@@ -171,6 +171,12 @@ sub new_from_xml {
     return $self;
 }
 
+=head2 BUILD ( hashref of the parameters passed to the constructor )
+
+Called after the object is created to validate the IdP using the cacert
+
+=cut
+
 sub BUILD {
     my($self) = @_;
 

@@ -79,6 +79,12 @@ has 'org_contact'      => (isa => Str, is => 'ro', required => 1);
 
 has '_cert_text' => (isa => Str, is => 'rw', required => 0);
 
+=head2 BUILD ( hashref of the parameters passed to the constructor )
+
+Called after the object is created to load the cert from a file
+
+=cut
+
 sub BUILD {
     my ($self) = @_;
 
