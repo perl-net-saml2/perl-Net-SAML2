@@ -25,13 +25,15 @@ Net::SAML2 - SAML bindings and protocol implementation
         )->as_xml;
 
         my $redirect = Net::SAML2::Binding::Redirect->new(
-                key => 'sign-nopw-cert.pem',
+                key => '/path/to/SPsign-nopw-key.pem',
                 url => $sso_url,
-                param => 'SAMLRequest',
-                cacert => '/path/to/cac-cert.pem'
+                param => 'SAMLRequest' OR 'SAMLResponse',
+                cert => '/path/to/IdP-cert.pem'
         );
 
         my $url = $redirect->sign($authnreq);
+
+        my $ret = $redirect->verify($url);
 
   # handle the POST back from the IdP, via the browser:
 
