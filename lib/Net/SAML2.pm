@@ -27,6 +27,8 @@ Net::SAML2 - SAML bindings and protocol implementation
         my $redirect = Net::SAML2::Binding::Redirect->new(
                 key => 'sign-nopw-cert.pem',
                 url => $sso_url,
+                param => 'SAMLRequest',
+                cacert => '/path/to/cac-cert.pem'
         );
 
         my $url = $redirect->sign($authnreq);
