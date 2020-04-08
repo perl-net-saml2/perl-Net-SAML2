@@ -115,6 +115,8 @@ Revision history for Perl extension Net::SAML2.
 
 0.20.04 TBD
 
+      Based on Github repo https://github.com/timlegge/perl-Net-SAML2
+
       34b7ce3 Fix #12 Some tests are always passing
       6be1c12 Fix Issue #6 - cert required in Binding/Redirect
       772f26f Fix Issue #4 - Missing paramaters in SYNOPSIS
