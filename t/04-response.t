@@ -74,7 +74,7 @@ my $sp = Net::SAML2::SP->new(
 my $post = $sp->post_binding;
 my $subject = $post->handle_response($response);
 ok($subject);
-ok(qr/verified/, $subject);
+like($subject, qr/verified/);
 #diag "subject: $subject\n";
 
 my $assertion_xml = decode_base64($response);

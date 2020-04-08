@@ -15,8 +15,8 @@ my $xml = $lor->as_xml;
 ok($xml);
 #diag($xml);
 
-ok(qr/ID=".+"/, $xml);
-ok(qr/IssueInstant=".+"/, $xml);
-ok(qr/persistent/, $xml);
+like($xml, qr/ID=".+"/);
+like($xml, qr/IssueInstant=".+"/);
+like($xml, qr/persistent/);
 
 done_testing;
