@@ -111,7 +111,7 @@ sub sign {
 sub verify {
     my $self = shift;
     delete $self->{signer_cert};
-    
+
     my ($xml) = @_;
 
     $self->{ parser } = XML::XPath->new( xml => $xml );
@@ -135,11 +135,11 @@ sub verify {
         else {
             die "no Signature node?";
         }
-    
+
         if (scalar @{ $signed_info_node->getNamespaces } == 0) {
             $signed_info_node->appendNamespace($ns);
         }
-    
+
         my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
         my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
         my $digest_method = $self->{parser}->findvalue('dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm', $signature_node);
@@ -186,7 +186,7 @@ sub verify {
 
         #my $digest_method = $self->{parser}->findvalue('dsig:Reference/dsig:DigestMethod/@Algorithm', $signed_info_node);
         my $refdigest     = _trim($self->{parser}->findvalue('dsig:Reference/dsig:DigestValue', $signed_info_node));
-    
+
         my $signed_xml    = $self->_get_signed_xml( $signature_node );
         my $canonical     = $self->_transform( $signed_xml, $signature_node );
         my $digest    = $self->{digest_method}->($canonical);
@@ -226,7 +226,7 @@ sub _transform {
     my ($xml, $context) = @_;
 
     my $transforms = $self->{parser}->find(
-        'dsig:SignedInfo/dsig:Reference/dsig:Transforms/dsig:Transform', 
+        'dsig:SignedInfo/dsig:Reference/dsig:Transforms/dsig:Transform',
         $context
     );
 
@@ -287,13 +287,13 @@ sub _clean_x509 {
     # rewrap the base64 data from the certificate; it may not be
     # wrapped at 64 characters as PEM requires
     $cert =~ s/\n//g;
-    
+
     my @lines;
     while (length $cert > 64) {
             push @lines, substr $cert, 0, 64, '';
         }
     push @lines, $cert;
-    
+
     $cert = join "\n", @lines;
 
     $cert = "-----BEGIN CERTIFICATE-----\n" . $cert . "\n-----END CERTIFICATE-----\n";
@@ -379,7 +379,7 @@ sub _get_node {
          $nodeset = $self->{parser}->find($xpath);
     }
     foreach my $node ($nodeset->get_nodelist) {
-        return $node; 
+        return $node;
     }
 }
 
@@ -467,7 +467,7 @@ sub _load_rsa_key {
             my $bigNum = ( $rsaKey->get_key_parameters() )[1];
             my $bin = $bigNum->to_bin();
             my $exp = encode_base64( $bin, '' );
-            
+
             $bigNum = ( $rsaKey->get_key_parameters() )[0];
             $bin = $bigNum->to_bin();
             my $mod = encode_base64( $bin, '' );
@@ -526,7 +526,7 @@ sub _load_cert_file {
         local $/ = undef;
         $text = <$CERT>;
         close $CERT;
-        
+
         my $cert = Crypt::OpenSSL::X509->new_from_string($text);
         if ( $cert ) {
             $self->{ cert_obj } = $cert;
@@ -682,31 +682,31 @@ XML::Sig - A toolkit to help sign and verify XML Digital Signatures.
      canonicalizer => 'XML::CanonicalizeXML',
      key => 'path/to/private.key',
    });
-   
+
    # create a signature
    my $signed = $signer->sign($xml);
    print "Signed XML: $signed\n";
-   
+
    # verify a signature
-   $signer->verify($signed) 
+   $signer->verify($signed)
      or die "Signature Invalid.";
    print "Signature valid.\n";
 
 =head1 DESCRIPTION
 
 This perl module provides two primary capabilities: given an XML string, create
-and insert a digital signature, or if one is already present in the string verify 
+and insert a digital signature, or if one is already present in the string verify
 it -- all in accordance with the W3C standard governing XML signatures.
 
 =head1 ABOUT DIGITAL SIGNATURES
 
 Just as one might want to send an email message that is cryptographically signed
 in order to give the recipient the means to independently verify who sent the email,
-one might also want to sign an XML document. This is especially true in the 
-scenario where an XML document is received in an otherwise unauthenticated 
+one might also want to sign an XML document. This is especially true in the
+scenario where an XML document is received in an otherwise unauthenticated
 context, e.g. SAML.
 
-However XML provides a challenge that email does not. In XML, two documents can be 
+However XML provides a challenge that email does not. In XML, two documents can be
 byte-wise inequivalent, and semanticaly equivalent at the same time. For example:
 
     <?xml version="1.0"?>
@@ -722,16 +722,16 @@ byte-wise inequivalent, and semanticaly equivalent at the same time. For example
     </foo>
 
 Each of these document express the same thing, or in other words they "mean"
-the same thing. However if you were to strictly sign the raw text of these 
-documents, they would each produce different signatures. 
+the same thing. However if you were to strictly sign the raw text of these
+documents, they would each produce different signatures.
 
-XML Signatures on the other hand will produce the same signature for each of 
-the documents above. Therefore an XML document can be written and rewritten by 
-different parties and still be able to have someone at the end of the line 
+XML Signatures on the other hand will produce the same signature for each of
+the documents above. Therefore an XML document can be written and rewritten by
+different parties and still be able to have someone at the end of the line
 verify a signature the document may contain.
 
 There is a specially subscribed methodology for how this process should be
-executed and involves transforming the XML into its canonical form so a 
+executed and involves transforming the XML into its canonical form so a
 signature can be reliably inserted or extracted for verification. This
 module implements that process.
 
@@ -810,7 +810,7 @@ Now, let's insert a signature:
 
 This module supports the following signature methods:
 
-=over 
+=over
 
 =item DSA
 
@@ -822,7 +822,7 @@ This module supports the following signature methods:
 
 This module supports the following canonicalization methods and transforms:
 
-=over 
+=over
 
 =item EXC-X14N#
 
@@ -845,7 +845,7 @@ Constructor; see OPTIONS below.
 =item B<sign($xml)>
 
 When given a string of XML, it will return the same string with a signature
-generated from the key provided when the XML::Sig object was initialized. 
+generated from the key provided when the XML::Sig object was initialized.
 
 This method presumes that there is one and only one element in your XML
 document with an ID (case sensitive) attribute. This is the element that will
@@ -855,7 +855,7 @@ attribute can be found on an element, the signature will not be created.
 
 =item B<verify($xml)>
 
-Returns true or false based upon whether the signature is valid or not. 
+Returns true or false based upon whether the signature is valid or not.
 
 When using XML::Sig exclusively to verify a signature, no key needs to be
 specified during initialization given that the public key should be
@@ -922,8 +922,8 @@ L<http://github.com/byrnereese/perl-XML-Sig>
 
 Author: Byrne Reese <byrne@majordojo.com>
 
-Thanks to Manni Heumann who wrote Google::SAML::Response from 
-which this module borrows heavily in order to create digital 
+Thanks to Manni Heumann who wrote Google::SAML::Response from
+which this module borrows heavily in order to create digital
 signatures.
 
 Net::SAML2 embedded version amended by Chris Andrews <chris@nodnol.org>.

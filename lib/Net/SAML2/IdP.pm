@@ -197,7 +197,7 @@ sub BUILD {
 =head2 sso_url( $binding )
 
 Returns the url for the SSO service using the given binding. Binding
-name should be the full URI. 
+name should be the full URI.
 
 =cut
 

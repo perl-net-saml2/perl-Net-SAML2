@@ -17,7 +17,7 @@ Net::SAML2 - SAML bindings and protocol implementation
 
         my $idp = Net::SAML2::IdP->new($IDP);
         my $sso_url = $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');
-        
+
         my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
                 issuer        => 'http://localhost:3000/metadata.xml',
                 destination   => $sso_url,
@@ -41,7 +41,7 @@ Net::SAML2 - SAML bindings and protocol implementation
         my $ret = $post->handle_response(
                 $saml_response
         );
-        
+
         if ($ret) {
                 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                         xml => decode_base64($saml_response)
@@ -52,7 +52,7 @@ Net::SAML2 - SAML bindings and protocol implementation
 
 =head1 DESCRIPTION
 
-Support for the Web Browser SSO profile of SAML2. 
+Support for the Web Browser SSO profile of SAML2.
 
 This is a very early release, but one which will correctly perform the
 SSO process.

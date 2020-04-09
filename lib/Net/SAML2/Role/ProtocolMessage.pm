@@ -28,7 +28,7 @@ has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 
 around 'BUILDARGS' => sub {
     my $orig = shift;
-    my $class = shift;      
+    my $class = shift;
     my %args = @_;
 
     # random ID for this message
@@ -37,7 +37,7 @@ around 'BUILDARGS' => sub {
     # IssueInstant in UTC
     my $dt = DateTime->now( time_zone => 'UTC' );
     $args{issue_instant} ||= $dt->strftime('%FT%TZ');
-        
+
     return \%args;
 };
 

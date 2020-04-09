@@ -109,7 +109,7 @@ sub as_xml {
         $x->LogoutRequest(
             $samlp,
             { ID => $self->id,
-              IssueInstant => $self->issue_instant, 
+              IssueInstant => $self->issue_instant,
               Version => '2.0' },
             $x->Issuer(
                 $saml,

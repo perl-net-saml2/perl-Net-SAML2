@@ -128,14 +128,14 @@ sub handle_response {
     my $parser = XML::XPath->new( xml => no_comments($response) );
     $parser->set_namespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
     $parser->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-        
+
     my $saml = $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
     return ($subject, $saml);
 }
 
 =head2 handle_request( $request )
 
-Handle a request from a remote system on the SOAP binding. 
+Handle a request from a remote system on the SOAP binding.
 
 Accepts a string containing the complete SOAP request.
 
@@ -143,7 +143,7 @@ Accepts a string containing the complete SOAP request.
 
 sub handle_request {
     my ($self, $request) = @_;
-        
+
     my $parser = XML::XPath->new( xml => no_comments($request) );
     $parser->set_namespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
     $parser->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
@@ -177,16 +177,16 @@ sub create_soap_envelope {
     my ($self, $message) = @_;
 
     # sign the message
-    my $sig = Net::SAML2::XML::Sig->new({ 
+    my $sig = Net::SAML2::XML::Sig->new({
         x509 => 1,
         key  => $self->key,
         cert => $self->cert,
     });
     my $signed_message = $sig->sign($message);
-        
+
     # OpenSSO ArtifactResolve hack
     #
-    # OpenSSO's ArtifactResolve parser is completely hateful. It demands that 
+    # OpenSSO's ArtifactResolve parser is completely hateful. It demands that
     # the order of child elements in an ArtifactResolve message be:
     #
     # 1: saml:Issuer

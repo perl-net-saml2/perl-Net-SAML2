@@ -30,7 +30,7 @@ use Crypt::OpenSSL::VerifyX509;
 
 =head2 new( )
 
-Constructor. Returns an instance of the POST binding. 
+Constructor. Returns an instance of the POST binding.
 
 Arguments:
 
@@ -50,7 +50,7 @@ has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 0);
 =head2 handle_response( $response )
 
 Decodes and verifies the response provided, which should be the raw
-Base64-encoded response, from the SAMLResponse CGI parameter. 
+Base64-encoded response, from the SAMLResponse CGI parameter.
 
 =cut
 

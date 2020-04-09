@@ -71,7 +71,7 @@ XML data
 
 sub new_from_xml {
     my ($class, %args) = @_;
-     
+
     my $xpath = XML::XPath->new( xml => no_comments($args{xml}) );
     $xpath->set_namespace('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
     $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');

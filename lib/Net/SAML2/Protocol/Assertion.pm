@@ -37,7 +37,7 @@ has 'in_response_to' => (isa => Str,           is => 'ro', required => 1);
 =head2 new_from_xml( ... )
 
 Constructor. Creates an instance of the Assertion object, parsing the
-given XML to find the attributes, session and nameid. 
+given XML to find the attributes, session and nameid.
 
 Arguments:
 

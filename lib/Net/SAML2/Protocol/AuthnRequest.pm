@@ -25,7 +25,7 @@ Net::SAML2::Protocol::AuthnRequest - SAML2 AuthnRequest object
 
 =head2 new( ... )
 
-Constructor. Creates an instance of the AuthnRequest object. 
+Constructor. Creates an instance of the AuthnRequest object.
 
 Arguments:
 

@@ -25,7 +25,7 @@ use XML::Generator;
 
 =head2 new( ... )
 
-Constructor. Create an SP object. 
+Constructor. Create an SP object.
 
 Arguments:
 
@@ -92,7 +92,7 @@ sub BUILD {
     my $text = $cert->as_string;
     $text =~ s/-----[^-]*-----//gm;
     $self->_cert_text($text);
-        
+
     return $self;
 }
 
@@ -105,14 +105,14 @@ given destination, which should be the identity URI of the IdP.
 
 sub authn_request {
     my ($self, $destination, $nameid_format) = @_;
-        
+
     my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
         issueinstant  => DateTime->now,
         issuer        => $self->id,
         destination   => $destination,
         nameid_format => $nameid_format,
     );
-        
+
     return $authnreq;
 }
 
@@ -121,7 +121,7 @@ sub authn_request {
 Returns a LogoutRequest object created by this SP, intended for the
 given destination, which should be the identity URI of the IdP.
 
-Also requires the nameid (+format) and session to be logged out. 
+Also requires the nameid (+format) and session to be logged out.
 
 =cut
 
@@ -173,14 +173,14 @@ IdP.
 
 sub artifact_request {
     my ($self, $destination, $artifact) = @_;
-        
+
     my $artifact_request = Net::SAML2::Protocol::ArtifactResolve->new(
         issuer       => $self->id,
         destination  => $destination,
         artifact     => $artifact,
         issueinstant => DateTime->now,
     );
-        
+
     return $artifact_request;
 }
 
@@ -194,14 +194,14 @@ parameter involved - typically C<SAMLRequest>.
 
 sub sso_redirect_binding {
     my ($self, $idp, $param) = @_;
-        
+
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         cert  => $idp->cert('signing'),
         key   => $self->key,
         param => $param,
     );
-        
+
     return $redirect;
 }
 
@@ -215,14 +215,14 @@ parameter involved - typically C<SAMLRequest> or C<SAMLResponse>.
 
 sub slo_redirect_binding {
     my ($self, $idp, $param) = @_;
-        
+
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         cert  => $idp->cert('signing'),
         key   => $self->key,
         param => $param,
     );
-        
+
     return $redirect;
 }
 
@@ -246,7 +246,7 @@ sub soap_binding {
         idp_cert => $idp_cert,
         cacert   => $self->cacert,
     );
-        
+
     return $soap;
 }
 
@@ -258,11 +258,11 @@ Returns a POST binding object for this SP.
 
 sub post_binding {
     my ($self) = @_;
-        
+
     my $post = Net::SAML2::Binding::POST->new(
         cacert => $self->cacert,
     );
-        
+
     return $post;
 }
 

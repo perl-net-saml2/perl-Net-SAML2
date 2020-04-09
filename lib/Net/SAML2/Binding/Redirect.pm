@@ -39,7 +39,7 @@ use File::Slurp qw/ read_file /;
 
 =head2 new( ... )
 
-Constructor. Creates an instance of the Redirect binding. 
+Constructor. Creates an instance of the Redirect binding.
 
 Arguments:
 
@@ -108,7 +108,7 @@ sub sign {
 
 =head2 verify( $url )
 
-Decode a Redirect binding URL. 
+Decode a Redirect binding URL.
 
 Verifies the signature on the response.
 
@@ -117,7 +117,7 @@ Verifies the signature on the response.
 sub verify {
     my ($self, $url) = @_;
     my $u = URI->new($url);
-        
+
     # verify the response
     my $sigalg = $u->query_param('SigAlg');
     die "can't verify '$sigalg' signatures"
@@ -125,7 +125,7 @@ sub verify {
 
     my $cert = Crypt::OpenSSL::X509->new_from_string($self->cert);
     my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
-        
+
     my $sig = decode_base64($u->query_param_delete('Signature'));
     my $signed = $u->query;
     die "bad sig" unless $rsa_pub->verify($signed, $sig);
@@ -134,7 +134,7 @@ sub verify {
     my $deflated = decode_base64($u->query_param($self->param));
     my $request = '';
     rawinflate \$deflated => \$request;
-        
+
     # unpack the relaystate
     my $relaystate = $u->query_param('RelayState');
 
