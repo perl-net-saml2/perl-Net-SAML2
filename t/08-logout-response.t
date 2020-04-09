@@ -7,7 +7,7 @@ my $lor = Net::SAML2::Protocol::LogoutResponse->new(
         issuer      => 'http://some/sp',
         destination => 'http://some/idp',
         status      => 'success',
-        response_to => 'randomID', 
+        response_to => 'randomID',
 );
 ok($lor);
 my $xml = $lor->as_xml;
