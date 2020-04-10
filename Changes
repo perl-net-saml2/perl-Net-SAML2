@@ -42,6 +42,8 @@ Revision history for Perl extension Net::SAML2.
 
 0.17_06  Tue 2 May 2017
 
+      Unreleased
+
       Github Only fork https://github.com/xmikew/perl-Net-SAML2
 
       e6efb23 (tag: v0.17_06) Bump version
@@ -75,6 +77,8 @@ Revision history for Perl extension Net::SAML2.
       710d85d tell encode_base64 to not add newlines to returned digest
 
 0.19.05  Sat 4 May 2019
+
+      Unreleased
 
       Github release only https://github.com/timlegge/perl-Net-SAML2/releases
 
@@ -113,13 +117,29 @@ Revision history for Perl extension Net::SAML2.
       f37bdbd Make IdP certificate verification emit a warning instead of 
               croaking
 
-0.20.04 TBD
+0.20.03 TRIAL
+
+      The following people have contributed code and fixed issues since
+      the last official version 0.17 by Chris Andrews
+
+      Alessandro Ranellucci <aar@cpan.org>
+      dmborque@gmail.com
+      Jeff Fearn <jfearn@redhat.com>
+      Mike Wisener <mwisener@secureworks.com>
+      Mike Wisener <xmikew@cpan.org>
+      Peter Marschall <peter@adpm.de>
+      Timothy Legge <timlegge@gmail.com>
+      xmikew <github@32ths.com>
 
       Based on Github repo https://github.com/timlegge/perl-Net-SAML2
 
+      e287cde Delete dynamic packaging files and update version
+      225a3b4 Missed a trailing space
+      12230c8 Fix the end of lines
+      f353d18 Update changes since 0.17 add repo ref
+      2b6f908 Update changes since 0.17
       34b7ce3 Fix #12 Some tests are always passing
       6be1c12 Fix Issue #6 - cert required in Binding/Redirect
       772f26f Fix Issue #4 - Missing paramaters in SYNOPSIS
       17e5aa4 Add additional pod coverage
       7d3a69f Fix pod syntax
-
