@@ -14,9 +14,25 @@ Net::SAML2::Protocol::AuthnRequest - SAML2 AuthnRequest object
 =head1 SYNOPSIS
 
   my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
-    issueinstant => DateTime->now,
-    issuer       => $self->{id},
-    destination  => $destination,
+    id            => 'NETSAML2_Crypt::OpenSSL::Random::random_pseudo_bytes(16),
+    issuer        => $self->{id},	# Service Provider (SP) Entity ID
+    destination   => $destination,	# Identity Provider (IdP) SSO URL
+    provider_name => $provider_name,	# Service Provider (SP) Human Readable Name
+    issue_instant => DateTime->now,	# Defaults to Current Time
+  );
+
+  my $request_id = $authnreq->id;	# Store and Compare to InResponseTo
+
+  or
+
+  my $request_id = 'NETSAML2_' . unpack 'H*', Crypt::OpenSSL::Random::random_pseudo_bytes(16);
+
+  my $authnreq = Net::SAML2::Protocol::AuthnRequest->as_xml(
+    id            => $request_id,	# Unique Request ID will be returned in response
+    issuer        => $self->{id},	# Service Provider (SP) Entity ID
+    destination   => $destination,	# Identity Provider (IdP) SSO URL
+    provider_name => $provider_name,	# Service Provider (SP) Human Readable Name
+    issue_instant => DateTime->now,	# Defaults to Current Time
   );
 
 =head1 METHODS
@@ -26,6 +42,13 @@ Net::SAML2::Protocol::AuthnRequest - SAML2 AuthnRequest object
 =head2 new( ... )
 
 Constructor. Creates an instance of the AuthnRequest object.
+
+Important Note: Best practice is to always do this first.  While it is possible
+to call as_xml() first you do not have to set the id as it will be set for you
+automatically.
+
+However tracking the id is important for security to ensure that the response
+has the same id in the InResponseTo attribute.
 
 Arguments:
 

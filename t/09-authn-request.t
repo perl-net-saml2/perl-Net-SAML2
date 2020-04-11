@@ -13,7 +13,7 @@ my $xml = $ar->as_xml;
 ok($xml);
 #diag($xml);
 
-like($xml, qr/ID=".+"/);
+like($xml, qr/ID="NETSAML2_.+"/);
 like($xml, qr/IssueInstant=".+"/);
 
 done_testing;
