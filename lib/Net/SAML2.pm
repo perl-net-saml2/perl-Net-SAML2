@@ -27,7 +27,7 @@ Net::SAML2 - SAML bindings and protocol implementation
         my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
           id            => 'NETSAML2_Crypt::OpenSSL::Random::random_pseudo_bytes(16),
           issuer        => $self->{id},		# Service Provider (SP) Entity ID
-          destination   => $destination,	# Identity Provider (IdP) SSO URL
+          destination   => $sso_url,		# Identity Provider (IdP) SSO URL
           provider_name => $provider_name,	# Service Provider (SP) Human Readable Name
           issue_instant => DateTime->now,	# Defaults to Current Time
         );
@@ -41,7 +41,7 @@ Net::SAML2 - SAML bindings and protocol implementation
         my $authnreq = Net::SAML2::Protocol::AuthnRequest->as_xml(
           id            => $request_id,		# Unique Request ID will be returned in response
           issuer        => $self->{id},		# Service Provider (SP) Entity ID
-          destination   => $destination,	# Identity Provider (IdP) SSO URL
+          destination   => $sso_url,		# Identity Provider (IdP) SSO URL
           provider_name => $provider_name,	# Service Provider (SP) Human Readable Name
           issue_instant => DateTime->now,	# Defaults to Current Time
         );
