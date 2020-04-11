@@ -10,7 +10,7 @@ Net::SAML2::IdP - SAML Identity Provider object
 
 =head1 SYNOPSIS
 
-  my $idp = Net::SAML2::IdP->new_from_url($IDP);
+  my $idp = Net::SAML2::IdP->new_from_url( url => $url, cacert => $cacert );
   my $sso_url = $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');
 
 =head1 METHODS
