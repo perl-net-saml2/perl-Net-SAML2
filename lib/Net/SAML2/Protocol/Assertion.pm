@@ -114,9 +114,13 @@ sub name {
     return $self->attributes->{CN}->[0];
 }
 
-=head2 valid( $audience )
+=head2 valid( $audience, $in_response_to )
 
 Returns true if this Assertion is currently valid for the given audience.
+
+Also accepts $in_response_to which it checks against the returned
+Assertion.  This is very important for security as it helps ensure
+that the assertion that was received was for the request that was made.
 
 Checks the audience matches, and that the current time is within the
 Assertions validity period as specified in its Conditions element.
