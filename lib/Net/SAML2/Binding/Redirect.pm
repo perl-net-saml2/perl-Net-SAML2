@@ -14,10 +14,10 @@ Net::SAML2::Binding::Redirect
 =head1 SYNOPSIS
 
   my $redirect = Net::SAML2::Binding::Redirect->new(
-    key => '/path/to/SPsign-nopw-key.pem',
-    url => $sso_url,
-    param => 'SAMLRequest' OR 'SAMLResponse',
-    cert => '/path/to/IdP-cert.pem'
+    key => '/path/to/SPsign-nopw-key.pem',	# Service Provider (SP) private key
+    url => $sso_url,				# Service Provider Single Sign Out URL
+    param => 'SAMLRequest' OR 'SAMLResponse',	# Type of request
+    cert => '/path/to/IdP-cert.pem'		# Service Provider (SP) certificate
   );
 
   my $url = $redirect->sign($authnreq);
