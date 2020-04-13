@@ -68,6 +68,8 @@ ok($assertion);
 is($assertion->session, 's2b087bdce06dbbf9cd4662af82b8b853d4d285c01');
 is($assertion->nameid,  'nKdwzcgBYGt42xovLuctZ60tyafv');
 
+is($assertion->in_response_to, 'N3k95Hg41WCHdwc9mqXynLPhB');
+
 is(scalar keys %{ $assertion->attributes }, 2);
 is(scalar @{ $assertion->attributes->{EmailAddress} }, 1);
 is(scalar @{ $assertion->attributes->{Phone2} }, 3);
