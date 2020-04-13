@@ -144,11 +144,13 @@ Revision history for Perl extension Net::SAML2.
       17e5aa4 Add additional pod coverage
       7d3a69f Fix pod syntax
 
-0.20.04 Mon 13 Apr 2020
+0.20     Mon 13 Apr 2020 22:25 UTC
 
       First official release since 0.17
       See Changes for updates includes in prior unofficial releases
 
+      b2af5f7 Ignore Build directories and Build archives
+      4293ece Delete file added by mistake and increment version number
       bcfcc21 Embedded tabs to Space
       f792089 Protocol/Assertion.pm: improve documentation and test for in_response_to
       f7e3965 Improve Redirect dobumentation
@@ -160,4 +162,3 @@ Revision history for Perl extension Net::SAML2.
       6fb076c Create README.md
       963d871 (tag: 0.20.03-TRIAL) Add dist.ini
       f4232c2 Update changes for 0.20.03 TRIAL
-
