@@ -133,7 +133,7 @@ Revision history for Perl extension Net::SAML2.
 
       Based on Github repo https://github.com/timlegge/perl-Net-SAML2
 
-      e287cde Delete dynamic packaging files and update version
+      6657a95 Delete dynamic packaging files and update version
       225a3b4 Missed a trailing space
       12230c8 Fix the end of lines
       f353d18 Update changes since 0.17 add repo ref
@@ -143,3 +143,21 @@ Revision history for Perl extension Net::SAML2.
       772f26f Fix Issue #4 - Missing paramaters in SYNOPSIS
       17e5aa4 Add additional pod coverage
       7d3a69f Fix pod syntax
+
+0.20.04 Mon 13 Apr 2020
+
+      First official release since 0.17
+      See Changes for updates includes in prior unofficial releases
+
+      bcfcc21 Embedded tabs to Space
+      f792089 Protocol/Assertion.pm: improve documentation and test for in_response_to
+      f7e3965 Improve Redirect dobumentation
+      474f1b7 Fix lib/Net/SAML2/IdP.pm docs
+      3087931 Fix up AuthnRequest docs and improve test
+      4caff6b Add Contributors to dist.ini
+      bd665c4 (additional-tests) Improve AuthnReq documentation
+      a492107 Add link to github repo
+      6fb076c Create README.md
+      963d871 (tag: 0.20.03-TRIAL) Add dist.ini
+      f4232c2 Update changes for 0.20.03 TRIAL
+

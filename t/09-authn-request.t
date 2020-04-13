@@ -7,7 +7,7 @@ use Crypt::OpenSSL::Random;
 my $request_id = 'NETSAML2_' . unpack 'H*', Crypt::OpenSSL::Random::random_pseudo_bytes(16);
 
 my $ar = Net::SAML2::Protocol::AuthnRequest->new(
-	id => $request_id,
+        id => $request_id,
         issuer => 'http://some/sp',
         destination => 'http://some/idp',
         nameid_format => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
