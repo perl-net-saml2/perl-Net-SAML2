@@ -1,5 +1,6 @@
 use Test::More;
 use Net::SAML2;
+use File::Slurp qw(read_file);
 
 my $xml = <<XML;
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -66,5 +67,22 @@ ok($idp->entityid eq 'http://sso.dev.venda.com/opensso');
 
 ok('urn:oasis:names:tc:SAML:2.0:nameid-format:transient' eq $idp->format('transient'));
 ok('urn:oasis:names:tc:SAML:2.0:nameid-format:persistent' eq $idp->format);
+
+# Test with passing the cacert as a string
+my $cacert_string = read_file( 't/cacert.pem' );
+ok($cacert_string);
+
+my $idp2 = Net::SAML2::IdP->new_from_xml( xml => $xml, cacert => $cacert_string, certs_as_string => 1 );
+ok($idp2);
+
+ok($idp2->sso_url($idp2->binding('redirect')));
+ok($idp2->slo_url($idp2->binding('redirect')));
+ok($idp2->art_url($idp2->binding('soap')));
+
+ok($idp2->cert('signing'));
+ok($idp2->entityid eq 'http://sso.dev.venda.com/opensso');
+
+ok('urn:oasis:names:tc:SAML:2.0:nameid-format:transient' eq $idp2->format('transient'));
+ok('urn:oasis:names:tc:SAML:2.0:nameid-format:persistent' eq $idp2->format);
 
 done_testing;

@@ -1,6 +1,6 @@
 package Net::SAML2::IdP;
 use Moose;
-use MooseX::Types::Moose qw/ Str Object HashRef ArrayRef /;
+use MooseX::Types::Moose qw/ Bool Str Object HashRef ArrayRef /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 
@@ -11,6 +11,13 @@ Net::SAML2::IdP - SAML Identity Provider object
 =head1 SYNOPSIS
 
   my $idp = Net::SAML2::IdP->new_from_url( url => $url, cacert => $cacert );
+
+  my $idp = Net::SAML2::IdP->new_from_xml(
+                xml => $xml,
+                cacert => $cacert,
+                certs_as_string => 0
+            )
+
   my $sso_url = $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');
 
 =head1 METHODS
@@ -31,6 +38,38 @@ Constructor
 
 =item B<entityid>
 
+=item B<cacert>
+
+Local cacert that can be used to verify the Identity Provider (IdP) signature
+
+=item B<sso_urls>
+
+Single Sign On URL from IdP Metadata
+
+=item B<slo_urls>
+
+Single Log Out URL from IdP Metadata
+
+=item B<art_urls>
+
+Artifact Resolution URL from the IdP Metadata
+
+=item B<certs>
+
+Certificates from the IdP Metadata
+
+=item B<formats>
+
+NameID formats provided in the IdP Metadata
+
+=item B<default_format>
+
+Default NameID format provided in the IdP Metadata
+
+=item B<certs_as_string>
+
+Certs may be passed as a string if true (1) instead of a file name
+
 =back
 
 =cut
@@ -43,6 +82,7 @@ has 'art_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0
 has 'certs'          => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'formats'        => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'default_format' => (isa => Str, is => 'ro', required => 1);
+has 'certs_as_string' => (isa => Bool, is => 'ro', required => 0);
 
 =head2 new_from_url( url => $url, cacert => $cacert )
 
@@ -65,7 +105,8 @@ sub new_from_url {
     return $class->new_from_xml(xml => $xml, cacert => $args{cacert});
 }
 
-=head2 new_from_xml( xml => $xml, cacert => $cacert )
+
+=head2 new_from_xml( xml => $xml, cacert => $cacert, certs_as_string => 0 )
 
 Constructor. Create an IdP object using the provided metadata XML
 document.
@@ -166,6 +207,7 @@ sub new_from_xml {
         formats        => $data->{NameIDFormat},
         default_format => $data->{DefaultFormat},
         cacert         => $args{cacert},
+        certs_as_string => $args{certs_as_string},
     );
 
     return $self;
@@ -180,9 +222,16 @@ Called after the object is created to validate the IdP using the cacert
 sub BUILD {
     my($self) = @_;
 
-    if ($self->cacert) {
-        my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+    my $ca = 0;
 
+    if (!($self->certs_as_string)) {
+        $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+    } else {
+        my $cacert = Crypt::OpenSSL::X509->new_from_string($self->cacert);
+        $ca = Crypt::OpenSSL::VerifyX509->new_from_x509($cacert);
+    }
+
+    if ($ca) {
         for my $use (keys %{$self->certs}) {
             my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
             ## BUGBUG this is failing for valid things ...
