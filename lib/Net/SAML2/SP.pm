@@ -1,7 +1,8 @@
 package Net::SAML2::SP;
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
+use MooseX::Types::Moose qw/ Bool Str /;
 use MooseX::Types::URI qw/ Uri /;
+use File::Slurp qw(read_file);
 
 =head1 NAME
 
@@ -14,6 +15,14 @@ Net::SAML2::SP - SAML Service Provider object
     url  => 'http://localhost:3000',
     cert => 'sign-nopw-cert.pem',
     key => 'sign-nopw-key.pem',
+  );
+
+  my $sp = Net::SAML2::SP->new(
+    id   => 'http://localhost:3000',
+    url  => 'http://localhost:3000',
+    cert => $cert_text,
+    key => $key_text,
+    certs_as_string => 1,
   );
 
 =head1 METHODS
@@ -39,13 +48,13 @@ base for all SP service URLs
 
 SP's identity URI.
 
-=item B<cert>
-
-path to the signing certificate
-
 =item B<key>
 
 path to the private key for the signing certificate
+
+=item B<cert>
+
+path to the signing certificate
 
 =item B<cacert>
 
@@ -63,6 +72,10 @@ SP organisation display name
 
 SP contact email address
 
+=item B<certs_as_string>
+
+If true (1) the cert, key, cacert are strings not files
+
 =back
 
 =cut
@@ -72,10 +85,10 @@ has 'id'     => (isa => Str, is => 'ro', required => 1);
 has 'cert'   => (isa => Str, is => 'ro', required => 1);
 has 'key'    => (isa => Str, is => 'ro', required => 1);
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
-
 has 'org_name'         => (isa => Str, is => 'ro', required => 1);
 has 'org_display_name' => (isa => Str, is => 'ro', required => 1);
 has 'org_contact'      => (isa => Str, is => 'ro', required => 1);
+has 'certs_as_string'  => (isa => Bool, is => 'ro', required => 0);
 
 has '_cert_text' => (isa => Str, is => 'rw', required => 0);
 
@@ -88,11 +101,19 @@ Called after the object is created to load the cert from a file
 sub BUILD {
     my ($self) = @_;
 
-    my $cert = Crypt::OpenSSL::X509->new_from_file($self->cert);
-    my $text = $cert->as_string;
-    $text =~ s/-----[^-]*-----//gm;
-    $self->_cert_text($text);
+    my $text = '';
 
+    if ( $self->certs_as_string ) {
+        my $cert = Crypt::OpenSSL::X509->new_from_string($self->cert);
+        $text = $cert->as_string;
+    } else {
+        my $cert = Crypt::OpenSSL::X509->new_from_file($self->cert);
+        $text = $cert->as_string;
+    }
+
+    $text =~ s/-----[^-]*-----//gm;
+    $text =~ s/^\s+|\s+$//g;
+    $self->_cert_text($text);
     return $self;
 }
 
@@ -200,6 +221,7 @@ sub sso_redirect_binding {
         cert  => $idp->cert('signing'),
         key   => $self->key,
         param => $param,
+        certs_as_string => $self->certs_as_string,
     );
 
     return $redirect;
@@ -221,6 +243,7 @@ sub slo_redirect_binding {
         cert  => $idp->cert('signing'),
         key   => $self->key,
         param => $param,
+        certs_as_string => $self->certs_as_string,
     );
 
     return $redirect;
@@ -245,6 +268,7 @@ sub soap_binding {
         url      => $idp_url,
         idp_cert => $idp_cert,
         cacert   => $self->cacert,
+        certs_as_string => $self->certs_as_string,
     );
 
     return $soap;
@@ -261,6 +285,7 @@ sub post_binding {
 
     my $post = Net::SAML2::Binding::POST->new(
         cacert => $self->cacert,
+        certs_as_string => $self->certs_as_string,
     );
 
     return $post;

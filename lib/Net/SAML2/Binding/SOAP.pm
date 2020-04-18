@@ -1,6 +1,6 @@
 package Net::SAML2::Binding::SOAP;
 use Moose;
-use MooseX::Types::Moose qw/ Str Object /;
+use MooseX::Types::Moose qw/ Bool Str Object /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 
@@ -15,6 +15,7 @@ Net::SAML2::Binding::Artifact - SOAP binding for SAML2
     key => $key,
     cert => $cert,
     idp_cert => $idp_cert,
+    certs_as_string => $cert_as_string,	# 1 - if the cacert is a string
   );
 
   my $response = $soap->request($req);
@@ -61,6 +62,10 @@ the idp's signing certificate
 
 the CA for the SAML CoT
 
+=item B<certs_as_string>
+
+certs, keys, cacerts passed as strings not filenames if true
+
 =back
 
 =cut
@@ -73,6 +78,7 @@ has 'key'      => (isa => Str, is => 'ro', required => 1);
 has 'cert'     => (isa => Str, is => 'ro', required => 1);
 has 'idp_cert' => (isa => Str, is => 'ro', required => 1);
 has 'cacert'   => (isa => Str, is => 'ro', required => 1);
+has 'certs_as_string'   => (isa => Bool, is => 'ro', required => 0);
 
 =head2 request( $message )
 
@@ -118,7 +124,15 @@ sub handle_response {
 
     # verify the signing certificate
     my $cert = $x->signer_cert;
-    my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+    my $ca = '';
+
+    if (!($self->certs_as_string)) {
+        $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+    } else {
+        my $cacert = Crypt::OpenSSL::X509->new_from_string($self->cacert);
+        $ca = Crypt::OpenSSL::VerifyX509->new_from_x509($cacert);
+    }
+
     $ret = $ca->verify($cert);
     die "bad signer cert" unless $ret;
 
@@ -156,7 +170,15 @@ sub handle_request {
         die "bad signature" unless $ret;
 
         my $cert = $x->signer_cert;
-        my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+        my $ca = '';
+
+        if (!($self->certs_as_string)) {
+            $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+        } else {
+            my $cacert = Crypt::OpenSSL::X509->new_from_string($self->cacert);
+            $ca = Crypt::OpenSSL::VerifyX509->new_from_x509($cacert);
+        }
+
         $ret = $ca->verify($cert);
         die "bad certificate in request: ".$cert->subject unless $ret;
 

@@ -2,6 +2,11 @@ use Test::More;
 use Net::SAML2;
 use MIME::Base64;
 use Data::Dumper;
+use File::Slurp qw(read_file);
+
+$cert = 't/sign-nopw-cert.pem';
+$key  = 't/sign-nopw-cert.pem';
+$cacert = 't/cacert.pem';
 
 my $xml = <<XML;
 <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="s2aa6f0dee017e82ced11a3c7c0be88ee42d3a9cb5" InResponseTo="N3k95Hg41WCHdwc9mqXynLPhB" Version="2.0" IssueInstant="2010-11-12T12:26:44Z" Destination="http://ct.local/saml/consumer-post"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">http://openam.nodnol.org:8080/opensso</saml:Issuer><samlp:Status xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
@@ -63,9 +68,9 @@ my $response = encode_base64($xml);
 my $sp = Net::SAML2::SP->new(
         id               => 'http://localhost:3000',
         url              => 'http://localhost:3000',
-        cert             => 't/sign-nopw-cert.pem',
-        key              => 't/sign-nopw-cert.pem',
-        cacert           => 't/cacert.pem',
+        cert             => $cert,
+        key              => $key,
+        cacert           => $cacert,
         org_name         => 'Test',
         org_display_name => 'Test',
         org_contact      => 'test@example.com',
@@ -83,5 +88,36 @@ my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
 );
 ok($assertion);
 #diag Dumper { assertion => $assertion };
+
+# repeat tests for text cert files
+$cert_text = read_file($cert);
+$key_text = read_file($key);
+$cacert_text = read_file($cacert);
+
+my $sp_text = Net::SAML2::SP->new(
+        id               => 'http://localhost:3000',
+        url              => 'http://localhost:3000',
+        cert             => $cert_text,
+        key              => $key_text,
+        cacert           => $cacert_text,
+        org_name         => 'Test',
+        org_display_name => 'Test',
+        org_contact      => 'test@example.com',
+        certs_as_string  => 1,
+);
+
+my $post = $sp_text->post_binding;
+my $subject = $post->handle_response($response);
+ok($subject);
+like($subject, qr/verified/);
+#diag "subject: $subject\n";
+
+my $assertion_xml = decode_base64($response);
+my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
+        xml => $xml,
+);
+ok($assertion);
+#diag Dumper { assertion => $assertion };
+
 
 done_testing;

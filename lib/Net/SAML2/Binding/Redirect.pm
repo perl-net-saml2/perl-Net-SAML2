@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
+use MooseX::Types::Moose qw/ Bool Str /;
 use MooseX::Types::URI qw/ Uri /;
 
 =head1 NAME
@@ -17,7 +17,8 @@ Net::SAML2::Binding::Redirect
     key => '/path/to/SPsign-nopw-key.pem',	# Service Provider (SP) private key
     url => $sso_url,				# Service Provider Single Sign Out URL
     param => 'SAMLRequest' OR 'SAMLResponse',	# Type of request
-    cert => '/path/to/IdP-cert.pem'		# Service Provider (SP) certificate
+    cert => '/path/to/IdP-cert.pem',		# Service Provider (SP) certificate
+    certs_as_string => 0,			# 1 = Certs are strings not file names
   );
 
   my $url = $redirect->sign($authnreq);
@@ -61,6 +62,10 @@ IdP's SSO service url for the Redirect binding
 
 query param name to use (SAMLRequest, SAMLResponse)
 
+=item B<certs_as_string>
+
+certs, keys, cacerts passed as strings not filenames if true
+
 =back
 
 =cut
@@ -69,6 +74,7 @@ has 'key'   => (isa => Str, is => 'ro', required => 1);
 has 'cert'  => (isa => Str, is => 'ro', required => 1);
 has 'url'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'param' => (isa => Str, is => 'ro', required => 1);
+has 'certs_as_string' => (isa => Bool, is => 'ro', required => 0);
 
 =head2 sign( $request, $relaystate )
 
@@ -95,7 +101,13 @@ sub sign {
     $u->query_param('RelayState', $relaystate) if defined $relaystate;
     $u->query_param('SigAlg', 'http://www.w3.org/2000/09/xmldsig#rsa-sha1');
 
-    my $key_string = read_file($self->key);
+    my $key_string = '';
+    if ($self->certs_as_string) {
+        $key_string = $self->key;
+    } else {
+        $key_string = read_file($self->key);
+    }
+
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
 
     my $to_sign = $u->query;
