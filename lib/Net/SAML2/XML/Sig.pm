@@ -38,7 +38,7 @@ sub new {
     my $class = shift;
     my $params = shift;
     my $self = {};
-    foreach my $prop ( qw/ key cert cert_text / ) {
+    foreach my $prop ( qw/ key cert cert_text certs_as_string / ) {
         if ( exists $params->{ $prop } ) {
             $self->{ $prop } = $params->{ $prop };
         }
@@ -46,15 +46,21 @@ sub new {
 #            confess "You need to provide the $prop parameter!";
 #        }
     }
+
     bless $self, $class;
+    $self->{ 'certs_as_string' } =
+        exists $params->{ certs_as_string } ? $params->{ certs_as_string } : 0;
     $self->{ 'canonicalizer' } =
         exists $params->{ canonicalizer } ? $params->{ canonicalizer } : 'XML::CanonicalizeXML';
     $self->{ 'x509' } = exists $params->{ x509 } ? 1 : 0;
     if ( exists $params->{ 'key' } ) {
         $self->_load_key( $params->{ 'key' } );
     }
-    if ( exists $params->{ 'cert' } ) {
+    if ( exists $params->{ 'cert' } && $self->{ 'certs_as_string' } != 1 ) {
         $self->_load_cert_file( $params->{ 'cert' } );
+    }
+    if ( exists $params->{ 'cert' } && $self->{ 'certs_as_string' } == 1 ) {
+        $self->_load_cert_text( $params->{ 'cert' } );
     }
     if ( exists $params->{ 'cert_text' } ) {
         $self->_load_cert_text( $params->{ 'cert_text' } );
@@ -554,7 +560,7 @@ sub _load_cert_text {
 
     confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certs." if $@;
 
-    my $text = $self->{ cert_text };
+    my $text = $self->{ cert_text } || $self->{ cert };
     my $cert = Crypt::OpenSSL::X509->new_from_string($text);
     if ( $cert ) {
         $self->{ cert_obj } = $cert;
@@ -572,13 +578,21 @@ sub _load_cert_text {
 sub _load_key {
     my $self = shift;
     my $file = $self->{ key };
+    my $text = '';
 
-    if ( open my $KEY, '<', $file ) {
-        my $text = '';
-        local $/ = undef;
-        $text = <$KEY>;
-        close $KEY;
-
+    if ( $self->{ certs_as_string } != 1 ) {
+        if ( open my $KEY, '<', $file ) {
+            local $/ = undef;
+            $text = <$KEY>;
+            close $KEY;
+        }
+        else {
+            confess "Could not load key $file: $!";
+        }
+    } else {
+        $text = $self->{ key };
+    }
+    if ( $text ne '' ) {
         if ( $text =~ m/BEGIN ([DR]SA) PRIVATE KEY/ ) {
             my $key_used = $1;
 
@@ -598,9 +612,8 @@ sub _load_key {
         else {
             confess "Could not detect type of key $file.";
         }
-    }
-    else {
-        confess "Could not load key $file: $!";
+    } else {
+        confess "Unable to load key data";
     }
 
     return;
