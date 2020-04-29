@@ -46,8 +46,9 @@ IdP's identity URI
 
 =cut
 
+has 'issuer'      => (isa => Str, is => 'ro', required => 1);
+has 'destination' => (isa => Str, is => 'ro', required => 1);
 has 'artifact'    => (isa => Str, is => 'ro', required => 1);
-
 
 =head2 as_xml( )
 
