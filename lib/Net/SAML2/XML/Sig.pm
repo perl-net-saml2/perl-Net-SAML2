@@ -7,7 +7,7 @@ use warnings;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-$VERSION = '0.24';
+$VERSION = '0.25';
 
 use base qw(Class::Accessor);
 Net::SAML2::XML::Sig->mk_accessors(qw(canonicalizer key));
