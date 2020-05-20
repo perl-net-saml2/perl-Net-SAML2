@@ -57,7 +57,7 @@ jobs:
         run: |
           apt-get install libxml2-dev make gcc;
           dzil build;
-          cd Net-Saml2-0.20;
+          cd Net-Saml2-0.25;
           curl -sL https://cpanmin.us/ | perl - -nq --with-develop --installdeps . ;
           cpanm -n Crypt::OpenSSL::Bignum
       - name: Build Module
