@@ -67,5 +67,5 @@ jobs:
           make
       - name: Run Tests
         run: |
-          cd Net-Saml2-0.20;
+          cd Net-Saml2-0.25;
           prove -lr -l -b -I inc t
