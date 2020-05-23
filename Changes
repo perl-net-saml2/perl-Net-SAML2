@@ -163,7 +163,7 @@ Revision history for Perl extension Net::SAML2.
       963d871 (tag: 0.20.03-TRIAL) Add dist.ini
       f4232c2 Update changes for 0.20.03 TRIAL
 
-0.25    TBD
+0.25  Tue, 19 May 2020 23:40:26 GMT
 
       What happened to version v0.21 to v0.24?
 
@@ -184,3 +184,6 @@ Revision history for Perl extension Net::SAML2.
       cac4ad7 Add missing pod info for Protocol/ArtifactResolve.pm
       b260946 Update README.md
 
+0.26-TRIAL TBD
+      148bf5d add test dependencies
+      ab5418d (tag: 0.25) Update Changes and increment the version
