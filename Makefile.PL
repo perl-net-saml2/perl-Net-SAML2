@@ -54,7 +54,6 @@ my %WriteMakefileArgs = (
     "warnings" => 0
   },
   "TEST_REQUIRES" => {
-    "Data::Dumper" => 0,
     "Test::More" => 0,
     "Test::NoTabs" => 0,
     "Test::Pod" => "1.14",
@@ -76,7 +75,6 @@ my %FallbackPrereqs = (
   "Crypt::OpenSSL::Random" => 0,
   "Crypt::OpenSSL::VerifyX509" => 0,
   "Crypt::OpenSSL::X509" => 0,
-  "Data::Dumper" => 0,
   "DateTime" => 0,
   "DateTime::Format::XSD" => 0,
   "Digest::SHA" => 0,

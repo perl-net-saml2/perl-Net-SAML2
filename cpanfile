@@ -39,7 +39,6 @@ requires "vars" => "0";
 requires "warnings" => "0";
 
 on 'test' => sub {
-  requires "Data::Dumper" => "0";
   requires "Test::More" => "0";
   requires "Test::NoTabs" => "0";
   requires "Test::Pod" => "1.14";

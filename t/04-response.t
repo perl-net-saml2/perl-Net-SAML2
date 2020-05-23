@@ -1,7 +1,6 @@
 use Test::More;
 use Net::SAML2;
 use MIME::Base64;
-use Data::Dumper;
 
 my $xml = <<XML;
 <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="s2aa6f0dee017e82ced11a3c7c0be88ee42d3a9cb5" InResponseTo="N3k95Hg41WCHdwc9mqXynLPhB" Version="2.0" IssueInstant="2010-11-12T12:26:44Z" Destination="http://ct.local/saml/consumer-post"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">http://openam.nodnol.org:8080/opensso</saml:Issuer><samlp:Status xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
@@ -82,6 +81,5 @@ my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
         xml => $xml,
 );
 ok($assertion);
-#diag Dumper { assertion => $assertion };
 
 done_testing;

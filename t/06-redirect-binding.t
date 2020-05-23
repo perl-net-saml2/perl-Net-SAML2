@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use Net::SAML2;
 use MIME::Base64;
-use Data::Dumper;
 use File::Slurp;
 use LWP::UserAgent;
 
