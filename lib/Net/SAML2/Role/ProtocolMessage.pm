@@ -3,8 +3,8 @@ use Moose::Role;
 use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
 use DateTime::Format::XSD;
-use Crypt::OpenSSL::Random;
 use XML::Generator;
+use Net::SAML2::Util qw(generate_id);
 
 =head1 NAME
 
@@ -32,7 +32,7 @@ around 'BUILDARGS' => sub {
     my %args = @_;
 
     # random ID for this message
-    $args{id} ||= 'NETSAML2_' . unpack 'H*', Crypt::OpenSSL::Random::random_pseudo_bytes(16);
+    $args{id} ||= generate_id();
 
     # IssueInstant in UTC
     my $dt = DateTime->now( time_zone => 'UTC' );

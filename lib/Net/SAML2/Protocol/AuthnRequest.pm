@@ -73,8 +73,16 @@ Value for the I<Comparison> attribute in case I<RequestedAuthnContext> is includ
 =cut
 
 has 'nameid' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
-has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'rw', required => 0);
+
 has 'nameidpolicy_format' => (isa => Str, is => 'rw', required => 0);
+
+has 'nameid_allow_create' => (
+    isa       => 'Bool',
+    is        => 'rw',
+    required  => 0,
+    predicate => 'has_nameid_allow_create'
+);
+
 has 'assertion_url' => (isa => Uri, is => 'rw', required => 0, coerce => 1);
 has 'assertion_index' => (isa => Int, is => 'rw', required => 0);
 has 'attribute_index' => (isa => Int, is => 'rw', required => 0);
@@ -85,6 +93,18 @@ has 'provider_name' => (isa => Str, is => 'rw', required => 0);
 has 'AuthnContextClassRef' => (isa => 'ArrayRef[Str]', is => 'rw', required => 0, default => sub {[]});
 has 'AuthnContextDeclRef' => (isa => 'ArrayRef[Str]', is => 'rw', required => 0, default => sub {[]});
 has 'RequestedAuthnContext_Comparison' => (isa => Str, is => 'rw', required => 0, default => 'exact');
+
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my %params = @_;
+    if ($params{nameid_format}) {
+        $params{nameidpolicy_format} //= $params{nameid_format};
+    }
+
+    return $self->$orig(%params);
+};
 
 =head2 as_xml( )
 
@@ -151,8 +171,13 @@ sub as_xml {
         $x->endTag(); # Subject
     }
     if ($self->nameidpolicy_format) {
-        $x->dataElement([$samlp, 'NameIDPolicy'], undef,
-            Format => $self->nameidpolicy_format);
+        $x->dataElement([$samlp, 'NameIDPolicy'],
+            undef,
+            Format => $self->nameidpolicy_format,
+            $self->has_nameid_allow_create
+                ? (AllowCreate => $self->nameid_allow_create)
+                : (),
+        );
     }
     if (@{$self->AuthnContextClassRef} || @{$self->AuthnContextDeclRef}) {
         $x->startTag([$samlp, 'RequestedAuthnContext'], Comparison => $self->RequestedAuthnContext_Comparison);

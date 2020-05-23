@@ -39,10 +39,20 @@ requires "vars" => "0";
 requires "warnings" => "0";
 
 on 'test' => sub {
+  requires "Import::Into" => "0";
+  requires "Path::Tiny" => "0";
+  requires "Sub::Override" => "0";
+  requires "Test::Deep" => "0";
+  requires "Test::Exception" => "0";
+  requires "Test::Fatal" => "0";
+  requires "Test::Lib" => "0";
   requires "Test::More" => "0";
   requires "Test::NoTabs" => "0";
   requires "Test::Pod" => "1.14";
   requires "Test::Pod::Coverage" => "1.04";
+  requires "XML::LibXML" => "0";
+  requires "XML::LibXML::XPathContext" => "0";
+  requires "namespace::autoclean" => "0";
 };
 
 on 'configure' => sub {

@@ -1,5 +1,7 @@
-use Test::More;
-use Net::SAML2;
+use Test::Lib;
+use Test::Net::SAML2;
+
+use Net::SAML2::Protocol::Assertion;
 use MIME::Base64;
 
 my $xml = <<XML;
@@ -59,27 +61,29 @@ XML
 
 my $response = encode_base64($xml);
 
-my $sp = Net::SAML2::SP->new(
-        id               => 'http://localhost:3000',
-        url              => 'http://localhost:3000',
-        cert             => 't/sign-nopw-cert.pem',
-        key              => 't/sign-nopw-cert.pem',
-        cacert           => 't/cacert.pem',
-        org_name         => 'Test',
-        org_display_name => 'Test',
-        org_contact      => 'test@example.com',
-);
+my $override = override_verify_x509_verify(1);
+
+my $sp = net_saml2_sp();
 
 my $post = $sp->post_binding;
-my $subject = $post->handle_response($response);
-ok($subject);
-like($subject, qr/verified/);
-#diag "subject: $subject\n";
 
-my $assertion_xml = decode_base64($response);
-my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-        xml => $xml,
+my $subject;
+
+lives_ok(
+    sub {
+        $subject = $post->handle_response($response);
+    },
+    '$sp->handle_response works'
 );
-ok($assertion);
+
+
+ok(defined $subject, "->handle response verified something");
+like($subject, qr/verified/, "Matches the verified string");
+
+## TODO: Move to t/03-assertion
+my $assertion_xml = decode_base64($response);
+my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(xml => $xml);
+
+isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
 
 done_testing;
