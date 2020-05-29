@@ -49,6 +49,7 @@ my %WriteMakefileArgs = (
     "XML::XPath" => 0,
     "base" => 0,
     "constant" => 0,
+    "namespace::autoclean" => 0,
     "strict" => 0,
     "vars" => 0,
     "warnings" => 0
@@ -66,8 +67,7 @@ my %WriteMakefileArgs = (
     "Test::Pod" => "1.14",
     "Test::Pod::Coverage" => "1.04",
     "XML::LibXML" => 0,
-    "XML::LibXML::XPathContext" => 0,
-    "namespace::autoclean" => 0
+    "XML::LibXML::XPathContext" => 0
   },
   "VERSION" => "0.26",
   "test" => {

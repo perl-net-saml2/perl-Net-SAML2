@@ -1,14 +1,14 @@
 package Net::SAML2::Role::ProtocolMessage;
+
 use Moose::Role;
-use MooseX::Types::Moose qw/ Str /;
+
+# ABSTRACT: Common behaviour for Protocol messages
+
+use namespace::autoclean;
+
+use DateTime;
 use MooseX::Types::URI qw/ Uri /;
-use DateTime::Format::XSD;
-use XML::Generator;
 use Net::SAML2::Util qw(generate_id);
-
-=head1 NAME
-
-Net::SAML2::Role::ProtocolMessage - common behaviour for Protocol messages
 
 =head1 DESCRIPTION
 
@@ -19,27 +19,48 @@ implementation.
 
 =cut
 
-has 'id'            => (isa => Str, is => 'ro', required => 1);
-has 'issue_instant' => (isa => Str, is => 'ro', required => 1);
-has 'issuer'        => (isa => Uri, is => 'rw', required => 1, coerce => 1);
-has 'issuer_namequalifier' => (isa => Str, is => 'rw', required => 0);
-has 'issuer_format' => (isa => Str, is => 'rw', required => 0);
-has 'destination'   => (isa => Uri, is => 'rw', required => 0, coerce => 1);
+has id => (
+    isa     => 'Str',
+    is      => 'ro',
+    builder => "_build_id"
+);
 
-around 'BUILDARGS' => sub {
-    my $orig = shift;
-    my $class = shift;
-    my %args = @_;
+has issue_instant => (
+    isa     => 'Str',
+    is      => 'ro',
+    builder => '_build_issue_instant',
+);
 
-    # random ID for this message
-    $args{id} ||= generate_id();
+has issuer => (
+    isa      => Uri,
+    is       => 'rw',
+    required => 1,
+    coerce   => 1,
+);
 
-    # IssueInstant in UTC
-    my $dt = DateTime->now( time_zone => 'UTC' );
-    $args{issue_instant} ||= $dt->strftime('%FT%TZ');
+has issuer_namequalifier => (
+    isa => 'Str',
+    is  => 'rw'
+);
 
-    return \%args;
-};
+has issuer_format => (
+    isa => 'Str',
+    is  => 'rw'
+);
+
+has destination => (
+    isa    => Uri,
+    is     => 'rw',
+    coerce => 1
+);
+
+sub _build_issue_instant {
+    return DateTime->now(time_zone => 'UTC')->strftime('%FT%TZ');
+}
+
+sub _build_id {
+    return generate_id();
+}
 
 =head1 CONSTRUCTOR ARGUMENTS
 
