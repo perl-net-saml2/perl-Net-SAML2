@@ -1,6 +1,5 @@
 package Net::SAML2::SP;
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
 
 =head1 NAME
@@ -74,16 +73,16 @@ SP contact email address
 =cut
 
 has 'url'    => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'id'     => (isa => Str, is => 'ro', required => 1);
-has 'cert'   => (isa => Str, is => 'ro', required => 1);
-has 'key'    => (isa => Str, is => 'ro', required => 1);
+has 'id'     => (isa => 'Str', is => 'ro', required => 1);
+has 'cert'   => (isa => 'Str', is => 'ro', required => 1);
+has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
 
-has 'org_name'         => (isa => Str, is => 'ro', required => 1);
-has 'org_display_name' => (isa => Str, is => 'ro', required => 1);
-has 'org_contact'      => (isa => Str, is => 'ro', required => 1);
+has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
+has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
+has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
 
-has '_cert_text' => (isa => Str, is => 'rw', required => 0);
+has '_cert_text' => (isa => 'Str', is => 'rw', required => 0);
 
 =head2 BUILD ( hashref of the parameters passed to the constructor )
 

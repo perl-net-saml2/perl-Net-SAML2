@@ -1,6 +1,5 @@
 package Net::SAML2::IdP;
 use Moose;
-use MooseX::Types::Moose qw/ Str Object HashRef ArrayRef /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 
@@ -35,14 +34,14 @@ Constructor
 
 =cut
 
-has 'entityid'       => (isa => Str, is => 'ro', required => 1);
-has 'cacert'         => (isa => 'Maybe[Str]', is => 'ro', required => 1);
-has 'sso_urls'       => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'slo_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0);
-has 'art_urls'       => (isa => 'Maybe[HashRef[Str]]', is => 'ro', required => 0);
-has 'certs'          => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'formats'        => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'default_format' => (isa => Str, is => 'ro', required => 1);
+has 'entityid' => (isa => 'Str',          is => 'ro', required => 1);
+has 'cacert'   => (isa => 'Maybe[Str]',   is => 'ro', required => 1);
+has 'sso_urls' => (isa => 'HashRef[Str]', is => 'ro', required => 1);
+has 'slo_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
+has 'art_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
+has 'certs'    => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
+has 'formats'  => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
+has 'default_format' => (isa => 'Str', is => 'ro', required => 1);
 
 =head2 new_from_url( url => $url, cacert => $cacert )
 

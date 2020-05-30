@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head1 NAME
@@ -44,8 +43,8 @@ path to the CA certificate for verification
 
 =cut
 
-has 'cert_text' => (isa => Str, is => 'ro', required => 0);
-has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 0);
+has 'cert_text' => (isa => 'Str', is => 'ro');
+has 'cacert' => (isa => 'Maybe[Str]', is => 'ro');
 
 =head2 handle_response( $response )
 

@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
 
 =head1 NAME
@@ -65,10 +64,10 @@ query param name to use (SAMLRequest, SAMLResponse)
 
 =cut
 
-has 'key'   => (isa => Str, is => 'ro', required => 1);
-has 'cert'  => (isa => Str, is => 'ro', required => 1);
+has 'key'   => (isa => 'Str', is => 'ro', required => 1);
+has 'cert'  => (isa => 'Str', is => 'ro', required => 1);
 has 'url'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'param' => (isa => Str, is => 'ro', required => 1);
+has 'param' => (isa => 'Str', is => 'ro', required => 1);
 
 =head2 sign( $request, $relaystate )
 

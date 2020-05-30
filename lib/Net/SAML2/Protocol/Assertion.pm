@@ -1,6 +1,5 @@
 package Net::SAML2::Protocol::Assertion;
 use Moose;
-use MooseX::Types::Moose qw/ Str HashRef ArrayRef /;
 use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
@@ -22,14 +21,14 @@ Net::SAML2::Protocol::Assertion - SAML2 assertion object
 
 =cut
 
-has 'attributes' => (isa => HashRef [ArrayRef], is => 'ro', required => 1);
-has 'session'    => (isa => Str,               is => 'ro', required => 1);
-has 'nameid'     => (isa => Str,               is => 'ro', required => 1);
+has 'attributes' => (isa => 'HashRef[ArrayRef]', is => 'ro', required => 1);
+has 'session'    => (isa => 'Str',               is => 'ro', required => 1);
+has 'nameid'     => (isa => 'Str',               is => 'ro', required => 1);
 has 'not_before' => (isa => DateTime,          is => 'ro', required => 1);
 has 'not_after'  => (isa => DateTime,          is => 'ro', required => 1);
 has 'audience'   => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'xpath'      => (isa => 'XML::XPath', is => 'ro', required => 1);
-has 'in_response_to' => (isa => Str,           is => 'ro', required => 1);
+has 'in_response_to' => (isa => 'Str',           is => 'ro', required => 1);
 
 =head1 METHODS
 

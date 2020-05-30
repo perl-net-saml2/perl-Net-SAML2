@@ -23,7 +23,6 @@ requires "Moose" => "0";
 requires "Moose::Role" => "0";
 requires "MooseX::Types::Common::String" => "0";
 requires "MooseX::Types::DateTime" => "0";
-requires "MooseX::Types::Moose" => "0";
 requires "MooseX::Types::URI" => "0";
 requires "URI" => "0";
 requires "URI::QueryParam" => "0";

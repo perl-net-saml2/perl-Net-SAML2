@@ -1,6 +1,5 @@
 package Net::SAML2::Protocol::LogoutResponse;
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 
@@ -49,9 +48,9 @@ request ID we're responding to
 
 =cut
 
-has 'status'      => (isa => Str, is => 'ro', required => 1);
-has 'substatus'   => (isa => Str, is => 'ro', required => 0);
-has 'response_to' => (isa => Str, is => 'ro', required => 1);
+has 'status'      => (isa => 'Str', is => 'ro', required => 1);
+has 'substatus'   => (isa => 'Str', is => 'ro', required => 0);
+has 'response_to' => (isa => 'Str', is => 'ro', required => 1);
 
 =head2 new_from_xml( ... )
 

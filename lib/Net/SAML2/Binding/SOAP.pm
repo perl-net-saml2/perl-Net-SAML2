@@ -1,6 +1,5 @@
 package Net::SAML2::Binding::SOAP;
 use Moose;
-use MooseX::Types::Moose qw/ Str Object /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 
@@ -65,14 +64,18 @@ the CA for the SAML CoT
 
 =cut
 
-has 'ua'       => (isa => Object, is => 'ro', required => 1,
-                   default => sub { LWP::UserAgent->new });
+has 'ua' => (
+    isa      => 'Object',
+    is       => 'ro',
+    required => 1,
+    default  => sub { LWP::UserAgent->new }
+);
 
 has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'key'      => (isa => Str, is => 'ro', required => 1);
-has 'cert'     => (isa => Str, is => 'ro', required => 1);
-has 'idp_cert' => (isa => Str, is => 'ro', required => 1);
-has 'cacert'   => (isa => Str, is => 'ro', required => 1);
+has 'key'      => (isa => 'Str', is => 'ro', required => 1);
+has 'cert'     => (isa => 'Str', is => 'ro', required => 1);
+has 'idp_cert' => (isa => 'Str', is => 'ro', required => 1);
+has 'cacert'   => (isa => 'Str', is => 'ro', required => 1);
 
 =head2 request( $message )
 

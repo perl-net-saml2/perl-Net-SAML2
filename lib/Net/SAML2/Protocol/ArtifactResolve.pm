@@ -1,6 +1,5 @@
 package Net::SAML2::Protocol::ArtifactResolve;
 use Moose;
-use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
 
 with 'Net::SAML2::Role::ProtocolMessage';
@@ -46,9 +45,9 @@ IdP's identity URI
 
 =cut
 
-has 'issuer'      => (isa => Str, is => 'ro', required => 1);
-has 'destination' => (isa => Str, is => 'ro', required => 1);
-has 'artifact'    => (isa => Str, is => 'ro', required => 1);
+has 'issuer'      => (isa => 'Str', is => 'ro', required => 1);
+has 'destination' => (isa => 'Str', is => 'ro', required => 1);
+has 'artifact'    => (isa => 'Str', is => 'ro', required => 1);
 
 =head2 as_xml( )
 
