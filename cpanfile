@@ -17,6 +17,7 @@ requires "HTTP::Request::Common" => "0";
 requires "IO::Compress::RawDeflate" => "0";
 requires "IO::Uncompress::RawInflate" => "0";
 requires "LWP::UserAgent" => "0";
+requires "List::Util" => "0";
 requires "MIME::Base64" => "0";
 requires "Moose" => "0";
 requires "Moose::Role" => "0";

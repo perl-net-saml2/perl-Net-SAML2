@@ -39,19 +39,22 @@ has issuer => (
 );
 
 has issuer_namequalifier => (
-    isa => 'Str',
-    is  => 'rw'
+    isa       => 'Str',
+    is        => 'rw',
+    predicate => 'has_issuer_namequalifier',
 );
 
 has issuer_format => (
     isa => 'Str',
-    is  => 'rw'
+    is  => 'rw',
+    predicate => 'has_issuer_format',
 );
 
 has destination => (
-    isa    => Uri,
-    is     => 'rw',
-    coerce => 1
+    isa       => Uri,
+    is        => 'rw',
+    coerce    => 1,
+    predicate => 'has_destination',
 );
 
 sub _build_issue_instant {
