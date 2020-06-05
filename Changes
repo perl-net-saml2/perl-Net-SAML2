@@ -185,5 +185,24 @@ Revision history for Perl extension Net::SAML2.
       b260946 Update README.md
 
 0.26-TRIAL TBD
-      148bf5d add test dependencies
+      Some major changes in the test suite but overall minor changes to
+      the rest of the module
+
+      Thanks to https://github.com/waterkip Wesley Schwengle for the 
+      overhaul of the test suite
+
+      15596bb Increment Version
+      82a8b54 Add pod documentation
+      62817ca Update changes
+      c4c7db6 Remove unneeded manual dependency from github workflow
+      56051db Update testsuite
+      8c62593 Move testapp to author tests
+      f4cec75 Remove Data::Dumper
+      0d1ccd8 Small setup in which Net::SAML2 is build in Docker
+      4746957 Make it easier to inspect makefile.pl and cpanfile
+      bae12de Really need to fix this
+      e399dd2 Missed a hard coded version
+      09ee6f3 Hard coded directory not ideal
       ab5418d (tag: 0.25) Update Changes and increment the version
+
+
