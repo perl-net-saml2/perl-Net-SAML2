@@ -28,3 +28,10 @@ __END__
 
     use Net::SAML2::Util qw(generate_id);
 
+=head1 METHODS
+
+=cut
+
+=head2 sub generate_id {}
+
+Generate a NETSAML2 Request Id
