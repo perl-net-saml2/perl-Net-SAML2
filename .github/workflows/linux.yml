@@ -57,14 +57,14 @@ jobs:
         run: |
           apt-get install libxml2-dev make gcc;
           dzil build;
-          cd Net-Saml2-0.25;
+          cd Net-Saml2-$(grep our lib/Net/SAML2.pm | sed "s/[^0-9\.]//g");
           curl -sL https://cpanmin.us/ | perl - -nq --with-develop --installdeps . ;
       - name: Build Module
         run: |
-          cd Net-Saml2-0.25;
+          cd Net-Saml2-$(grep our lib/Net/SAML2.pm | sed "s/[^0-9\.]//g");
           perl Makefile.PL;
           make
       - name: Run Tests
         run: |
-          cd Net-Saml2-0.25;
+          cd Net-Saml2-$(grep our lib/Net/SAML2.pm | sed "s/[^0-9\.]//g");
           prove -lr -l -b -I inc t
