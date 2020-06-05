@@ -69,7 +69,7 @@ my %WriteMakefileArgs = (
     "XML::LibXML::XPathContext" => 0,
     "namespace::autoclean" => 0
   },
-  "VERSION" => "0.25",
+  "VERSION" => "0.26",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
