@@ -100,7 +100,9 @@ around BUILDARGS => sub {
 
     my %params = @_;
     if ($params{nameid_format}) {
-        $params{nameidpolicy_format} //= $params{nameid_format};
+        unless (defined $params{nameidpolicy_format}) {
+            $params{nameidpolicy_format} = $params{nameid_format};
+        }
     }
 
     return $self->$orig(%params);
