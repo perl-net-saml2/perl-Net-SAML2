@@ -658,7 +658,7 @@ sub _canonicalize_xml {
         # adjust prefixlist from attribute for XML::CanonicalizeXML's format
         $prefixlist =~ s/ /,/g;
 
-        return XML::CanonicalizeXML::canonicalize( $xml, $xpath, $prefixlist, 1, $comments );
+        return XML::CanonicalizeXML::canonicalize( $xml, $xpath, $prefixlist, 2, $comments );
     }
     else {
         confess "Unknown XML canonicalizer module.";
