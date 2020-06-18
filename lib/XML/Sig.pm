@@ -46,16 +46,16 @@ sub new {
     }
     bless $self, $class;
     $self->{ 'canonicalizer' } =
-	exists $params->{ canonicalizer } ? $params->{ canonicalizer } : 'XML::CanonicalizeXML';
+        exists $params->{ canonicalizer } ? $params->{ canonicalizer } : 'XML::CanonicalizeXML';
     $self->{ 'x509' } = exists $params->{ x509 } ? 1 : 0;
     if ( exists $params->{ 'key' } ) {
-	$self->_load_key( $params->{ 'key' } );
+        $self->_load_key( $params->{ 'key' } );
     }
     if ( exists $params->{ 'cert' } ) {
-	$self->_load_cert_file( $params->{ 'cert' } );
+        $self->_load_cert_file( $params->{ 'cert' } );
     }
     if ( exists $params->{ 'cert_text' } ) {
-	$self->_load_cert_text( $params->{ 'cert_text' } );
+        $self->_load_cert_text( $params->{ 'cert_text' } );
     }
     return $self;
 }
@@ -88,12 +88,12 @@ sub sign {
 
     my $signature;
     if ($self->{key_type} eq 'dsa') {
-	# DSA only permits the signing of 20 bytes or less, hence the sha1
-	my $bin_signature  = $self->{key_obj}->sign( sha1($canonical) );
-	$signature     = encode_base64( $bin_signature, "\n" );
+        # DSA only permits the signing of 20 bytes or less, hence the sha1
+        my $bin_signature  = $self->{key_obj}->sign( sha1($canonical) );
+        $signature     = encode_base64( $bin_signature, "\n" );
     } else {
-	my $bin_signature = $self->{key_obj}->sign( $canonical );
-	$signature     = encode_base64( $bin_signature, "\n" );
+        my $bin_signature = $self->{key_obj}->sign( $canonical );
+        $signature     = encode_base64( $bin_signature, "\n" );
     }
 
     # With the signature value and the signedinfo element, we create
@@ -121,39 +121,39 @@ sub verify {
     my $signature_node = $self->_get_node('//dsig:Signature');
     my $ns;
     if (defined $signature_node && ref $signature_node) {
-	    $ns = $signature_node->getNamespaces->[0];
-	    $self->{dsig_prefix} = ($ns->getPrefix eq '#default') ? '' : $ns->getPrefix;
+            $ns = $signature_node->getNamespaces->[0];
+            $self->{dsig_prefix} = ($ns->getPrefix eq '#default') ? '' : $ns->getPrefix;
     }
     else {
-	    die "no Signature node?";
+            die "no Signature node?";
     }
     
     if (scalar @{ $signed_info_node->getNamespaces } == 0) {
-	$signed_info_node->appendNamespace($ns);
+        $signed_info_node->appendNamespace($ns);
     }
     
     my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
     my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
 
     if (defined $self->{cert_obj}) {
-	    # use the provided cert to verify
-	    return 0 unless $self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature);
+            # use the provided cert to verify
+            return 0 unless $self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature);
     }
     else {
-	    # extract the certficate or key from the document
-	    my $keyinfo_node;
-	    if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
-		    return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
-	    } 
-	    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
-		    return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
-	    }
-	    elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
-		    return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
-	    }
-	    else {
-		    die "Unrecognized key type or no KeyInfo in document";
-	    }
+            # extract the certficate or key from the document
+            my $keyinfo_node;
+            if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
+                    return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
+            } 
+            elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
+                    return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
+            }
+            elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
+                    return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
+            }
+            else {
+                    die "Unrecognized key type or no KeyInfo in document";
+            }
     }
 
     my $digest_method = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm');
@@ -194,11 +194,11 @@ sub _transform {
     my $self = shift;
     my ($xml) = @_;
     foreach my $node ($self->{parser}->find('//dsig:Transform/@Algorithm')->get_nodelist) {
-	my $alg = $node->getNodeValue;
-	if ($alg eq TRANSFORM_ENV_SIG) { $xml = $self->_transform_env_sig($xml); }
-	elsif ($alg eq TRANSFORM_EXC_C14N) { $xml = $self->_canonicalize_xml($xml,0); }
-	elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) { $xml = $self->_canonicalize_xml($xml,1); }
-	else { die "Unsupported transform: $alg"; }
+        my $alg = $node->getNodeValue;
+        if ($alg eq TRANSFORM_ENV_SIG) { $xml = $self->_transform_env_sig($xml); }
+        elsif ($alg eq TRANSFORM_EXC_C14N) { $xml = $self->_canonicalize_xml($xml,0); }
+        elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) { $xml = $self->_canonicalize_xml($xml,1); }
+        else { die "Unsupported transform: $alg"; }
     }
     return $xml;
 }
@@ -380,15 +380,15 @@ sub _load_rsa_key {
         $self->{ key_obj }  = $rsaKey;
         $self->{ key_type } = 'rsa';
 
-	if (!$self->{ x509 }) {
-	    my $bigNum = ( $rsaKey->get_key_parameters() )[1];
-	    my $bin = $bigNum->to_bin();
-	    my $exp = encode_base64( $bin, '' );
-	    
-	    $bigNum = ( $rsaKey->get_key_parameters() )[0];
-	    $bin = $bigNum->to_bin();
-	    my $mod = encode_base64( $bin, '' );
-	    $self->{KeyInfo} = "<dsig:KeyInfo>
+        if (!$self->{ x509 }) {
+            my $bigNum = ( $rsaKey->get_key_parameters() )[1];
+            my $bin = $bigNum->to_bin();
+            my $exp = encode_base64( $bin, '' );
+            
+            $bigNum = ( $rsaKey->get_key_parameters() )[0];
+            $bin = $bigNum->to_bin();
+            my $mod = encode_base64( $bin, '' );
+            $self->{KeyInfo} = "<dsig:KeyInfo>
                                  <dsig:KeyValue>
                                   <dsig:RSAKeyValue>
                                    <dsig:Modulus>$mod</dsig:Modulus>
@@ -396,7 +396,7 @@ sub _load_rsa_key {
                                   </dsig:RSAKeyValue>
                                  </dsig:KeyValue>
                                 </dsig:KeyInfo>";
-	}
+        }
     }
     else {
         confess "did not get a new Crypt::OpenSSL::RSA object";
@@ -432,7 +432,7 @@ sub _load_cert_file {
     my $self = shift;
 
     eval {
-	require Crypt::OpenSSL::X509;
+        require Crypt::OpenSSL::X509;
     };
 
     confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certs." if $@;
@@ -448,8 +448,8 @@ sub _load_cert_file {
         if ( $cert ) {
             $self->{ cert_obj } = $cert;
             my $cert_text = $cert->as_string;
-	    $cert_text =~ s/-----[^-]*-----//gm;
-	    $self->{KeyInfo} = "<dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>\n"._trim($cert_text)."\n</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo>";
+            $cert_text =~ s/-----[^-]*-----//gm;
+            $self->{KeyInfo} = "<dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>\n"._trim($cert_text)."\n</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo>";
         }
         else {
             confess "Could not load certificate from $file";
@@ -466,7 +466,7 @@ sub _load_cert_text {
     my $self = shift;
 
     eval {
-	require Crypt::OpenSSL::X509;
+        require Crypt::OpenSSL::X509;
     };
 
     confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certs." if $@;
@@ -475,12 +475,12 @@ sub _load_cert_text {
     my $cert = Crypt::OpenSSL::X509->new_from_string($text);
     if ( $cert ) {
         $self->{ cert_obj } = $cert;
-	my $cert_text = $cert->as_string;
-	$cert_text =~ s/-----[^-]*-----//gm;
-	$self->{KeyInfo} = "<dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>\n"._trim($cert_text)."\n</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo>";
+        my $cert_text = $cert->as_string;
+        $cert_text =~ s/-----[^-]*-----//gm;
+        $self->{KeyInfo} = "<dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>\n"._trim($cert_text)."\n</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo>";
     }
     else {
-	    confess "Could not load certificate from given text.";
+            confess "Could not load certificate from given text.";
     }
 
     return;
@@ -507,11 +507,11 @@ sub _load_key {
             }
 
             return 1;
-	} elsif ( $text =~ m/BEGIN PRIVATE KEY/ ) {
-	    $self->_load_rsa_key( $text );
+        } elsif ( $text =~ m/BEGIN PRIVATE KEY/ ) {
+            $self->_load_rsa_key( $text );
         } elsif ($text =~ m/BEGIN CERTIFICATE/) {
-	    $self->_load_x509_key( $text );
-	}
+            $self->_load_x509_key( $text );
+        }
         else {
             confess "Could not detect type of key $file.";
         }
@@ -571,7 +571,7 @@ sub _canonicalize_xml {
     elsif ( $self->{ canonicalizer } eq 'XML::CanonicalizeXML' ) {
         require XML::CanonicalizeXML;
         my $xpath = '<XPath>(//. | //@* | //namespace::*)</XPath>';
-	return XML::CanonicalizeXML::canonicalize( $xml, $xpath, [], 1, $comments );
+        return XML::CanonicalizeXML::canonicalize( $xml, $xpath, [], 1, $comments );
     }
     else {
         confess "Unknown XML canonicalizer module.";
@@ -712,7 +712,7 @@ Now, let's insert a signature:
 
 =item L<Crypt::OpenSSL::RSA>
 
-=cut
+=back
 
 =head1 USAGE
 
@@ -728,7 +728,7 @@ This module supports the following signature methods:
 
 =item RSA encoded as x509
 
-=cut
+=back
 
 This module supports the following canonicalization methods and transforms:
 
@@ -740,11 +740,17 @@ This module supports the following canonicalization methods and transforms:
 
 =item Enveloped Signature
 
-=cut
+=back
 
 =head2 METHODS
 
 =over
+
+=item B<new(...)>
+
+Constructor; see OPTIONS below.
+
+=cut
 
 =item B<sign($xml)>
 
@@ -772,7 +778,7 @@ signer's certificate as embedded in the XML document for verification
 against a CA certificate. The certificate is returned as a
 Crypt::OpenSSL::X509 object.
 
-=cut
+=back
 
 =head2 OPTIONS
 
@@ -829,5 +835,7 @@ Author: Byrne Reese <byrne@majordojo.com>
 Thanks to Manni Heumann who wrote Google::SAML::Response from 
 which this module borrows heavily in order to create digital 
 signatures.
+
+Net::SAML2 embedded version amended by Chris Andrews <chris@nodnol.org>.
 
 =cut
