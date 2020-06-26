@@ -171,7 +171,11 @@ sub verify {
             );
             my $keyinfo_nodeset;
             foreach my $key_info_sig_type ( qw/X509Data RSAKeyValue DSAKeyValue/ ) {
-                $keyinfo_nodeset = $self->{parser}->find("/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:$key_info_sig_type", $signature_node);
+                if ( $key_info_sig_type eq 'X509Data' ) {
+                    $keyinfo_nodeset = $self->{parser}->find("/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:$key_info_sig_type", $signature_node);
+                } else {
+                    $keyinfo_nodeset = $self->{parser}->find("/descendant::dsig:Signature[1]/dsig:KeyInfo/dsig:KeyValue/dsig:$key_info_sig_type", $signature_node);
+                }
                 if ( $keyinfo_nodeset->size ) {
                     my $verify_method = $verify_dispatch{$key_info_sig_type};
                     if ( ! $self->$verify_method($keyinfo_nodeset->get_node(0), $signed_info_canon, $signature) ) {
