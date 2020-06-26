@@ -20,10 +20,15 @@ jobs:
           - '5.26'
           - '5.28'
           - '5.30'
+          - '5.32'
     container:
       image: perl:${{ matrix.perl-version }}
     steps:
       - uses: actions/checkout@v1
+      - name: Install OS Packages
+        run: |
+          apt-get update;
+          apt-get -y install xmlsec1;
       - name: Install Dependencies
         run: |
           curl -sL https://cpanmin.us/ | perl - -nq --with-develop --installdeps .
