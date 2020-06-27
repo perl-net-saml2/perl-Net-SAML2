@@ -14,7 +14,7 @@ BEGIN {
 SKIP: {
     skip "xmlsec1 not installed", 4 unless which('xmlsec1');
 
-    # Try whether xmlsec is correctly installed which 
+    # Try whether xmlsec is correctly installed which
     # doesn't seem to be the case on every cpan testing machine
 
     my $output = `xmlsec1 --version`;
