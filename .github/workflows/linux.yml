@@ -25,16 +25,36 @@ jobs:
       image: perl:${{ matrix.perl-version }}
     steps:
       - uses: actions/checkout@v1
+      - name: Install Dependencies
+        run: |
+          cpanm -n \
+          Devel::Cover::Report::Coveralls \
+          Dist::Zilla;
+          dzil authordeps --missing | cpanm;
       - name: Install OS Packages
         run: |
           apt-get update;
           apt-get -y install xmlsec1;
       - name: Install Dependencies
         run: |
-          curl -sL https://cpanmin.us/ | perl - -nq --with-develop --installdeps .
+          cpanm -n \
+          Class::Accessor \
+          Crypt::OpenSSL::DSA \
+          Crypt::OpenSSL::RSA \
+          Crypt::OpenSSL::Guess \
+          Crypt::OpenSSL::Random \
+          Crypt::OpenSSL::Bignum \
+          Crypt::OpenSSL::X509 \
+          XML::CanonicalizeXML \
+          XML::XPath \
+          XML::Parser;
+          dzil build;
       - name: Build Module
         run: |
+          cd XML-Sig-$(grep "VERSION =" lib/XML/Sig.pm | sed "s/[^0-9\.]//g");
           perl Makefile.PL;
           make
       - name: Run Tests
-        run: prove -lr -l -b -I inc t
+        run: |
+          cd XML-Sig-$(grep "VERSION =" lib/XML/Sig.pm | sed "s/[^0-9\.]//g");
+          prove -lr -l -b -I inc t
