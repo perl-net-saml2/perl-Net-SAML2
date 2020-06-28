@@ -50,6 +50,7 @@ sub new {
     $self->{ 'canonicalizer' } =
         exists $params->{ canonicalizer } ? $params->{ canonicalizer } : 'XML::CanonicalizeXML';
     $self->{ 'x509' } = exists $params->{ x509 } ? 1 : 0;
+    $self->{ 'exclusive' } = exists $params->{ exclusive } ? $params->{ exclusive } : 1;
     if ( exists $params->{ 'key' } ) {
         $self->_load_key( $params->{ 'key' } );
     }
@@ -658,7 +659,7 @@ sub _canonicalize_xml {
         # adjust prefixlist from attribute for XML::CanonicalizeXML's format
         $prefixlist =~ s/ /,/g;
 
-        return XML::CanonicalizeXML::canonicalize( $xml, $xpath, $prefixlist, 1, $comments );
+        return XML::CanonicalizeXML::canonicalize( $xml, $xpath, $prefixlist, $self->{ exclusive }, $comments );
     }
     else {
         confess "Unknown XML canonicalizer module.";
@@ -897,6 +898,12 @@ XML::Canonical was removed as an option due to its age
 =item XML::CanonicalizerXML (default)
 
 =back
+
+=item B<exclusive>
+
+The XML::CanonicalizerXML exclusive method.  exclusive is an int to specify exclusive canonicalization (1 = exclusive, 0 = non-exclusive, 2 = exclusive v1.1)
+
+default = 1
 
 =item B<x509>
 

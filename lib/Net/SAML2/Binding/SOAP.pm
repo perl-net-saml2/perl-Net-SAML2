@@ -112,7 +112,7 @@ sub handle_response {
     my ($self, $response) = @_;
 
     # verify the response
-    my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert });
+    my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert, exclusive => 1, });
     my $ret = $x->verify($response);
     die "bad SOAP response" unless $ret;
 
@@ -151,7 +151,7 @@ sub handle_request {
     my $saml = $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
 
     if (defined $saml) {
-        my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert });
+        my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert, exclusive => 1, });
         my $ret = $x->verify($saml);
         die "bad signature" unless $ret;
 
@@ -181,6 +181,7 @@ sub create_soap_envelope {
         x509 => 1,
         key  => $self->key,
         cert => $self->cert,
+        exclusive => 1,
     });
     my $signed_message = $sig->sign($message);
 
