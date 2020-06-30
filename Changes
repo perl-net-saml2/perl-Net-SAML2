@@ -1,5 +1,24 @@
 Revision history for Perl extension Net::SAML2.
 
+0.27
+        9352be7 Add contributing info
+        2ecbc2b Use default Moose types instead of MooseX::Types::Moose
+        ecee8bf Add predicates to Net::SAML2::Protocol::AuthnRequest
+        7562ff1 Make use of builders instead of using BUILDARGS
+        d46073c Specify Canonical exclusive mode for XML::Sig
+        597d346 RSA|DSAKeyValue have KeyValue element
+        00f6276 Reverse order of Changes file
+        6f1ee32 Merge pull request #1 from waterkip/perl-510
+        ca48803 Fix perl 5.10 issue with `//=` syntax
+        a31840e Fix github action for newer versions of perl Checkout
+                patched Crypt::OpenSSL::VerifyX509
+        6c67af9 Fix perl 5.10 issue with `//=` syntax
+        739673c Release does not need Docker file
+        7c346f7 Update README.md
+        ce250ee Update Makefile Version
+        3d65d76 Try to fix hard coded directory
+        13ceb8c Update changes for version 0.26
+
 0.26-TRIAL TBD
       Some major changes in the test suite but overall minor changes to
       the rest of the module
