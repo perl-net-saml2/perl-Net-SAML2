@@ -1,6 +1,14 @@
 Revision history for Perl extension Net::SAML2.
 
-0.27
+0.27    03-Jul-2020
+
+        Some overhaul of the Moose code and a couple of XML::Sig fixes
+        as well as a fix to work with Perl 5.10 (Upgrade please upgrade)
+
+        As a point of interest the external XML::Sig module has been updated
+        and is now capable of replacing Net::SAML2::XML::Sig
+
+        eac8408 Update Changes
         9352be7 Add contributing info
         2ecbc2b Use default Moose types instead of MooseX::Types::Moose
         ecee8bf Add predicates to Net::SAML2::Protocol::AuthnRequest
