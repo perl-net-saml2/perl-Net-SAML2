@@ -9,6 +9,8 @@ jobs:
     strategy:
       matrix:
         perl-version:
+          - '5.10'
+          - '5.12'
           - '5.14'
           - '5.16'
           - '5.18'
@@ -18,62 +20,29 @@ jobs:
           - '5.26'
           - '5.28'
           - '5.30'
+          - '5.32'
     container:
       image: perl:${{ matrix.perl-version }}
     steps:
       - uses: actions/checkout@v1
-      - name: Install Dependencies
-        run: |
-          cpanm -n \
-          Devel::Cover::Report::Coveralls \
-          Dist::Zilla \
-          Dist::Zilla::App::Command::cover \
-          Dist::Zilla::Plugin::CheckChangeLog \
-          Dist::Zilla::Plugin::ExtraTests \
-          Dist::Zilla::Plugin::GitHub::Meta \
-          Dist::Zilla::Plugin::MetaProvides::Package \
-          Dist::Zilla::Plugin::MinimumPerl \
-          Dist::Zilla::Plugin::PerlTidy \
-          Dist::Zilla::Plugin::PodCoverageTests \
-          Dist::Zilla::Plugin::PodSyntaxTests \
-          Dist::Zilla::Plugin::RewriteVersion \
-          Dist::Zilla::Plugin::Test::Kwalitee \
-          Dist::Zilla::Plugin::Test::Kwalitee::Extra \
-          Dist::Zilla::Plugin::Test::Perl::Critic \
-          Dist::Zilla::Plugin::Test::Portability \
-          Dist::Zilla::Plugin::Test::UnusedVars \
-          Dist::Zilla::Plugin::Meta::Maintainers \
-          Dist::Zilla::Plugin::Meta::Contributors \
-          Dist::Zilla::Plugin::Repository \
-          Dist::Zilla::Plugin::Test::EOL \
-          Dist::Zilla::Plugin::Test::EOF \
-          Dist::Zilla::Plugin::Test::NoTabs \
-          Dist::Zilla::Plugin::Test::TrailingSpace \
-          Dist::Zilla::Plugin::PodWeaver \
-          Dist::Zilla::Plugin::VersionFromModule \
-          Dist::Zilla::Plugin::AuthorsFromGit;
-          dzil authordeps --missing | cpanm;
       - name: Install Crypt::OpenSSL::VerifyX509
         run: |
-          cpan install inc::Module::Install Module::Install::AuthorRequires Module::Install::AuthorTests \
+          curl -sL https://cpanmin.us/ | perl - -nq inc::Module::Install \
+          Module::Install::AuthorRequires Module::Install::AuthorTests \
           Test::NoTabs Test::Pod Test::Pod::Coverage Test::More Crypt::OpenSSL::X509;
           git clone https://github.com/timlegge/perl-Crypt-OpenSSL-VerifyX509.git;
           cd perl-Crypt-OpenSSL-VerifyX509;
           perl Makefile.PL;
           make install;
-      - name: Run dzil
+          cd ..;
+      - name: Install Net::SAML2 Depends
         run: |
           apt-get install libxml2-dev make gcc;
-          perl -e 'use Crypt::OpenSSL::VerifyX509';
-          dzil build;
-          cd Net-Saml2-$(grep our lib/Net/SAML2.pm | sed "s/[^0-9\.]//g");
-          curl -sL https://cpanmin.us/ | perl - -nq --with-develop --installdeps . ;
+          curl -sL https://cpanmin.us/ | perl - -nq --installdeps . ;
       - name: Build Module
         run: |
-          cd Net-Saml2-$(grep our lib/Net/SAML2.pm | sed "s/[^0-9\.]//g");
           perl Makefile.PL;
           make
       - name: Run Tests
         run: |
-          cd Net-Saml2-$(grep our lib/Net/SAML2.pm | sed "s/[^0-9\.]//g");
           prove -lr -l -b -I inc t
