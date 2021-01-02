@@ -211,6 +211,7 @@ sub sign {
 
     die "You cannot sign XML without a private key." unless $self->key;
 
+    local $XML::LibXML::skipXMLDeclaration = 1;
     my $dom = XML::LibXML->load_xml( string => $xml );
 
     $self->{ parser } = XML::LibXML::XPathContext->new($dom);
@@ -310,7 +311,7 @@ sub sign {
         print ("\n\n\n SignatureValue:\n" . $signature_value_node . "\n\n\n") if $DEBUG;
     }
 
-    return $dom;
+    return $dom->toString();
 }
 
 =head3 B<verify($xml)>
