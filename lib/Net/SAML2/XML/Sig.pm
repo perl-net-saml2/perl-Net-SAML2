@@ -35,8 +35,8 @@ it -- all in accordance with the W3C standard governing XML signatures.
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
+# Based on XML::Sig VERSION = '0.38';
 $VERSION = '0.29';
-# Based on XML::Sig VERSION = '0.34';
 
 use base qw(Class::Accessor);
 Net::SAML2::XML::Sig->mk_accessors(qw(key));
@@ -99,7 +99,7 @@ This module supports the following canonicalization methods and transforms:
 =cut
 
 use constant TRANSFORM_ENV_SIG           => 'http://www.w3.org/2000/09/xmldsig#enveloped-signature';
-use constant TRANSFORM_C14N              => 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315#';
+use constant TRANSFORM_C14N              => 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315';
 use constant TRANSFORM_C14N_COMMENTS     => 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments';
 use constant TRANSFORM_C14N_V1_1         => 'http://www.w3.org/TR/2008/REC-xml-c14n11-20080502';
 use constant TRANSFORM_C14N_V1_1_COMMENTS => 'http://www.w3.org/TR/2008/REC-xml-c14n11-20080502#WithComments';
@@ -295,7 +295,11 @@ sub sign {
             # concatonation of r and s in that order ($r . $s)
             my $r = $bin_signature->get_r;
             my $s = $bin_signature->get_s;
-            $signature        = encode_base64( $r . $s, "\n" );
+
+            my $rs = _zero_fill_buffer(320);
+            _concat_dsa_sig_r_s(\$rs, $r, $s);
+
+            $signature        = encode_base64( $rs, "\n" );
         } else {
             print ("    Signing SignedInfo using RSA key type\n") if $DEBUG;
             my $bin_signature = $self->{key_obj}->sign( $signed_info_canon );
@@ -358,9 +362,6 @@ sub verify {
     while (my $signature_node = $signature_nodeset->shift()) {
         $i++;
         print ("\nSignature $i\n") if $DEBUG;
-        # set the namespace for the signature to a known prefix
-        $signature_node->setNamespace(
-            'http://www.w3.org/2000/09/xmldsig#', 'dsig', 1 );
 
         # Get SignedInfo Reference ID
         my $reference = $self->{ parser }->findvalue(
@@ -409,6 +410,7 @@ sub verify {
         my ($signed_info) = $self->{ parser }->findnodes('dsig:SignedInfo', $signature_node);
         my $signed_info_canon = $self->_canonicalize_xml($signed_info, $signature_node);
 
+        print "$signed_info_canon\n" if $DEBUG;
         if(Digest::SHA->can($digest_method)) {
             my $rsa_hash = "use_$digest_method" . "_hash";
             $self->{rsa_hash} =  "use_$digest_method" . "_hash";
@@ -610,32 +612,64 @@ sub _transform {
         $context
     );
 
+    print "_transform\n" if $DEBUG;
     foreach my $node ($transforms->get_nodelist) {
         my $alg = $node->getAttribute('Algorithm');
 
-        print "Algorithm: $alg\n" if $DEBUG;
+        print "    Algorithm: $alg\n" if $DEBUG;
         if ($alg eq TRANSFORM_ENV_SIG) {
             # TODO the xml being passed here currently has the
             # Signature removed.  May be better to do it all here
             next;
         }
         elsif ($alg eq TRANSFORM_C14N) {
-           $xml = $xml->toStringC14N();
+            print "        toStringC14N" if $DEBUG;
+            $xml = $xml->toStringC14N();
         }
         elsif ($alg eq TRANSFORM_C14N_COMMENTS) {
+            print "        toStringC14N(1)" if $DEBUG;
             $xml = $xml->toStringC14N(1);
         }
         elsif ($alg eq TRANSFORM_EXC_C14N) {
-            $xml = $xml->toStringEC14N();
+            my @prefixlist = $self->_find_prefixlist($node);
+            print "        toStringEC14N(0, '', @prefixlist)\n" if $DEBUG;
+            $xml = $xml->toStringEC14N(0, '', \@prefixlist);
         }
         elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) {
-            $xml = $xml->toStringEC14N(1);
+            my @prefixlist = $self->_find_prefixlist($node);
+            print "        toStringEC14N(1, '', @prefixlist)\n" if $DEBUG;
+            $xml = $xml->toStringEC14N(1, '', \@prefixlist);
         }
         else {
             die "Unsupported transform: $alg";
         }
     }
     return $xml;
+}
+
+##
+## _find_prefixlist($node)
+##
+## Arguments:
+##    $node:    string XML NodeSet
+##
+## Returns: ARRAY of prefix lists
+##
+## Generate an array of prefix lists defined in InclusiveNamespaces
+##
+sub _find_prefixlist {
+    my $self = shift;
+    my ($node) = @_;
+    my @children = $node->getChildrenByTagName('InclusiveNamespaces');
+
+    my $prefixlist = '';
+    foreach my $child (@children) {
+        if ($child) {
+            $prefixlist .= $child->getAttribute('PrefixList');
+        }
+        $prefixlist .= ' ';
+    }
+    return split / /, $prefixlist;
 }
 
 ##
@@ -771,6 +805,54 @@ sub _verify_x509_cert {
 }
 
 ##
+## _zero_fill_buffer($bits)
+##
+## Arguments:
+##    $bits:     number of bits to set to zero
+##
+## Returns: Zero filled bit buffer of size $bits
+##
+## Create a buffer with all bits set to 0
+##
+sub _zero_fill_buffer {
+    my $bits = shift;
+    # set all bit to zero
+    my $v = '';
+    for (my $i = 0; $i < $bits; $i++) {
+        vec($v, $i, 1) = 0;
+    }
+    return $v;
+}
+
+##
+## _concat_dsa_sig_r_s(\$buffer,$r,$s)
+##
+## Arguments:
+##    $buffer:      Zero Filled bit buffer
+##    $r:           octet stream
+##    $s:           octet stream
+##
+## Combine r and s components of DSA signature
+##
+sub _concat_dsa_sig_r_s {
+
+    my ($buffer, $r, $s) = @_;
+    my $bits_r = (length($r)*8)-1;
+    my $bits_s = (length($s)*8)-1;
+
+    # Place $s right justified in $v starting at bit 319
+    for (my $i = $bits_s; $i >=0; $i--) {
+        vec($$buffer, 160 + $i + (159 - $bits_s) , 1) = vec($s, $i, 1);
+    }
+
+    # Place $r right justified in $v starting at bit 159
+    for (my $i = $bits_r; $i >= 0 ; $i--) {
+        vec($$buffer, $i + (159 - $bits_r) , 1) = vec($r, $i, 1);
+    }
+
+}
+
+##
 ## _verify_dsa($context,$canonical,$sig)
 ##
 ## Arguments:
@@ -809,7 +891,7 @@ sub _verify_dsa {
     # The signature value consists of the base64 encoding of the
     # concatonation of r and s in that order ($r . $s)
     # Binary Signature is stored as a concatonation of r and s
-    my ($r, $s) = unpack('a20 a20', $bin_signature);
+    my ($r, $s) = unpack('a20a20', $bin_signature);
 
     # Create a new Signature Object from r and s
     my $sigobj = Crypt::OpenSSL::DSA::Signature->new();
