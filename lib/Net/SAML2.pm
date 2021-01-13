@@ -76,8 +76,14 @@ Net::SAML2 - SAML bindings and protocol implementation
 
 Support for the Web Browser SSO profile of SAML2.
 
-This is a very early release, but one which will correctly perform the
-SSO process.
+Net::SAML2 correctly perform the SSO process against numerous SAML
+Identity Providers (IdPs).  It has been tested against:
+
+GSuite
+Azure (Office 365)
+OneLogin
+Jump
+Mircosoft ADFS
 
 =head1 MAJOR CAVEATS
 

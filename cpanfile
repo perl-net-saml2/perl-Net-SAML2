@@ -24,8 +24,8 @@ requires "MooseX::Types::DateTime" => "0";
 requires "MooseX::Types::URI" => "0";
 requires "URI" => "0";
 requires "URI::QueryParam" => "0";
-requires "XML::CanonicalizeXML" => "0";
 requires "XML::Generator" => "0";
+requires "XML::LibXML" => "0";
 requires "XML::Tidy" => "0";
 requires "XML::Writer" => "0";
 requires "XML::XPath" => "0";
@@ -49,7 +49,6 @@ on 'test' => sub {
   requires "Test::NoTabs" => "0";
   requires "Test::Pod" => "1.14";
   requires "Test::Pod::Coverage" => "1.04";
-  requires "XML::LibXML" => "0";
   requires "XML::LibXML::XPathContext" => "0";
 };
 
