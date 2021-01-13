@@ -35,7 +35,7 @@ it -- all in accordance with the W3C standard governing XML signatures.
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-# Based on XML::Sig VERSION = '0.38';
+# Based on XML::Sig VERSION = '0.39';
 $VERSION = '0.29';
 
 use base qw(Class::Accessor);
@@ -391,8 +391,10 @@ sub verify {
         print ("   Digest Method: $digest_method\n") if $DEBUG;
 
         # Get the DigestValue used to verify Canonical XML
-        my $refdigest = _trim($self->{ parser }->findvalue(
-                'dsig:SignedInfo/dsig:Reference/dsig:DigestValue', $signature_node));
+        # Note that the digest may have embedded newlines in the XML
+        # Decode the base64 and encode it with no newlines
+        my $refdigest = encode_base64(decode_base64(_trim($self->{ parser }->findvalue(
+                'dsig:SignedInfo/dsig:Reference/dsig:DigestValue', $signature_node))), "");
         print ("   Digest Value: $refdigest\n") if $DEBUG;
 
         # Get the SignatureValue used to verify the SignedInfo
@@ -485,7 +487,7 @@ sub verify {
         # Obtain the DigestValue of the Canonical XML
         my $digest = $self->{digest_method}->($canonical);
 
-        print ( "    Reference Digest " . _trim($refdigest) ."\n") if $DEBUG;
+        print ( "    Reference Digest:  " . _trim($refdigest) ."\n") if $DEBUG;
 
         print ( "    Calculated Digest: ". _trim(encode_base64($digest, '')) ."\n") if $DEBUG;
 
