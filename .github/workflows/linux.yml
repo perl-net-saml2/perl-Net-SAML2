@@ -25,19 +25,9 @@ jobs:
       image: perl:${{ matrix.perl-version }}
     steps:
       - uses: actions/checkout@v1
-      - name: Install Crypt::OpenSSL::VerifyX509
-        run: |
-          curl -sL https://cpanmin.us/ | perl - -nq inc::Module::Install \
-          Module::Install::AuthorRequires Module::Install::AuthorTests \
-          Test::NoTabs Test::Pod Test::Pod::Coverage Test::More Crypt::OpenSSL::X509;
-          git clone https://github.com/timlegge/perl-Crypt-OpenSSL-VerifyX509.git;
-          cd perl-Crypt-OpenSSL-VerifyX509;
-          perl Makefile.PL;
-          make install;
-          cd ..;
       - name: Install Net::SAML2 Depends
         run: |
-          apt-get install libxml2-dev make gcc;
+          apt-get install libxml2 make gcc;
           curl -sL https://cpanmin.us/ | perl - -nq --installdeps . ;
       - name: Build Module
         run: |

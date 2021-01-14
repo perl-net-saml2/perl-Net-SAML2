@@ -22,7 +22,7 @@ my %WriteMakefileArgs = (
     "Crypt::OpenSSL::DSA" => 0,
     "Crypt::OpenSSL::RSA" => 0,
     "Crypt::OpenSSL::Random" => 0,
-    "Crypt::OpenSSL::VerifyX509" => 0,
+    "Crypt::OpenSSL::Verify" => 0,
     "Crypt::OpenSSL::X509" => 0,
     "DateTime" => 0,
     "DateTime::Format::XSD" => 0,
@@ -68,7 +68,7 @@ my %WriteMakefileArgs = (
     "Test::Pod::Coverage" => "1.04",
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.29",
+  "VERSION" => "0.30",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -82,7 +82,7 @@ my %FallbackPrereqs = (
   "Crypt::OpenSSL::DSA" => 0,
   "Crypt::OpenSSL::RSA" => 0,
   "Crypt::OpenSSL::Random" => 0,
-  "Crypt::OpenSSL::VerifyX509" => 0,
+  "Crypt::OpenSSL::Verify" => 0,
   "Crypt::OpenSSL::X509" => 0,
   "DateTime" => 0,
   "DateTime::Format::XSD" => 0,
