@@ -3,7 +3,7 @@ package Net::SAML2::Protocol::AuthnRequest;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
-use XML::Writer;
+use XML::Writer 0.625;
 use List::Util qw(any);
 
 with 'Net::SAML2::Role::ProtocolMessage';
