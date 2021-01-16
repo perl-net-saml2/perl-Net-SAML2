@@ -1,5 +1,10 @@
 Revision history for Perl extension Net::SAML2.
 
+0.31-TRIAL   15-Jan-2021
+
+        TBD     Update Changes and Increment version
+        2c6780a Fixes #10: XML::Writer requires newer version
+
 0.30-TRIAL    13-Jan-2021
 
         Significant Changes
@@ -9,7 +14,8 @@ Revision history for Perl extension Net::SAML2.
 
         Warning: This release require the installation of Crypt::OpenSSL::Verify.
 
-        TBD     Update Changes and Increment version
+        0d07622 Merge pull request #9 from timlegge/crypt-openssl-verify
+        929894c Update Changes and Increment version
         ccaa892 Remove the installation of Crypt::OpenSSL::VerifyX509 from action
         36d0a5c Move to Crypt-OpenSSL-Verify as Crypt-OpenSSL-Verify is not supported
         af050d5 Merge pull request #8 from timlegge/merge-xml-sig

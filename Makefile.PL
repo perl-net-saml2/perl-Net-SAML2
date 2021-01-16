@@ -45,7 +45,7 @@ my %WriteMakefileArgs = (
     "XML::Generator" => 0,
     "XML::LibXML" => 0,
     "XML::Tidy" => 0,
-    "XML::Writer" => 0,
+    "XML::Writer" => "0.625",
     "XML::XPath" => 0,
     "base" => 0,
     "constant" => 0,
@@ -68,7 +68,7 @@ my %WriteMakefileArgs = (
     "Test::Pod::Coverage" => "1.04",
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.30",
+  "VERSION" => "0.31",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -117,7 +117,7 @@ my %FallbackPrereqs = (
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,
   "XML::Tidy" => 0,
-  "XML::Writer" => 0,
+  "XML::Writer" => "0.625",
   "XML::XPath" => 0,
   "base" => 0,
   "constant" => 0,
