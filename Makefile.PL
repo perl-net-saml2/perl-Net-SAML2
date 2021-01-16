@@ -68,7 +68,7 @@ my %WriteMakefileArgs = (
     "Test::Pod::Coverage" => "1.04",
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.31",
+  "VERSION" => "0.32",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }

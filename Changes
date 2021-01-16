@@ -1,15 +1,26 @@
 Revision history for Perl extension Net::SAML2.
 
-0.31-TRIAL   15-Jan-2021
+0.32         16-Jan-2022
+
+        Version 0.31-TRIAL with version incremented
+        Significant Changes since 0.29
+
+            1. Replace Crypt::OpenSSL::Verify509
+            2. Merge latest XML::Sig
 
         TBD     Update Changes and Increment version
+
+0.31-TRIAL   15-Jan-2021
+
+        78fe988 Update Changes and Increment version
+        71d67e5 Merge pull request #11 from timlegge/xml-writer
         2c6780a Fixes #10: XML::Writer requires newer version
 
 0.30-TRIAL    13-Jan-2021
 
         Significant Changes
 
-            1. Replace Crypt::OpenSSL::Verify
+            1. Replace Crypt::OpenSSL::Verify509
             2. Merge latest XML::Sig
 
         Warning: This release require the installation of Crypt::OpenSSL::Verify.
