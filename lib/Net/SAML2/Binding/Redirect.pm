@@ -46,15 +46,19 @@ Arguments:
 
 =item B<key>
 
-signing key (for creating Redirect URLs)
+The SP's (Service Provider) also known as your application's signing key
+that your application uses to sign the AuthnRequest.  Some IdPs may not
+verify the signature.
 
 =item B<cert>
 
-IdP's signing cert (for verifying Redirect URLs)
+IdP's (Identity Provider's) signing certificate that is used to sign the
+response from the IdP.  It is used to verify the signature of the Redirect
+response.
 
 =item B<url>
 
-IdP's SSO service url for the Redirect binding
+IdP's SSO (Single Sign Out) service url for the Redirect binding
 
 =item B<param>
 
