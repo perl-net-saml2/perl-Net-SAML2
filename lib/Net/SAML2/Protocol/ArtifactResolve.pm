@@ -48,6 +48,7 @@ IdP's identity URI
 has 'issuer'      => (isa => 'Str', is => 'ro', required => 1);
 has 'destination' => (isa => 'Str', is => 'ro', required => 1);
 has 'artifact'    => (isa => 'Str', is => 'ro', required => 1);
+has 'provider'    => (isa => 'Str', is => 'ro', required => 0);
 
 =head2 as_xml( )
 
@@ -68,7 +69,7 @@ sub as_xml {
             { ID => $self->id,
               IssueInstant => $self->issue_instant,
               Destination => $self->destination,
-              ProviderName => "My SP's human readable name.",
+              ProviderName => $self->provider || "My SP's human readable name.",
               Version => '2.0' },
             $x->Issuer(
                 $saml,
