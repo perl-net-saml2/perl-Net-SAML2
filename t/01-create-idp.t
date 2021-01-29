@@ -95,7 +95,11 @@ is(
     'Has correct art_url'
 );
 
-looks_like_a_cert($idp->cert('signing'));
+foreach my $use (keys %{$idp->certs}) {
+    for my $cert (@{$idp->cert($use)}) {
+        looks_like_a_cert($cert);
+    }
+};
 
 is(
     $idp->entityid,
@@ -152,7 +156,11 @@ is(
         'Has correct art_url'
     );
 
-    looks_like_a_cert($idp->cert('signing'), 'Looks like signing certificate');
+    foreach my $use (keys %{$idp->certs}) {
+        for my $cert (@{$idp->cert($use)}) {
+            looks_like_a_cert($cert);
+        }
+    };
 
     is(
         $idp->entityid,
@@ -275,7 +283,11 @@ XML
         'Has correct art_url'
     );
 
-    looks_like_a_cert($idp->cert('signing'), 'Looks like signing certificate');
+    foreach my $use (keys %{$idp->certs}) {
+        for my $cert (@{$idp->cert($use)}) {
+            looks_like_a_cert($cert);
+        }
+    };
 
     is(
         $idp->entityid,

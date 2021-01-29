@@ -66,7 +66,7 @@ has 'cacert'   => (isa => 'Maybe[Str]',   is => 'ro', required => 1);
 has 'sso_urls' => (isa => 'HashRef[Str]', is => 'ro', required => 1);
 has 'slo_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
 has 'art_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
-has 'certs'    => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
+has 'certs'    => (isa => 'HashRef[ArrayRef[Str]]', is => 'ro', required => 1);
 has 'sls_force_lcase_url_encoding'    => (isa => 'Bool', is => 'ro', required => 0);
 has 'sls_double_encoded_response' => (isa => 'Bool', is => 'ro', required => 0);
 
@@ -180,10 +180,15 @@ sub new_from_xml {
         }
     }
 
+    my @certs = ();
+
     for my $key (
         $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor'))
     {
-        my $use = $key->getAttribute('use') || 'signing';
+        my @uses;
+        push (@uses, $key->getAttribute('use') || 'signing');
+        push (@uses, 'encryption') if !$key->getAttribute('use');
+
 
         $key->setNamespace('http://www.w3.org/2000/09/xmldsig#', 'ds');
 
@@ -204,9 +209,12 @@ sub new_from_xml {
         $text = join "\n", @lines;
 
         # form a PEM certificate
-        $data->{Cert}->{$use}
-            = sprintf("-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----\n",
-            $text);
+        for my $use (@uses) {
+            my $pem->{$use}
+                = sprintf("-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----\n",
+                $text);
+            push (@certs, $pem);
+        }
     }
 
     my $self = $class->new(
@@ -214,7 +222,7 @@ sub new_from_xml {
         sso_urls => $data->{SSO},
         slo_urls => $data->{SLO} || {},
         art_urls => $data->{Art} || {},
-        certs                        => $data->{Cert},
+        certs                        => \@certs,
         cacert                       => $args{cacert},
         sls_force_lcase_url_encoding => $args{sls_force_lcase_url_encoding},
         sls_double_encoded_response  => $args{sls_double_encoded_response},
@@ -229,28 +237,50 @@ sub new_from_xml {
     return $self;
 }
 
-=head2 BUILD ( hashref of the parameters passed to the constructor )
+# BUILDARGS ( hashref of the parameters passed to the constructor )
+#
+# Called after the object is created to validate the IdP using the cacert
+#
 
-Called after the object is created to validate the IdP using the cacert
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
 
-=cut
+    my %params = @_;
 
-sub BUILD {
-    my($self) = @_;
+    if ($params{cacert}) {
+        my $ca = Crypt::OpenSSL::Verify->new($params{cacert}, { strict_certs => 0, });
 
-    if ($self->cacert) {
-        my $ca = Crypt::OpenSSL::Verify->new($self->cacert, { strict_certs => 0, });
+        my $verified = 0;
+        my %errors;
+        my %certs;
 
-        for my $use (keys %{$self->certs}) {
-            my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
-            ## BUGBUG this is failing for valid things ...
-            eval { $ca->verify($cert) };
-            if ($@) {
-                warn "Can't verify IdP '$use' cert: $@\n";
+        for my $pem (@{ $params{certs} }) {
+            for my $use (keys %{$pem}) {
+                my @tmpcrt;
+                my $cert = Crypt::OpenSSL::X509->new_from_string($pem->{$use});
+                ## BUGBUG this is failing for valid things ...
+                eval { $ca->verify($cert) };
+                if ($@) {
+                    $errors{$cert->fingerprint_sha256} = $@;
+                    next;
+                }
+                $verified = 1;
+                push @tmpcrt, $pem->{$use};
+
+                $certs{$use} = \@tmpcrt;
             }
         }
+
+        $params{certs} = \%certs;
+
+        if (!$verified) {
+             warn "Can't verify IdP signing cert: ", %errors, "\n";
+        }
     }
-}
+
+    return $self->$orig(%params);
+};
 
 =head2 sso_url( $binding )
 
@@ -290,7 +320,13 @@ sub art_url {
 
 =head2 cert( $use )
 
-Returns the IdP's certificate for the given use (e.g. C<signing>).
+Returns the IdP's certificates for the given use (e.g. C<signing>).
+
+IdP's are generated from the metadata it is possible for multiple certificates
+to be contained in the metadata and therefore possible for them to be there to
+be multiple verified certs in $self->certs.  At this point any certs in the IdP
+have been verified and are valid for the specified use.  All certs are of type
+$use are returned.
 
 =cut
 
@@ -310,6 +346,7 @@ sub binding {
     my($self, $name) = @_;
 
     my $bindings = {
+        post     => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
         redirect => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
         soap     => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
     };
