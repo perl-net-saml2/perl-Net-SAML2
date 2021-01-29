@@ -68,10 +68,32 @@ query param name to use (SAMLRequest, SAMLResponse)
 
 =cut
 
-has 'key'   => (isa => 'Str', is => 'ro', required => 1);
-has 'cert'  => (isa => 'Str', is => 'ro', required => 1);
-has 'url'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'param' => (isa => 'Str', is => 'ro', required => 1);
+has 'key'   => (isa => 'Str',      is => 'ro', required => 1);
+has 'cert'  => (isa => 'ArrayRef', is => 'ro', required => 1);
+has 'url'   => (isa => Uri,        is => 'ro', required => 1, coerce => 1);
+has 'param' => (isa => 'Str',      is => 'ro', required => 1);
+
+=head2 BUILDARGS
+
+Earlier versions expected the cert to be a string.  However, metadata
+can include multiple signing certificates so the $idp->cert is now
+expected to be an arrayref to the certificates.  To avoid breaking existing
+applications this changes the the cert to an arrayref if it is not
+already an array ref.
+
+=cut
+
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my %params = @_;
+    if ($params{cert} && !ref($params{cert})) {
+            $params{cert} = [$params{cert}];
+    }
+
+    return $self->$orig(%params);
+};
 
 =head2 sign( $request, $relaystate )
 
@@ -126,13 +148,16 @@ sub verify {
     die "can't verify '$sigalg' signatures"
          unless $sigalg eq 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
 
-    my $cert = Crypt::OpenSSL::X509->new_from_string($self->cert);
-    my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
+    foreach my $crt (@{ $self->cert }) {
+        for my $use (keys %{$crt}) {
+            my $cert = Crypt::OpenSSL::X509->new_from_string($crt->{$use});
+            my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
 
-    my $sig = decode_base64($u->query_param_delete('Signature'));
-    my $signed = $u->query;
-    die "bad sig" unless $rsa_pub->verify($signed, $sig);
-
+            my $sig = decode_base64($u->query_param_delete('Signature'));
+            my $signed = $u->query;
+            die "bad sig" unless $rsa_pub->verify($signed, $sig);
+        }
+    }
     # unpack the SAML request
     my $deflated = decode_base64($u->query_param($self->param));
     my $request = '';

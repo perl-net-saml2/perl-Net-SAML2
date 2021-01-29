@@ -22,8 +22,13 @@ is(
     'SLO url is correct'
 );
 
-my $idp_cert = $idp->cert('signing');
-looks_like_a_cert($idp_cert);
+my $idp_cert;
+foreach my $cert (@{$idp->certs}) {
+    for my $use (keys %{$cert}) {
+        $idp_cert = $cert->{$use};
+        looks_like_a_cert($cert->{$use});
+    }
+};
 
 my $nameid  = 'user-to-log-out';
 my $session = 'session-to-log-out';

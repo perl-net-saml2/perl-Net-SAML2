@@ -39,7 +39,7 @@ has 'cacert'   => (isa => 'Maybe[Str]',   is => 'ro', required => 1);
 has 'sso_urls' => (isa => 'HashRef[Str]', is => 'ro', required => 1);
 has 'slo_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
 has 'art_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
-has 'certs'    => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
+has 'certs'    => (isa => 'ArrayRef[HashRef[Str]]',        is => 'ro', required => 1);
 has 'formats'  => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
 has 'default_format' => (isa => 'Str', is => 'ro', required => 1);
 
@@ -74,9 +74,11 @@ document.
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $xpath = XML::XPath->new(xml => no_comments($args{xml}));
-    $xpath->set_namespace('md', 'urn:oasis:names:tc:SAML:2.0:metadata');
-    $xpath->set_namespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
+    my $dom = XML::LibXML->load_xml( string => no_comments($args{xml}) );
+
+    my $xpath = XML::LibXML::XPathContext->new($dom);
+    $xpath->registerNs('md', 'urn:oasis:names:tc:SAML:2.0:metadata');
+    $xpath->registerNs('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
     my $data;
 
@@ -127,15 +129,17 @@ sub new_from_xml {
         $data->{DefaultFormat} = 'unspecified' unless exists $data->{DefaultFormat};
     }
 
-    for my $key (
-        $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor'))
+    my @certs = ();
+    my $key_nodeset =
+        $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor');
+
+    while (my $key = $key_nodeset->shift())
     {
+        $key->setNamespace('http://www.w3.org/2000/09/xmldsig#', 'ds');
         my $use = $key->getAttribute('use') || 'signing';
 
-        # We can't select by ds:KeyInfo/ds:X509Data/ds:X509Certificate
-        # because of https://rt.cpan.org/Public/Bug/Display.html?id=8784
         my ($text)
-            = $key->findvalue("//*[local-name()='X509Certificate']")
+            = $key->findvalue("ds:KeyInfo/ds:X509Data/ds:X509Certificate", $key)
             =~ /^\s*(.+?)\s*$/s;
 
         # rewrap the base64 data from the metadata; it may not
@@ -151,13 +155,15 @@ sub new_from_xml {
         $text = join "\n", @lines;
 
         # form a PEM certificate
-        $data->{Cert}->{$use}
+        my $pem->{$use}
             = sprintf("-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----\n",
             $text);
+        push (@certs, $pem);
+        $data->{Cert} = \@certs;
     }
 
     my $self = $class->new(
-        entityid       => $xpath->findvalue('//md:EntityDescriptor/@entityID')->value,
+        entityid       => $xpath->findvalue('//md:EntityDescriptor/@entityID'),
         sso_urls       => $data->{SSO},
         slo_urls       => $data->{SLO} || {},
         art_urls       => $data->{Art} || {},
@@ -176,22 +182,42 @@ Called after the object is created to validate the IdP using the cacert
 
 =cut
 
-sub BUILD {
-    my($self) = @_;
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
 
-    if ($self->cacert) {
-        my $ca = Crypt::OpenSSL::Verify->new($self->cacert, { strict_certs => 0, });
+    my %params = @_;
 
-        for my $use (keys %{$self->certs}) {
-            my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
-            ## BUGBUG this is failing for valid things ...
-            eval { $ca->verify($cert) };
-            if ($@) {
-                warn "Can't verify IdP '$use' cert: $@\n";
+    if ($params{cacert}) {
+        my $ca = Crypt::OpenSSL::Verify->new($params{cacert}, { strict_certs => 0, });
+
+        my $verified = 0;
+        my $error = "";
+        my @certs;
+
+        for my $pem (@{ $params{certs} }) {
+            for my $use (keys %{$pem}) {
+                my $cert = Crypt::OpenSSL::X509->new_from_string($pem->{$use});
+                ## BUGBUG this is failing for valid things ...
+                eval { $ca->verify($cert) };
+                if (!$@) {
+                    $verified = 1;
+                    push @certs, $pem;
+                } else {
+                    $error = $@;
+                }
             }
         }
+        $params{certs} = \@certs;
+
+        #TODO: This needs to be fixed for multiple error - multiple certs
+        if (!$verified) {
+             warn "Can't verify IdP signing cert: $error\n";
+        }
     }
-}
+
+    return $self->$orig(%params);
+};
 
 =head2 sso_url( $binding )
 
@@ -231,13 +257,28 @@ sub art_url {
 
 =head2 cert( $use )
 
-Returns the IdP's certificate for the given use (e.g. C<signing>).
+Returns the IdP's certificates for the given use (e.g. C<signing>).
+
+IdP's are generated from the metadata it is possible for multiple certificates
+to be contained in the metadata and therefore possible for them to be there to
+be multiple verified certs in $self->certs.  At this point any certs in the IdP
+have been verified and are valid for the specified use.  All certs are of type
+$use are returned.
 
 =cut
 
 sub cert {
     my($self, $use) = @_;
-    return $self->certs->{$use};
+    my @certs;
+    for my $cert (@{ $self->certs} ) {
+        for my $key (keys %{$cert}) {
+            if ($key eq $use ) {
+                push @certs, $cert;
+            }
+        }
+
+    }
+    return \@certs;
 }
 
 =head2 binding( $name )
@@ -251,6 +292,7 @@ sub binding {
     my($self, $name) = @_;
 
     my $bindings = {
+        post     => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
         redirect => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
         soap     => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
     };

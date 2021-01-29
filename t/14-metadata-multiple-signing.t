@@ -2,29 +2,35 @@ use Test::Lib;
 use Test::Net::SAML2;
 use Net::SAML2::IdP;
 
-my $xml = path('t/idp-metadata2.xml')->slurp;
+my $xml = path('t/idp-metadata-multiple-signing-azure.xml')->slurp;
 
 my $idp = Net::SAML2::IdP->new_from_xml(
     xml => $xml,
-    cacert => 't/cacert.pem',
+    cacert => 't/cacert-azure.pem',
 );
 isa_ok($idp, 'Net::SAML2::IdP');
 
 is(
     $idp->sso_url($idp->binding('redirect')),
-    'http://sso.dev.venda.com/opensso/SSORedirect/metaAlias/idp',
+    'https://login.microsoftonline.com/239f867f-feea-452e-a800-6859e696161c/saml2',
     'Found SSO redirect binding'
 );
 
 is(
+    $idp->sso_url($idp->binding('post')),
+    'https://login.microsoftonline.com/239f867f-feea-452e-a800-6859e696161c/saml2',
+    'Found SSO POST binding'
+);
+
+is(
     $idp->slo_url($idp->binding('redirect')),
-    'http://sso.dev.venda.com/opensso/IDPSloRedirect/metaAlias/idp',
+    'https://login.microsoftonline.com/239f867f-feea-452e-a800-6859e696161c/saml2',
     'Found SLO redirect binding'
 );
 
 is(
     $idp->art_url($idp->binding('soap')),
-    'http://sso.dev.venda.com/opensso/ArtifactResolver/metaAlias/idp',
+    undef,
     'Found SSO artifact binding'
 );
 
@@ -34,10 +40,9 @@ foreach my $cert (@{$idp->certs}) {
     }
 };
 
-
 is(
     $idp->entityid,
-    'http://sso.dev.venda.com/opensso',
+    'https://sts.windows.net/239f867f-feea-452e-a800-6859e696161c/',
     "Found correct entity id"
 );
 
