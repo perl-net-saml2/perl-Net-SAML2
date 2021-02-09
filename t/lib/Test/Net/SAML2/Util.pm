@@ -38,6 +38,7 @@ sub net_saml2_sp {
         org_name         => 'Test',
         org_display_name => 'Test',
         org_contact      => 'test@example.com',
+        org_url          => 'http://www.example.com', 
         @_,
     );
 }
