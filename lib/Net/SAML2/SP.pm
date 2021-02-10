@@ -68,6 +68,11 @@ SP organisation display name
 
 SP contact email address
 
+=item B<org_url>
+
+SP organization url.  This is optional and url will be used as in
+previous versions if this is not provided.
+
 =back
 
 =cut
@@ -81,6 +86,7 @@ has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
 has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
 has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
 has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
+has 'org_url'          => (isa => 'Str', is => 'ro', required => 0);
 
 has '_cert_text' => (isa => 'Str', is => 'rw', required => 0);
 
@@ -352,7 +358,7 @@ sub metadata {
                 $md,
                 {
                     'xml:lang' => 'en' },
-                $self->url
+                defined($self->org_url) ? $self->org_url :$self->url
             )
         ),
         $x->ContactPerson(
