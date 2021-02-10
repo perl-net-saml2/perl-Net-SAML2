@@ -430,6 +430,7 @@ this results in the following XML
     <md:Company>Net::SAML2</md:Company>
     <md:EmailAddress>timlegge@cpan.org</md:EmailAddress>
   </md:ContactPerson>
+</md:EntityDescriptor>
 
 ```
 
