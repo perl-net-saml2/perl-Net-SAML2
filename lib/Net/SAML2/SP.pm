@@ -73,6 +73,17 @@ SP contact email address
 SP organization url.  This is optional and url will be used as in
 previous versions if this is not provided.
 
+=item B<authnreq_signed>
+
+Specifies in the metadata whether the SP signs the AuthnRequest
+Optional (0 or 1) defaults to 1 (TRUE) if not specified.
+
+=item B<want_assertions_signed>
+
+Specifies in the metadata whether the SP wants the Assertion from
+the IdP to be signed
+Optional (0 or 1) defaults to 1 (TRUE) if not specified.
+
 =back
 
 =cut
@@ -89,6 +100,9 @@ has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
 has 'org_url'          => (isa => 'Str', is => 'ro', required => 0);
 
 has '_cert_text' => (isa => 'Str', is => 'rw', required => 0);
+
+has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0);
+has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0);
 
 =head2 BUILD ( hashref of the parameters passed to the constructor )
 
@@ -296,8 +310,8 @@ sub metadata {
             entityID => $self->id },
         $x->SPSSODescriptor(
             $md,
-            { AuthnRequestsSigned => '1',
-              WantAssertionsSigned => '1',
+            { AuthnRequestsSigned => defined($self->authnreq_signed) ? $self->authnreq_signed : '1',
+              WantAssertionsSigned => defined($self->want_assertions_signed) ? $self->want_assertions_signed : '1',
               errorURL => $self->url . '/saml/error',
               protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol' },
             $x->KeyDescriptor(
