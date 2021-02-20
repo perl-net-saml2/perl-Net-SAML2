@@ -38,10 +38,8 @@ The Net::SAML2::IdP generated results in:
 $VAR1 = bless( {
                  'slo_urls' => {},
                  'sso_urls' => {
-                                 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' => 'https://accounts.goog
-le.com/o/saml2/idp?idpid=C01nccos6',
-                                 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' => 'https://accounts.
-google.com/o/saml2/idp?idpid=C01nccos6'
+                                 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' => 'https://accounts.google.com/o/saml2/idp?idpid=C01nccos6',
+                                 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' => 'https://accounts.google.com/o/saml2/idp?idpid=C01nccos6'
                                },
                  'default_format' => 'emailAddress',
                  'cacert' => 't/cacert-google.pem',
