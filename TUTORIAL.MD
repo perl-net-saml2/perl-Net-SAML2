@@ -157,15 +157,23 @@ The **issue_instant** is the date and time of the request and is generated autom
 
 The Net::SAML2::Binding::Redirect is used to create the redirect URL that will be used to redirect the user's browser to the Identity Provider's web site to login.
 
+In addition, it could be used to process a redirect from the IdP to process a LoginRequest or LogoutResponse.
+
 ```
     my $redirect = Net::SAML2::Binding::Redirect->new(
         key => $sp_signing_cert,
-        cert => $sp_signing_cert,
+        cert => $idp->cert('signing'),
         param => 'SAMLRequest',
         # The ssl_url destination for redirect
         url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
     );
 ```
+
+**Note:** This is an odd one.  The cert parameter here is the IdP's signing certificate.
+
+In a Net::SAML2::Binding::Redirect->Sign() it is not used at all (you are signing the request with the SP's signing key).
+
+In Net::SAML2::Binding::Redirect->Verify() the IdP's signing certificate is used to verify a Redirect from the IdP.
 
 the creation of the Net::SAML2::Binding::Redirect results in:
 
@@ -207,7 +215,7 @@ The **key** is the absolute filename of the Service Provider's private key that 
 
 #### cert
 
-The **cert** is the absolute filename of the Service Provider's public key.  It is not actually used for the signing the AuthnRequest.
+The **cert** is the IdP signing cert as included in the Net::SAML2::IdP object.  It is used for the verify of a Redirect from the IdP.
 
 #### url
 
