@@ -16,7 +16,7 @@ Net::SAML2::Binding::Redirect
     key     => '/path/to/SPsign-nopw-key.pem',		# Service Provider (SP) private key
     url     => $sso_url,							# Service Provider Single Sign Out URL
     param   => 'SAMLRequest' OR 'SAMLResponse',		# Type of request
-    cert    => '/path/to/IdP-cert.pem'				# Identity Provider (IdP) certificate
+    cert    => $idp->cert('signing')				# Identity Provider (IdP) certificate
   );
 
   my $url = $redirect->sign($authnreq);
@@ -52,8 +52,8 @@ verify the signature.
 
 =item B<cert>
 
-IdP's (Identity Provider's) signing certificate that is used to sign the
-response from the IdP.  It is used to verify the signature of the Redirect
+IdP's (Identity Provider's) certificate that is used to verify a signed
+Redirect from the IdP.  It is used to verify the signature of the Redirect
 response.
 
 =item B<url>
