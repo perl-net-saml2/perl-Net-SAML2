@@ -66,6 +66,7 @@ my %WriteMakefileArgs = (
     "Test::NoTabs" => 0,
     "Test::Pod" => "1.14",
     "Test::Pod::Coverage" => "1.04",
+    "URI::URL" => 0,
     "XML::LibXML::XPathContext" => 0
   },
   "VERSION" => "0.32",
@@ -113,6 +114,7 @@ my %FallbackPrereqs = (
   "Test::Pod::Coverage" => "1.04",
   "URI" => 0,
   "URI::QueryParam" => 0,
+  "URI::URL" => 0,
   "XML::Generator" => 0,
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,
