@@ -51,6 +51,7 @@ on 'test' => sub {
   requires "Test::NoTabs" => "0";
   requires "Test::Pod" => "1.14";
   requires "Test::Pod::Coverage" => "1.04";
+  requires "URI::URL" => "0";
   requires "XML::LibXML::XPathContext" => "0";
 };
 
