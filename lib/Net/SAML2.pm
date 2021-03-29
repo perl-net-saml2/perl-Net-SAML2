@@ -79,11 +79,21 @@ Support for the Web Browser SSO profile of SAML2.
 Net::SAML2 correctly perform the SSO process against numerous SAML
 Identity Providers (IdPs).  It has been tested against:
 
-GSuite
-Azure (Office 365)
-OneLogin
-Jump
-Mircosoft ADFS
+=over
+
+=item GSuite (Google)
+
+=item Azure (Microsoft Office 365)
+
+=item OneLogin
+
+=item Jump
+
+=item Mircosoft ADFS
+
+=item Keycloak
+
+=back
 
 =head1 MAJOR CAVEATS
 
