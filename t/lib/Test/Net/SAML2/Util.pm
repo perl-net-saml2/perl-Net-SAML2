@@ -187,6 +187,7 @@ RESPONSEDOC
             key => 't/net-saml2-key.pem',
             x509 => 1,
             cert => 't/net-saml2-cert.pem',
+            no_xml_declaration => 1,
         });
     my $response = encode_base64($signer->sign($res_xml),"\n");
 

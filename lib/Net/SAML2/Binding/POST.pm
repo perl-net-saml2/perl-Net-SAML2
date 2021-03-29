@@ -61,6 +61,7 @@ sub handle_response {
     my $xml_opts = { x509 => 1 };
     $xml_opts->{ cert_text } = $self->cert_text if ($self->cert_text);
     $xml_opts->{ exclusive } = 1;
+    $xml_opts->{ no_xml_declaration } = 1;
     my $x = Net::SAML2::XML::Sig->new($xml_opts);
     my $ret = $x->verify($xml);
     die "signature check failed" unless $ret;

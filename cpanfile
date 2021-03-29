@@ -8,6 +8,7 @@ requires "Crypt::OpenSSL::RSA" => "0";
 requires "Crypt::OpenSSL::Random" => "0";
 requires "Crypt::OpenSSL::Verify" => "0";
 requires "Crypt::OpenSSL::X509" => "0";
+requires "Crypt::PK::ECC" => "0";
 requires "DateTime" => "0";
 requires "DateTime::Format::XSD" => "0";
 requires "Digest::SHA" => "0";

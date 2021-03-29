@@ -115,7 +115,14 @@ sub handle_response {
     my ($self, $response) = @_;
 
     # verify the response
-    my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert, exclusive => 1, });
+    my $x = Net::SAML2::XML::Sig->new(
+    {
+        x509 => 1,
+        cert_text => $self->idp_cert,
+        exclusive => 1,
+        no_xml_declaration => 1,
+    });
+
     my $ret = $x->verify($response);
     die "bad SOAP response" unless $ret;
 
@@ -185,6 +192,7 @@ sub create_soap_envelope {
         key  => $self->key,
         cert => $self->cert,
         exclusive => 1,
+        no_xml_declaration => 1,
     });
     my $signed_message = $sig->sign($message);
 
