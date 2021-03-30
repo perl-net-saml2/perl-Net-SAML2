@@ -1,5 +1,21 @@
 Revision history for Perl extension Net::SAML2.
 
+0.34 - 2021-03-30
+
+  [Significant Changes since 0.32]
+
+  - Mostly an improvement in documentation
+  - Implement "full client" test that follows TUTORIAL.md
+  - TUTORIAL.md documents how to add Net::SAML2 to your web application
+  - Numerous small bug fixes/enhancements
+  - Improvements in SP Metadata support
+  - Add response_status to Assertion object
+  - XML::Sig version 0.47 (improvements in ECDSA and DSA and other fixes)
+
+  [Change Log]
+
+  - TBD     Update Changes and Increment version
+
 0.33-TRIAL - 2021-03-28
 
   [Significant Changes]
@@ -14,7 +30,7 @@ Revision history for Perl extension Net::SAML2.
 
   [Change Log]
 
-  - TBD     Update Changes and Increment version
+  - 844d0be Update Changes and Increment version
   - 7fabe59 Merge XML::Sig version 0.47
   - d62059f Add Keycloak as a tested SAML provider
   - f626fc5 Sign releases
