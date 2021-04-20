@@ -7,7 +7,7 @@ use ExtUtils::MakeMaker;
 
 my %WriteMakefileArgs = (
   "ABSTRACT" => "SAML bindings and protocol implementation",
-  "AUTHOR" => "Original Author: Chris Andrews  <chrisa\@cpan.org>",
+  "AUTHOR" => "Chris Andrews  <chrisa\@cpan.org>",
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
   },

@@ -125,9 +125,29 @@ use Net::SAML2::Protocol::ArtifactResolve;
 
 =pod
 
-=head1 AUTHOR
+=head1 CONTRIBUTORS
 
-Chris Andrews <chrisandrews@venda.com>
+=over
+
+=item Chris Andrews <chris@nodnol.org>
+
+=item Oskari Okko Ojala <okko@frantic.com>
+
+=item Peter Marschall <peter@adpm.de>
+
+=item Mike Wisener <xmikew@cpan.org>
+
+=item Jeff Fearn <jfearn@redhat.com>
+
+=item Alessandro Ranellucci <aar@cpan.org>
+
+=item Mike Wisener <mwisener@secureworks.com>, xmikew <github@32ths.com>
+
+=item xmikew <github@32ths.com>
+
+=item Timothy Legge <timlegge@gmail.com>
+
+=back
 
 =head1 COPYRIGHT
 

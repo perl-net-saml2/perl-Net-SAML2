@@ -84,8 +84,16 @@ MAJOR CAVEATS
     SP-side protocol only
     Requires XML metadata from the IdP
 
-AUTHOR
-    Chris Andrews <chrisandrews@venda.com>
+CONTRIBUTORS
+    Chris Andrews <chris@nodnol.org>
+    Oskari Okko Ojala <okko@frantic.com>
+    Peter Marschall <peter@adpm.de>
+    Mike Wisener <xmikew@cpan.org>
+    Jeff Fearn <jfearn@redhat.com>
+    Alessandro Ranellucci <aar@cpan.org>
+    Mike Wisener <mwisener@secureworks.com>, xmikew <github@32ths.com>
+    xmikew <github@32ths.com>
+    Timothy Legge <timlegge@gmail.com>
 
 COPYRIGHT
     The following copyright notice applies to all the files provided in this
@@ -98,16 +106,11 @@ LICENCE
     under the same terms as Perl itself.
 
 AUTHOR
-    Original Author: Chris Andrews <chrisa@cpan.org>
+    Chris Andrews <chrisa@cpan.org>
 
 COPYRIGHT AND LICENSE
-    This software is copyright (c) 2021 by Chris Andrews and Others; in
-    detail:
-
-      Copyright 2010-2012  Chris Andrews
-                2016       Jeff Fearn
-                2017       xmikew
-                2019-2021  Timothy Legge
+    This software is copyright (c) 2021 by Chris Andrews and Others, see the
+    git log.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.
