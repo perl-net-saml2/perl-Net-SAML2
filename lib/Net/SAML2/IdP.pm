@@ -1,7 +1,6 @@
 package Net::SAML2::IdP;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
-use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head1 NAME
 
@@ -59,7 +58,7 @@ sub new_from_url {
 
     my $res = $ua->request($req);
     die "no metadata" unless $res->is_success;
-    my $xml = no_comments($res->content);
+    my $xml = $res->content;
 
     return $class->new_from_xml(xml => $xml, cacert => $args{cacert});
 }
@@ -75,7 +74,7 @@ sub new_from_xml {
     my($class, %args) = @_;
 
     my $dom = XML::LibXML->load_xml(
-                    string => no_comments($args{xml}),
+                    string => $args{xml},
                     no_network => 1,
                     load_ext_dtd => 0,
                     expand_entities => 0 );
