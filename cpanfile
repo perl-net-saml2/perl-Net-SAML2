@@ -31,7 +31,6 @@ requires "XML::Generator" => "0";
 requires "XML::LibXML" => "0";
 requires "XML::Tidy" => "0";
 requires "XML::Writer" => "0.625";
-requires "XML::XPath" => "0";
 requires "base" => "0";
 requires "constant" => "0";
 requires "namespace::autoclean" => "0";

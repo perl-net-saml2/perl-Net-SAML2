@@ -5,7 +5,7 @@ use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
 use DateTime::Format::XSD;
 use Net::SAML2::XML::Util qw/ no_comments /;
-use XML::XPath;
+use XML::LibXML;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -27,7 +27,7 @@ has 'nameid'            => (isa => 'Str',               is => 'ro', required => 
 has 'not_before'        => (isa => DateTime,            is => 'ro', required => 1);
 has 'not_after'         => (isa => DateTime,            is => 'ro', required => 1);
 has 'audience'          => (isa => NonEmptySimpleStr,   is => 'ro', required => 1);
-has 'xpath'             => (isa => 'XML::XPath',        is => 'ro', required => 1);
+has 'xpath'             => (isa => 'XML::LibXML::XPathContext',        is => 'ro', required => 1);
 has 'in_response_to'    => (isa => 'Str',               is => 'ro', required => 1);
 has 'response_status'   => (isa => 'Str',               is => 'ro', required => 1);
 
@@ -55,10 +55,15 @@ XML data
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $xpath = XML::XPath->new(xml => no_comments($args{xml}));
+    my $dom = XML::LibXML->load_xml(
+                    string => no_comments($args{xml}),
+                    no_network => 1,
+                    load_ext_dtd => 0,
+                    expand_entities => 0 );
 
-    $xpath->set_namespace('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-    $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    my $xpath = XML::LibXML::XPathContext->new($dom);
+    $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
+    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
     my $attributes = {};
     for my $node (
@@ -73,7 +78,7 @@ sub new_from_xml {
     my $not_before;
     if($xpath->findvalue('//saml:Conditions/@NotBefore')) {
         $not_before = DateTime::Format::XSD->parse_datetime(
-            $xpath->findvalue('//saml:Conditions/@NotBefore')->value);
+            $xpath->findvalue('//saml:Conditions/@NotBefore'));
     }
     else {
         $not_before = DateTime->now();
@@ -82,24 +87,24 @@ sub new_from_xml {
     my $not_after;
     if($xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
         $not_after = DateTime::Format::XSD->parse_datetime(
-            $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')->value);
+            $xpath->findvalue('//saml:Conditions/@NotOnOrAfter'));
     }
     else {
         $not_after = DateTime->from_epoch(epoch => time() + 1000);
     }
 
     my $self = $class->new(
-        issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer')->value,
-        destination    => $xpath->findvalue('/samlp:Response/@Destination')->value,
+        issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer'),
+        destination    => $xpath->findvalue('/samlp:Response/@Destination'),
         attributes     => $attributes,
-        session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex')->value,
-        nameid         => $xpath->findvalue('//saml:Subject/saml:NameID')->value,
-        audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience')->value,
+        session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex'),
+        nameid         => $xpath->findvalue('//saml:Subject/saml:NameID'),
+        audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
         not_before     => $not_before,
         not_after      => $not_after,
         xpath          => $xpath,
-        in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo')->value,
-        response_status => $xpath->findvalue('//saml2p:Response/saml2p:Status/saml2p:StatusCode/@Value')->value,
+        in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
+        response_status => $xpath->findvalue('//samlp:Response/samlp:Status/samlp:StatusCode/@Value'),
     );
 
     return $self;

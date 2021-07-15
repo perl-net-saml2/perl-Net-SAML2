@@ -76,17 +76,23 @@ XML data
 sub new_from_xml {
     my ($class, %args) = @_;
 
-    my $xpath = XML::XPath->new( xml => no_comments($args{xml}) );
-    $xpath->set_namespace('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
-    $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    my $dom = XML::LibXML->load_xml(
+                    string => no_comments($args{xml}),
+                    no_network => 1,
+                    load_ext_dtd => 0,
+                    expand_entities => 0 );
+
+    my $xpath = XML::LibXML::XPathContext->new($dom);
+    $xpath->registerNs('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
+    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
     my $self = $class->new(
-        id            => $xpath->findvalue('/samlp:LogoutRequest/@ID')->value,
-        session       => $xpath->findvalue('/samlp:LogoutRequest/samlp:SessionIndex')->value,
-        issuer        => $xpath->findvalue('/samlp:LogoutRequest/saml:Issuer')->value,
-        nameid        => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID')->value,
-        nameid_format => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@Format')->value,
-        destination   => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@NameQualifier')->value,
+        id            => $xpath->findvalue('/samlp:LogoutRequest/@ID'),
+        session       => $xpath->findvalue('/samlp:LogoutRequest/samlp:SessionIndex'),
+        issuer        => $xpath->findvalue('/samlp:LogoutRequest/saml:Issuer'),
+        nameid        => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID'),
+        nameid_format => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@Format'),
+        destination   => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@NameQualifier'),
     );
 
     return $self;

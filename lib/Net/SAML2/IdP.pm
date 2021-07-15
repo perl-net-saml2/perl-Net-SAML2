@@ -20,7 +20,7 @@ use Crypt::OpenSSL::Verify;
 use Crypt::OpenSSL::X509;
 use HTTP::Request::Common;
 use LWP::UserAgent;
-use XML::XPath;
+use XML::LibXML;
 
 =head2 new( )
 
@@ -74,9 +74,15 @@ document.
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $xpath = XML::XPath->new(xml => no_comments($args{xml}));
-    $xpath->set_namespace('md', 'urn:oasis:names:tc:SAML:2.0:metadata');
-    $xpath->set_namespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
+    my $dom = XML::LibXML->load_xml(
+                    string => no_comments($args{xml}),
+                    no_network => 1,
+                    load_ext_dtd => 0,
+                    expand_entities => 0 );
+
+    my $xpath = XML::LibXML::XPathContext->new($dom);
+    $xpath->registerNs('md', 'urn:oasis:names:tc:SAML:2.0:metadata');
+    $xpath->registerNs('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
     my $data;
 
@@ -157,7 +163,7 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
-        entityid       => $xpath->findvalue('//md:EntityDescriptor/@entityID')->value,
+        entityid       => $xpath->findvalue('//md:EntityDescriptor/@entityID'),
         sso_urls       => $data->{SSO},
         slo_urls       => $data->{SLO} || {},
         art_urls       => $data->{Art} || {},

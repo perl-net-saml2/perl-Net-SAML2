@@ -23,7 +23,7 @@ Net::SAML2::Binding::Artifact - SOAP binding for SAML2
 =cut
 
 use Net::SAML2::XML::Sig;
-use XML::XPath;
+use XML::LibXML;
 use LWP::UserAgent;
 use HTTP::Request::Common;
 
@@ -135,9 +135,15 @@ sub handle_response {
     my $subject = sprintf("%s (verified)", $cert->subject);
 
     # parse the SOAP response and return the payload
-    my $parser = XML::XPath->new( xml => no_comments($response) );
-    $parser->set_namespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-    $parser->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    my $dom = XML::LibXML->load_xml(
+                    string => no_comments($response),
+                    no_network => 1,
+                    load_ext_dtd => 0,
+                    expand_entities => 0 );
+
+    my $parser = XML::LibXML::XPathContext->new($dom);
+    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
+    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
     my $saml = $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
     return ($subject, $saml);
