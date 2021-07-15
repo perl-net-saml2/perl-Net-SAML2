@@ -2,7 +2,7 @@ NAME
     Net::SAML2
 
 VERSION
-    version 0.35
+    version 0.36
 
 SYNOPSIS
       # generate a redirect off to the IdP:

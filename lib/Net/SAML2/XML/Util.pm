@@ -9,7 +9,7 @@ use XML::Tidy;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-$VERSION = '0.35';
+$VERSION = '0.36';
 
 # We are exporting functions
 use base qw/Exporter/;

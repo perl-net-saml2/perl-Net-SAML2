@@ -1,5 +1,12 @@
 Revision history for Perl extension Net::SAML2.
 
+0.36-TRIAL - 2021-07-15
+
+  [Change Log]
+
+  - TBD     Update Changes and Increment version
+  - be1a42f Remove no_comments call from IdP
+
 0.35-TRIAL - 2021-07-14
 
   [Significant Changes]
@@ -10,7 +17,7 @@ Revision history for Perl extension Net::SAML2.
 
   [Change Log]
 
-  - TBD     Update Changes and Increment version
+  - a071834 Update Changes and Increment version
   - 3741d2a Replace XML::XPath with XML::libXML
   - f3887f5 Fixup Contributors and cleanup README
   - 9d8c3bd Automatically generate README for repo
