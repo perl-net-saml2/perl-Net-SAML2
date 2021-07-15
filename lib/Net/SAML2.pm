@@ -4,7 +4,7 @@ use warnings;
 
 require 5.008_001;
 
-our $VERSION = '0.34';
+our $VERSION = '0.35';
 $VERSION = eval {$VERSION};
 
 =head1 NAME

@@ -1,5 +1,21 @@
 Revision history for Perl extension Net::SAML2.
 
+0.35-TRIAL - 2021-07-14
+
+  [Significant Changes]
+
+  Replaces XML::XPath with XML::libXML which is better maintained and more
+  powerful.  XML::libXML options are set to disable loading external documents
+  and expanding entities as well as disabling network access.
+
+  [Change Log]
+
+  - TBD     Update Changes and Increment version
+  - 3741d2a Replace XML::XPath with XML::libXML
+  - f3887f5 Fixup Contributors and cleanup README
+  - 9d8c3bd Automatically generate README for repo
+  - 4a1f2ef Update dist.ini to use Pod2Readme
+
 0.34 - 2021-03-30
 
   [Significant Changes since 0.32]
@@ -14,7 +30,7 @@ Revision history for Perl extension Net::SAML2.
 
   [Change Log]
 
-  - TBD     Update Changes and Increment version
+  - 1ef0848 Update Changes and Increment version
 
 0.33-TRIAL - 2021-03-28
 
