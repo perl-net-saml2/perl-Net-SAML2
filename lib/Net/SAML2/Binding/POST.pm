@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Moose;
-use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head1 NAME
 
@@ -57,7 +56,7 @@ sub handle_response {
     my ($self, $response) = @_;
 
     # unpack and check the signature
-    my $xml = no_comments(decode_base64($response));
+    my $xml = decode_base64($response);
     my $xml_opts = { x509 => 1 };
     $xml_opts->{ cert_text } = $self->cert_text if ($self->cert_text);
     $xml_opts->{ exclusive } = 1;

@@ -71,18 +71,20 @@ XML data
 sub new_from_xml {
     my ($class, %args) = @_;
 
-    my $xpath = XML::XPath->new( xml => no_comments($args{xml}) );
-    $xpath->set_namespace('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
-    $xpath->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    my $dom = no_comments($args{xml});
+
+    my $xpath = XML::LibXML::XPathContext->new($dom);
+    $xpath->registerNs('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
+    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
     my $self = $class->new(
-        id          => $xpath->findvalue('/samlp:LogoutResponse/@ID')->value,
-        response_to => $xpath->findvalue('/samlp:LogoutResponse/@InResponseTo')->value,
-        destination => $xpath->findvalue('/samlp:LogoutResponse/@Destination')->value,
-        session     => $xpath->findvalue('/samlp:LogoutResponse/samlp:SessionIndex')->value,
-        issuer      => $xpath->findvalue('/samlp:LogoutResponse/saml:Issuer')->value,
-        status      => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value')->value,
-        substatus   => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value')->value,
+        id          => $xpath->findvalue('/samlp:LogoutResponse/@ID'),
+        response_to => $xpath->findvalue('/samlp:LogoutResponse/@InResponseTo'),
+        destination => $xpath->findvalue('/samlp:LogoutResponse/@Destination'),
+        session     => $xpath->findvalue('/samlp:LogoutResponse/samlp:SessionIndex'),
+        issuer      => $xpath->findvalue('/samlp:LogoutResponse/saml:Issuer'),
+        status      => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value'),
+        substatus   => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value'),
     );
 
     return $self;

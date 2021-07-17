@@ -55,11 +55,7 @@ XML data
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $dom = XML::LibXML->load_xml(
-                    string => no_comments($args{xml}),
-                    no_network => 1,
-                    load_ext_dtd => 0,
-                    expand_entities => 0 );
+    my $dom = no_comments($args{xml});
 
     my $xpath = XML::LibXML::XPathContext->new($dom);
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');

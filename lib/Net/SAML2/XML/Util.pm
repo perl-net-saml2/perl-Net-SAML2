@@ -3,7 +3,7 @@ package Net::SAML2::XML::Util;
 use strict;
 use warnings;
 
-use XML::Tidy;
+use XML::LibXML;
 
 # use 'our' on v5.6.0
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
@@ -42,9 +42,17 @@ sub no_comments {
     my $xml = shift;
 
     # Remove comments from XML to mitigate XML comment auth bypass
-    my $tidy_obj = XML::Tidy->new(xml => $xml);
-    $tidy_obj->prune('//comment()');
-    return $tidy_obj->toString();
+    my $dom = XML::LibXML->load_xml(
+                    string => $xml,
+                    no_network => 1,
+                    load_ext_dtd => 0,
+                    expand_entities => 0 );
+
+    for my $comment_node ($dom->findnodes('//comment()')) {
+        $comment_node->parentNode->removeChild($comment_node);
+    }
+
+    return $dom;
 }
 
 1;

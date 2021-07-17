@@ -20,6 +20,7 @@ use Crypt::OpenSSL::X509;
 use HTTP::Request::Common;
 use LWP::UserAgent;
 use XML::LibXML;
+use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head2 new( )
 
@@ -73,11 +74,7 @@ document.
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $dom = XML::LibXML->load_xml(
-                    string => $args{xml},
-                    no_network => 1,
-                    load_ext_dtd => 0,
-                    expand_entities => 0 );
+    my $dom = no_comments($args{xml});
 
     my $xpath = XML::LibXML::XPathContext->new($dom);
     $xpath->registerNs('md', 'urn:oasis:names:tc:SAML:2.0:metadata');

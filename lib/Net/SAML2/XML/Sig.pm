@@ -73,6 +73,7 @@ use base qw/Exporter/;
 
 use Digest::SHA qw(sha1 sha224 sha256 sha384 sha512);
 use XML::LibXML;
+use Net::SAML2::XML::Util qw/ no_comments /;
 use MIME::Base64;
 use Carp;
 
@@ -288,7 +289,12 @@ sub sign {
 
     local $XML::LibXML::skipXMLDeclaration = $self->{ no_xml_declaration };
 
-    my $dom = XML::LibXML->load_xml( string => $xml );
+    my $dom = no_comments($xml);
+    #my $dom = XML::LibXML->load_xml(
+    #                string => $xml,
+    #                no_network => 1,
+    #                load_ext_dtd => 0,
+    #                expand_entities => 0 );
 
     $self->{ parser } = XML::LibXML::XPathContext->new($dom);
     $self->{ parser }->registerNs('dsig', 'http://www.w3.org/2000/09/xmldsig#');
@@ -451,7 +457,12 @@ sub verify {
     delete $self->{signer_cert};
     my ($xml) = @_;
 
-    my $dom = XML::LibXML->load_xml( string => $xml );
+    my $dom = no_comments($xml);
+    #my $dom = XML::LibXML->load_xml(
+    #                string => $xml,
+    #                no_network => 1,
+    #                load_ext_dtd => 0,
+    #                expand_entities => 0 );
 
     $self->{ parser } = XML::LibXML::XPathContext->new($dom);
     $self->{ parser }->registerNs('dsig', 'http://www.w3.org/2000/09/xmldsig#');

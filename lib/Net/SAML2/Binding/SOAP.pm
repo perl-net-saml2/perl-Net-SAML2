@@ -135,11 +135,7 @@ sub handle_response {
     my $subject = sprintf("%s (verified)", $cert->subject);
 
     # parse the SOAP response and return the payload
-    my $dom = XML::LibXML->load_xml(
-                    string => no_comments($response),
-                    no_network => 1,
-                    load_ext_dtd => 0,
-                    expand_entities => 0 );
+    my $dom = no_comments($response);
 
     my $parser = XML::LibXML::XPathContext->new($dom);
     $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
@@ -160,11 +156,14 @@ Accepts a string containing the complete SOAP request.
 sub handle_request {
     my ($self, $request) = @_;
 
-    my $parser = XML::XPath->new( xml => no_comments($request) );
-    $parser->set_namespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-    $parser->set_namespace('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    my $dom = no_comments($request);
 
-    my $saml = $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
+    my $parser = XML::LibXML::XPathContext->new($dom);
+    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
+    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+
+    my ($nodes) = $parser->findnodes('/soap-env:Envelope/soap-env:Body/*');
+    my $saml = $nodes->toString;
 
     if (defined $saml) {
         my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert, exclusive => 1, });
