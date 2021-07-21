@@ -29,7 +29,6 @@ requires "URI" => "0";
 requires "URI::QueryParam" => "0";
 requires "XML::Generator" => "0";
 requires "XML::LibXML" => "0";
-requires "XML::Tidy" => "0";
 requires "XML::Writer" => "0.625";
 requires "base" => "0";
 requires "constant" => "0";
