@@ -1,10 +1,16 @@
 Revision history for Perl extension Net::SAML2.
 
-0.37-TRIAL - 2021-07-21
+0.38 - 2021-07-23
 
   [Change Log]
 
   - TBD     Update Changes and Increment version
+
+0.37-TRIAL - 2021-07-21
+
+  [Change Log]
+
+  - cc4e029 Update Changes and Increment version
   - f6227a4 Replace remaining XML::XPath with XML::libXML
 
 0.36-TRIAL - 2021-07-15
