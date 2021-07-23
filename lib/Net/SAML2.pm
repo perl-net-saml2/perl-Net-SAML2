@@ -93,6 +93,8 @@ Identity Providers (IdPs).  It has been tested against:
 
 =item Keycloak
 
+=item Auth0 (requires Net::SAML2 >=0.38)
+
 =back
 
 =head1 MAJOR CAVEATS

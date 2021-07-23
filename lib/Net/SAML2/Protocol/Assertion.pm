@@ -3,6 +3,7 @@ use Moose;
 use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
+use DateTime::HiRes;
 use DateTime::Format::XSD;
 use Net::SAML2::XML::Util qw/ no_comments /;
 use XML::LibXML;
@@ -77,7 +78,7 @@ sub new_from_xml {
             $xpath->findvalue('//saml:Conditions/@NotBefore'));
     }
     else {
-        $not_before = DateTime->now();
+        $not_before = DateTime::HiRes->now();
     }
 
     my $not_after;
@@ -139,7 +140,7 @@ sub valid {
     return 0 unless !defined $in_response_to
         or $in_response_to eq $self->in_response_to;
 
-    my $now = DateTime::->now;
+    my $now = DateTime::HiRes->now;
 
     # not_before is "NotBefore" element - exact match is ok
     # not_after is "NotOnOrAfter" element - exact match is *not* ok

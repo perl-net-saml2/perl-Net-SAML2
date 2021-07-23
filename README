@@ -76,6 +76,7 @@ DESCRIPTION
     Jump
     Mircosoft ADFS
     Keycloak
+    Auth0 (requires Net::SAML2 >=0.38)
 
 NAME
     Net::SAML2 - SAML bindings and protocol implementation

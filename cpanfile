@@ -11,6 +11,7 @@ requires "Crypt::OpenSSL::X509" => "0";
 requires "Crypt::PK::ECC" => "0";
 requires "DateTime" => "0";
 requires "DateTime::Format::XSD" => "0";
+requires "DateTime::HiRes" => "0";
 requires "Digest::SHA" => "0";
 requires "Exporter" => "0";
 requires "File::Slurp" => "0";
