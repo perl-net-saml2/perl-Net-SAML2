@@ -4,7 +4,7 @@ use warnings;
 
 require 5.008_001;
 
-our $VERSION = '0.38';
+our $VERSION = '0.39';
 $VERSION = eval {$VERSION};
 
 =head1 NAME
@@ -93,7 +93,7 @@ Identity Providers (IdPs).  It has been tested against:
 
 =item Keycloak
 
-=item Auth0 (requires Net::SAML2 >=0.38)
+=item Auth0 (requires Net::SAML2 >=0.39)
 
 =back
 

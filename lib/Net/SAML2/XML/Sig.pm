@@ -36,7 +36,7 @@ use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
 # Based on XML::Sig VERSION = '0.47';
-$VERSION = '0.38';
+$VERSION = '0.39';
 
 use base qw(Class::Accessor);
 Net::SAML2::XML::Sig->mk_accessors(qw(key));

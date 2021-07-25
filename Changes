@@ -1,10 +1,18 @@
 Revision history for Perl extension Net::SAML2.
 
+0.39-TRIAL - 2021-07-25
+
+  [Change Log]
+  - TBD     Update Changes and Increment version
+  - 5921d12 Fixes #28 support https urls for metadata
+  - 95a2311 Fixes #29 which also supports Auth0 SAML
+  - 09591b6 Test InResponseTo on Assertions
+
 0.38 - 2021-07-23
 
   [Change Log]
 
-  - TBD     Update Changes and Increment version
+  - 88abdeb Update Changes and Increment version
 
 0.37-TRIAL - 2021-07-21
 

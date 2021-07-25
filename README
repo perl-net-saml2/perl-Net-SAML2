@@ -2,7 +2,7 @@ NAME
     Net::SAML2
 
 VERSION
-    version 0.38
+    version 0.39
 
 SYNOPSIS
       # generate a redirect off to the IdP:
@@ -76,7 +76,7 @@ DESCRIPTION
     Jump
     Mircosoft ADFS
     Keycloak
-    Auth0 (requires Net::SAML2 >=0.38)
+    Auth0 (requires Net::SAML2 >=0.39)
 
 NAME
     Net::SAML2 - SAML bindings and protocol implementation
