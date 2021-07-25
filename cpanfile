@@ -18,6 +18,7 @@ requires "File::Slurp" => "0";
 requires "HTTP::Request::Common" => "0";
 requires "IO::Compress::RawDeflate" => "0";
 requires "IO::Uncompress::RawInflate" => "0";
+requires "LWP::Protocol::https" => "0";
 requires "LWP::UserAgent" => "0";
 requires "List::Util" => "0";
 requires "MIME::Base64" => "0";

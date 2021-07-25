@@ -57,8 +57,17 @@ sub new_from_url {
     my $req = GET $args{url};
     my $ua  = LWP::UserAgent->new;
 
+    if ( defined $args{ssl_opts} ) {
+        require LWP::Protocol::https;
+        $ua->ssl_opts( %{$args{ssl_opts}} );
+    }
+
     my $res = $ua->request($req);
-    die "no metadata" unless $res->is_success;
+    if (! $res->is_success ) {
+        my $msg = "no metadata: " . $res->code . ": " . $res->message . "\n";
+        die $msg;
+    }
+
     my $xml = $res->content;
 
     return $class->new_from_xml(xml => $xml, cacert => $args{cacert});
