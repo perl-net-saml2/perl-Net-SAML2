@@ -13,6 +13,9 @@ Net::SAML2 - SAML bindings and protocol implementation
 
 =head1 SYNOPSIS
 
+  See TUTORIAL.md for implementation documentation and
+  t/12-full-client.t for a pseudo implementation following the tutorial
+
   # generate a redirect off to the IdP:
 
         my $idp = Net::SAML2::IdP->new($IDP);
