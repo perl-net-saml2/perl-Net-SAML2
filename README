@@ -2,7 +2,7 @@ NAME
     Net::SAML2
 
 VERSION
-    version 0.39
+    version 0.40
 
 SYNOPSIS
       See TUTORIAL.md for implementation documentation and

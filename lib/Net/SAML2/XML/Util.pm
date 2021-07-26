@@ -9,7 +9,7 @@ use XML::LibXML;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-$VERSION = '0.39';
+$VERSION = '0.40';
 
 # We are exporting functions
 use base qw/Exporter/;
