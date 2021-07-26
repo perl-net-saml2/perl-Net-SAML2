@@ -8,7 +8,16 @@ Net::SAML2::IdP - SAML Identity Provider object
 
 =head1 SYNOPSIS
 
-  my $idp = Net::SAML2::IdP->new_from_url( url => $url, cacert => $cacert );
+  my $idp = Net::SAML2::IdP->new_from_url(
+        url => $url,
+        cacert => $cacert,
+        ssl_opts =>         # Optional options supported by LWP::Protocol::https
+            {
+                SSL_ca_file     => '/your/directory/cacert.pem',
+                SSL_ca_path     => '/etc/ssl/certs',
+                verify_hostname => 1,
+            }
+        );
   my $sso_url = $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');
 
 =head1 METHODS
@@ -43,11 +52,11 @@ has 'certs'    => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
 has 'formats'  => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
 has 'default_format' => (isa => 'Str', is => 'ro', required => 1);
 
-=head2 new_from_url( url => $url, cacert => $cacert )
+=head2 new_from_url( url => $url, cacert => $cacert, ssl_opts => {} )
 
 Create an IdP object by retrieving the metadata at the given URL.
 
-Dies if the metadata can't be retrieved.
+Dies if the metadata can't be retrieved with reason.
 
 =cut
 

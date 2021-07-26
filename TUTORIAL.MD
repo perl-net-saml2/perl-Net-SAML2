@@ -17,7 +17,14 @@ The metadata is provided by the Identity Provider (IdP).  Net::SAML2:IdP->new_fr
 ```
     my $idp = Net::SAML2::IdP->new_from_url(
         url => $metadata,	# URL where the xml is located
-        cacert => $cacert	# Filename of the Identity Providers CACert
+        cacert => $cacert,	# Filename of the Identity Providers CACert
+        ssl_opts =>         # Optional options supported by LWP::Protocol::https
+            {
+                SSL_ca_file     => '/your/directory/cacert.pem',
+                SSL_ca_path     => '/etc/ssl/certs',
+                verify_hostname => 1,
+            }
+
     );
 ```
 
