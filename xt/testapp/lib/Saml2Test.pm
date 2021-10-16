@@ -143,6 +143,33 @@ get '/sls-redirect-response' => sub {
     return "Redirected\n";
 };
 
+post '/sls-post-response' => sub {
+    my $idp = _idp();
+    my $idp_cert = $idp->cert('signing');
+
+    my $sp = _sp();
+    my $post = $sp->post_binding(cacert => $idp_cert);
+
+    my $ret = $post->handle_response(
+        params->{SAMLResponse},
+    );
+
+    if ($ret) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => decode_base64(params->{SAMLResponse})
+        );
+        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            print STDERR "Logout Success Status\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
+
+    redirect '/', 302;
+    return "Redirected\n";
+};
+
 get '/metadata.xml' => sub {
     my $sp = _sp();
     return $sp->metadata;
