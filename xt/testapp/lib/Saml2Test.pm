@@ -183,11 +183,11 @@ get '/metadata.xml' => sub {
 
 sub _sp {
     my $sp = Net::SAML2::SP->new(
-        id     => 'http://localhost:3000',
-        url    => 'http://localhost:3000',
-        cert   => 'sign-nopw-cert.pem',
-        key    => 'sign-nopw-cert.pem',
-        cacert => 'saml_cacert.pem',
+        id     => config->{issuer},
+        url    => config->{url},
+        cert   => config->{cert},
+        key    => config->{key},
+        cacert => config->{cacert},
 		
         org_name	 => 'Saml2Test',
         org_display_name => 'Saml2Test app for Net::SAML2',
