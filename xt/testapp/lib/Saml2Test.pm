@@ -189,7 +189,7 @@ sub _sp {
         key    => config->{key},
         cacert => config->{cacert},
 		
-        org_name	 => 'Saml2Test',
+        org_name	 => 'Net::SAML2 Saml2Test',
         org_display_name => 'Saml2Test app for Net::SAML2',
         org_contact	 => 'saml2test@example.com',
     );
