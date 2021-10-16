@@ -27,7 +27,7 @@ get '/login' => sub {
     my $idp = _idp();
     my $sp = _sp();
     my $authnreq = $sp->authn_request(
-        $idp->entityid,
+        $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         $idp->format, # default format.
     )->as_xml;
 	
@@ -47,7 +47,10 @@ get '/logout-redirect' => sub {
     my $sp = _sp();
 
     my $logoutreq = $sp->logout_request(
-        $idp->entityid, params->{nameid}, $idp->format, params->{session}
+        $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        params->{nameid},
+        $idp->format,
+        params->{session}
     )->as_xml;
 
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLRequest');
