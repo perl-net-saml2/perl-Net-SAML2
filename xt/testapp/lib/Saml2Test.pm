@@ -177,6 +177,7 @@ post '/sls-post-response' => sub {
 };
 
 get '/metadata.xml' => sub {
+    content_type 'application/octet-stream';
     my $sp = _sp();
     return $sp->metadata;
 };
