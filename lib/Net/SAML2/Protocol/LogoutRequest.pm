@@ -47,7 +47,8 @@ SP's identity URI
 
 =item B<destination>
 
-IdP's identity URI
+IdP's identity URI this is required for a signed message but likely should be
+sent regardless
 
 =back
 
@@ -56,6 +57,7 @@ IdP's identity URI
 has 'session'       => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'nameid'        => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has 'destination'   => (isa => NonEmptySimpleStr, is => 'ro', required => 0);
 
 =head2 new_from_xml( ... )
 
@@ -112,6 +114,7 @@ sub as_xml {
             $samlp,
             { ID => $self->id,
               IssueInstant => $self->issue_instant,
+              Destination => $self->destination,
               Version => '2.0' },
             $x->Issuer(
                 $saml,

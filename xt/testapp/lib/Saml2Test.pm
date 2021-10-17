@@ -3,7 +3,7 @@ package                         # PAUSE hide
 use strict;
 use warnings;
 
-=head1 NAME 
+=head1 NAME
 
 Saml2Test - test Dancer app for Net::SAML2
 
@@ -16,6 +16,7 @@ Demo app to show use of Net::SAML2 as an SP.
 use Dancer ':syntax';
 use Net::SAML2;
 use MIME::Base64 qw/ decode_base64 /;
+use URI::Encode;
 
 our $VERSION = '0.1';
 
@@ -27,7 +28,7 @@ get '/login' => sub {
     my $idp = _idp();
     my $sp = _sp();
     my $authnreq = $sp->authn_request(
-        $idp->entityid,
+        $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         $idp->format, # default format.
     )->as_xml;
 	
@@ -47,7 +48,10 @@ get '/logout-redirect' => sub {
     my $sp = _sp();
 
     my $logoutreq = $sp->logout_request(
-        $idp->entityid, params->{nameid}, $idp->format, params->{session}
+        $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        params->{nameid},
+        $idp->format,
+        params->{session}
     )->as_xml;
 
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLRequest');
@@ -88,7 +92,7 @@ post '/consumer-post' => sub {
     my $ret = $post->handle_response(
         params->{SAMLResponse}
     );
-        
+
     if ($ret) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             xml => decode_base64(params->{SAMLResponse})
@@ -123,7 +127,7 @@ get '/consumer-artifact' => sub {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             xml => $response
         );
-                
+
         template 'user', { assertion => $assertion };
     }
     else {
@@ -137,26 +141,56 @@ get '/sls-redirect-response' => sub {
 
     my $sp = _sp();
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLResponse');
-    my ($response, $relaystate) = $redirect->verify(request->request_uri);
-        
+
+    my $uri     = URI::Encode->new( { encode_reserved => 0 } );
+    my ($response, $relaystate) = $redirect->verify($uri->decode(request->request_uri));
+
     redirect $relaystate || '/', 302;
     return "Redirected\n";
 };
 
+post '/sls-post-response' => sub {
+    my $idp = _idp();
+    my $idp_cert = $idp->cert('signing');
+
+    my $sp = _sp();
+    my $post = $sp->post_binding(cacert => $idp_cert);
+
+    my $ret = $post->handle_response(
+        params->{SAMLResponse},
+    );
+
+    if ($ret) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => decode_base64(params->{SAMLResponse})
+        );
+        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            print STDERR "Logout Success Status\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
+
+    redirect '/', 302;
+    return "Redirected\n";
+};
+
 get '/metadata.xml' => sub {
+    content_type 'application/octet-stream';
     my $sp = _sp();
     return $sp->metadata;
 };
 
 sub _sp {
     my $sp = Net::SAML2::SP->new(
-        id     => 'http://localhost:3000',
-        url    => 'http://localhost:3000',
-        cert   => 'sign-nopw-cert.pem',
-        key    => 'sign-nopw-cert.pem',
-        cacert => 'saml_cacert.pem',
+        id     => config->{issuer},
+        url    => config->{url},
+        cert   => config->{cert},
+        key    => config->{key},
+        cacert => config->{cacert},
 		
-        org_name	 => 'Saml2Test',
+        org_name	 => 'Net::SAML2 Saml2Test',
         org_display_name => 'Saml2Test app for Net::SAML2',
         org_contact	 => 'saml2test@example.com',
     );

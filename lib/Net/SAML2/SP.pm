@@ -339,6 +339,11 @@ sub metadata {
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                   Location  => $self->url . '/saml/sls-redirect-response' },
             ),
+            $x->SingleLogoutService(
+                $md,
+                { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+                  Location  => $self->url . '/saml/sls-post-response' },
+            ),
             $x->AssertionConsumerService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',

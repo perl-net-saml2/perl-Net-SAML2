@@ -43,7 +43,7 @@ $form = $mech->form_number(1);
 ok($form);
 ok(qr!/consumer-post!, $form->action);
 
-$params = { 
+$params = {
 	SAMLResponse => $form->param('SAMLResponse'),
 };
 

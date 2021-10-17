@@ -17,6 +17,7 @@ Net::SAML2::Binding::Redirect
     url     => $sso_url,							# Service Provider Single Sign Out URL
     param   => 'SAMLRequest' OR 'SAMLResponse',		# Type of request
     cert    => $idp->cert('signing')				# Identity Provider (IdP) certificate
+    sig_hash => 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'  # Signature to sign request
   );
 
   my $url = $redirect->sign($authnreq);
@@ -64,6 +65,16 @@ IdP's SSO (Single Sign Out) service url for the Redirect binding
 
 query param name to use (SAMLRequest, SAMLResponse)
 
+=item B<sig_hash>
+
+RSA hash to use to sign request
+
+Supported:
+
+sha1, sha224, sha256, sha384, sha512
+
+sha1 is current default but will change by version 44
+
 =back
 
 =cut
@@ -72,6 +83,7 @@ has 'key'   => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'  => (isa => 'Str', is => 'ro', required => 1);
 has 'url'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'param' => (isa => 'Str', is => 'ro', required => 1);
+has 'sig_hash' => (isa => 'Str', is => 'ro', required => 0);
 
 =head2 sign( $request, $relaystate )
 
@@ -96,10 +108,29 @@ sub sign {
     my $u = URI->new($self->url);
     $u->query_param($self->param, $req);
     $u->query_param('RelayState', $relaystate) if defined $relaystate;
-    $u->query_param('SigAlg', 'http://www.w3.org/2000/09/xmldsig#rsa-sha1');
 
     my $key_string = read_file($self->key);
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
+
+    if ( exists $self->{ sig_hash } && grep { $_ eq $self->{ sig_hash } } ('sha224', 'sha256', 'sha384', 'sha512'))
+    {
+        if ($self->{ sig_hash } eq 'sha224') {
+            $rsa_priv->use_sha224_hash;
+        } elsif ($self->{ sig_hash } eq 'sha256') {
+            $rsa_priv->use_sha256_hash;
+        } elsif ($self->{ sig_hash } eq 'sha384') {
+            $rsa_priv->use_sha384_hash;
+        } elsif ($self->{ sig_hash } eq 'sha512') {
+            $rsa_priv->use_sha512_hash;
+        } else {
+            die "Unsupported Signing Hash";
+        }
+        $u->query_param('SigAlg', 'http://www.w3.org/2001/04/xmldsig-more#rsa-' . $self->{ sig_hash });
+    }
+    else { #$self->{ sig_hash } eq 'sha1' or something unsupported
+        $rsa_priv->use_sha1_hash;
+        $u->query_param('SigAlg', 'http://www.w3.org/2000/09/xmldsig#rsa-sha1');
+    }
 
     my $to_sign = $u->query;
     my $sig = encode_base64($rsa_priv->sign($to_sign), '');
@@ -123,11 +154,23 @@ sub verify {
 
     # verify the response
     my $sigalg = $u->query_param('SigAlg');
-    die "can't verify '$sigalg' signatures"
-         unless $sigalg eq 'http://www.w3.org/2000/09/xmldsig#rsa-sha1';
 
     my $cert = Crypt::OpenSSL::X509->new_from_string($self->cert);
     my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
+
+    if ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256') {
+        $rsa_pub->use_sha256_hash;
+    } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224') {
+        $rsa_pub->use_sha224_hash;
+    } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384') {
+        $rsa_pub->use_sha384_hash;
+    } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512') {
+        $rsa_pub->use_sha512_hash;
+    } elsif ($sigalg eq 'http://www.w3.org/2000/09/xmldsig#rsa-sha1') {
+        $rsa_pub->use_sha1_hash;
+    } else {
+        die "Unsupported Signature Algorithim: $sigalg";
+    }
 
     my $sig = decode_base64($u->query_param_delete('Signature'));
     my $signed = $u->query;
