@@ -98,6 +98,8 @@ Identity Providers (IdPs).  It has been tested against:
 
 =item Auth0 (requires Net::SAML2 >=0.39)
 
+=item PingIdentity
+
 =back
 
 =head1 MAJOR CAVEATS

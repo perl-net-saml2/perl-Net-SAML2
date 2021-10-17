@@ -80,6 +80,7 @@ DESCRIPTION
     Mircosoft ADFS
     Keycloak
     Auth0 (requires Net::SAML2 >=0.39)
+    PingIdentity
 
 NAME
     Net::SAML2 - SAML bindings and protocol implementation
