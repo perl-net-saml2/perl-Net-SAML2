@@ -3,7 +3,7 @@ package                         # PAUSE hide
 use strict;
 use warnings;
 
-=head1 NAME 
+=head1 NAME
 
 Saml2Test - test Dancer app for Net::SAML2
 
@@ -92,7 +92,7 @@ post '/consumer-post' => sub {
     my $ret = $post->handle_response(
         params->{SAMLResponse}
     );
-        
+
     if ($ret) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             xml => decode_base64(params->{SAMLResponse})
@@ -127,7 +127,7 @@ get '/consumer-artifact' => sub {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             xml => $response
         );
-                
+
         template 'user', { assertion => $assertion };
     }
     else {
