@@ -6,6 +6,10 @@ use warnings;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
 
+our $VERSION = '0.40';
+
+# ABSTRACT: Net::SAML2::Binding::Redirect - HTTP Redirect binding for SAML
+
 =head1 NAME
 
 Net::SAML2::Binding::Redirect

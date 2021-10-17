@@ -3,6 +3,8 @@ package Net::SAML2::XML::Sig;
 use strict;
 use warnings;
 
+# ABSTRACT: Net::SAML2::XML::Sig - A toolkit to help sign and verify XML Digital Signatures
+
 =head1 NAME
 
 Net::SAML2::XML::Sig - A toolkit to help sign and verify XML Digital Signatures.
@@ -36,7 +38,7 @@ use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
 # Based on XML::Sig VERSION = '0.47';
-$VERSION = '0.40';
+our $VERSION = '0.40';
 
 use base qw(Class::Accessor);
 Net::SAML2::XML::Sig->mk_accessors(qw(key));

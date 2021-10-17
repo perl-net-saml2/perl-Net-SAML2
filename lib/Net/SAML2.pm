@@ -4,6 +4,8 @@ use warnings;
 
 require 5.008_001;
 
+# ABSTRACT: SAML2 bindings and protocol implementation
+
 our $VERSION = '0.40';
 $VERSION = eval {$VERSION};
 

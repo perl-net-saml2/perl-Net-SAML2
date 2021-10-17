@@ -5,6 +5,10 @@ use warnings;
 
 use Moose;
 
+our $VERSION = '0.40';
+
+# ABSTRACT: Net::SAML2::Binding::POST - HTTP POST binding for SAML
+
 =head1 NAME
 
 Net::SAML2::Binding::POST - HTTP POST binding for SAML2

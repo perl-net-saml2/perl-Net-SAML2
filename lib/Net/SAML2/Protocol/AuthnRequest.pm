@@ -10,6 +10,12 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 AuthnRequest object
 
+our $VERSION = '0.40';
+
+=head1 NAME
+
+Net::SAML2::Protocol::AuthnRequest - SAML2 AuthnRequest object
+
 =head1 SYNOPSIS
 
   my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
