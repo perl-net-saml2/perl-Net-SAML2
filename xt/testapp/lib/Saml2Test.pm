@@ -16,7 +16,7 @@ Demo app to show use of Net::SAML2 as an SP.
 use Dancer ':syntax';
 use Net::SAML2;
 use MIME::Base64 qw/ decode_base64 /;
-use URI::Encode;
+use URI::Encode qw(uri_encode uri_decode);
 
 our $VERSION = '0.1';
 
@@ -142,8 +142,9 @@ get '/sls-redirect-response' => sub {
     my $sp = _sp();
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLResponse');
 
-    my $uri     = URI::Encode->new( { encode_reserved => 0 } );
-    my ($response, $relaystate) = $redirect->verify($uri->decode(request->request_uri));
+    my $decoded = uri_decode(request->uri);
+
+    my ($response, $relaystate) = $redirect->verify($decoded);
 
     redirect $relaystate || '/', 302;
     return "Redirected\n";
