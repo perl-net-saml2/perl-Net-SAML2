@@ -47,6 +47,11 @@ get '/logout-redirect' => sub {
     my $idp = _idp();
     my $sp = _sp();
 
+    if ( ! defined $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect') ) {
+        redirect "/", 302;
+        return; # "Redirected\n";
+    }
+
     my $logoutreq = $sp->logout_request(
         $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         params->{nameid},
@@ -64,6 +69,12 @@ get '/logout-redirect' => sub {
 get '/logout-soap' => sub {
     my $idp = _idp();
     my $slo_url = $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
+
+    if ( ! defined $slo_url ) {
+        redirect "/", 302;
+        return "Redirected\n";
+    }
+
     my $idp_cert = $idp->cert('signing');
 
     my $sp = _sp();
