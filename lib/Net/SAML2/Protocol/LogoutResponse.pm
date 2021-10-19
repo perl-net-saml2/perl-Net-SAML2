@@ -5,6 +5,10 @@ use Net::SAML2::XML::Util qw/ no_comments /;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
+# ABSTRACT: SAML2 LogoutResponse Protocol object
+
+our $VERSION = '0.40';
+
 =head1 NAME
 
 Net::SAML2::Protocol::LogoutResponse - the SAML2 LogoutResponse object

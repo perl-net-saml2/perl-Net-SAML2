@@ -16,7 +16,7 @@ Demo app to show use of Net::SAML2 as an SP.
 use Dancer ':syntax';
 use Net::SAML2;
 use MIME::Base64 qw/ decode_base64 /;
-use URI::Encode;
+use URI::Encode qw(uri_encode uri_decode);
 
 our $VERSION = '0.1';
 
@@ -47,6 +47,11 @@ get '/logout-redirect' => sub {
     my $idp = _idp();
     my $sp = _sp();
 
+    if ( ! defined $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect') ) {
+        redirect "/", 302;
+        return; # "Redirected\n";
+    }
+
     my $logoutreq = $sp->logout_request(
         $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         params->{nameid},
@@ -64,6 +69,12 @@ get '/logout-redirect' => sub {
 get '/logout-soap' => sub {
     my $idp = _idp();
     my $slo_url = $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
+
+    if ( ! defined $slo_url ) {
+        redirect "/", 302;
+        return "Redirected\n";
+    }
+
     my $idp_cert = $idp->cert('signing');
 
     my $sp = _sp();
@@ -142,8 +153,9 @@ get '/sls-redirect-response' => sub {
     my $sp = _sp();
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLResponse');
 
-    my $uri     = URI::Encode->new( { encode_reserved => 0 } );
-    my ($response, $relaystate) = $redirect->verify($uri->decode(request->request_uri));
+    my $decoded = uri_decode(request->uri);
+
+    my ($response, $relaystate) = $redirect->verify($decoded);
 
     redirect $relaystate || '/', 302;
     return "Redirected\n";

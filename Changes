@@ -1,5 +1,38 @@
 Revision history for Perl extension Net::SAML2.
 
+{{$NEXT}}
+
+  [Significant Changes since 0.40]
+
+  - COMPATABILITY WARNING: version 0.44 will likely make sha256 the default
+  - HTTP-Redirect now supports signing and verifying with more than rsa-sha1
+  - include HTTP-Post for SingleLogoutService in generated metadata
+  - Destination missing in LogoutRequest
+  - Added PingIdentity to the tested IdPs
+  - Most other changes related to the testapp Saml2Test (in git repo)
+
+  [Change Log]
+  - f694501 testapp: prevent app error if the are no slo_urls
+  - c2c9e4b testapp: revert previous change to sls-redirect-response
+  - c9532b3 Fixes #30 - Modules withou version and cleanup missing Abstract
+  - 9c5585b Merge pull request #37 from timlegge/testapp
+  - c51ba51 Tested compatiblity against PingIdentity
+  - b4d3fe9 Remove end of line spaces
+  - 41ef582 testapp: provide documentation on how to use the Saml2Test application
+  - 5a8ebb7 Fixes #36 testapp: metadata is rendered as text by the browser
+  - f1e2eca testapp: add .gitignore file testapp
+  - ca4b8bd Fixes #35: Metadata does not include HTTP-Post for SingleLogoutService
+  - 64008da testapp: Better org_name
+  - 22073bb Update certificates with 10 year expiration
+  - f215c40 testapp: add lightttpd.conf to proxy https traffic to testapp on port 3000
+  - f92ba77 testapp: provide lighttpd config to deliver a metatdata.xml file
+  - 2d671a4 Fixes #32: HTTP-Redirect should support more than sha1
+  - 5e2425a testapp: Make required settings configurable
+  - f70b0a5 Fixes #34: testapp: Dancer request_uri is not decoded
+  - 8c0d048 testapp: Fixes #33 Destination is not properly assigned
+  - 6e0a685 Fixes #31 Destination missing in LogoutRequest
+  - 652c763 testapp: support post for LogoutResponse
+
 0.40 - 2021-07-26
 
   [Significant Changes since 0.38]
