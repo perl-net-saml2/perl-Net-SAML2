@@ -2,6 +2,8 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.41 -- Thu Oct 21 17:59:37 ADT 2021
+
   [Significant Changes since 0.40]
 
   - COMPATABILITY WARNING: version 0.44 will likely make sha256 the default
