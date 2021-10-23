@@ -201,10 +201,16 @@ sub _sp {
         cert   => config->{cert},
         key    => config->{key},
         cacert => config->{cacert},
+        slo_url_soap => config->{slo_url_soap},
+        slo_url_redirect => config->{slo_url_redirect},
+        slo_url_post => config->{slo_url_post},
+        acs_url_post => config->{acs_url_post},
+        acs_url_artifact => config->{acs_url_artifact},
+        error_url => config->{error_url},
 		
-        org_name	 => 'Net::SAML2 Saml2Test',
-        org_display_name => 'Saml2Test app for Net::SAML2',
-        org_contact	 => 'saml2test@example.com',
+        org_name	 => config->{org_name},
+        org_display_name => config->{org_display_name},
+        org_contact	 => config->{org_contact},
     );
     return $sp;
 }	
