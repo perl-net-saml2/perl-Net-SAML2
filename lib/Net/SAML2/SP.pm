@@ -257,8 +257,9 @@ sub slo_redirect_binding {
         cert  => $idp->cert('signing'),
         key   => $self->key,
         param => $param,
+        sls_force_lcase_url_encoding => $idp->{sls_force_lcase_url_encoding},
+        sls_double_encoded_response => $idp->{sls_double_encoded_response},
     );
-
     return $redirect;
 }
 

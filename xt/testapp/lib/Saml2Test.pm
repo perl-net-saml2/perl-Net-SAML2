@@ -16,7 +16,6 @@ Demo app to show use of Net::SAML2 as an SP.
 use Dancer ':syntax';
 use Net::SAML2;
 use MIME::Base64 qw/ decode_base64 /;
-use URI::Encode qw(uri_encode uri_decode);
 
 our $VERSION = '0.1';
 
@@ -31,7 +30,7 @@ get '/login' => sub {
         $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         $idp->format, # default format.
     )->as_xml;
-	
+
     my $redirect = $sp->sso_redirect_binding($idp, 'SAMLRequest');
     my $url = $redirect->sign($authnreq);
     redirect $url, 302;
@@ -153,10 +152,19 @@ get '/sls-redirect-response' => sub {
     my $sp = _sp();
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLResponse');
 
-    my $decoded = uri_decode(request->uri);
+    my ($response, $relaystate) = $redirect->verify(request->uri);
 
-    my ($response, $relaystate) = $redirect->verify($decoded);
-
+    if ($response) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => $response
+        );
+        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
     redirect $relaystate || '/', 302;
     return "Redirected\n";
 };
@@ -177,7 +185,7 @@ post '/sls-post-response' => sub {
             xml => decode_base64(params->{SAMLResponse})
         );
         if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
-            print STDERR "Logout Success Status\n";
+            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
         }
     }
     else {
@@ -213,12 +221,14 @@ sub _sp {
         org_contact	 => config->{org_contact},
     );
     return $sp;
-}	
+}
 
 sub _idp {
     my $idp = Net::SAML2::IdP->new_from_url(
         url    => config->{idp},
-        cacert => 'saml_cacert.pem'
+        cacert => 'saml_cacert.pem',
+        sls_force_lcase_url_encoding => config->{sls_force_lcase_url_encoding},
+        sls_double_encoded_response => config->{sls_double_encoded_response}
     );
     return $idp;
 }
