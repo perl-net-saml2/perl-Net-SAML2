@@ -98,6 +98,13 @@ has 'cert'   => (isa => 'Str', is => 'ro', required => 1);
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
 
+has 'error_url'        => (isa => 'Str', is => 'ro', required => 1);
+has 'slo_url_soap'     => (isa => 'Str', is => 'ro', required => 1);
+has 'slo_url_redirect' => (isa => 'Str', is => 'ro', required => 1);
+has 'slo_url_post'     => (isa => 'Str', is => 'ro', required => 1);
+has 'acs_url_post'     => (isa => 'Str', is => 'ro', required => 1);
+has 'acs_url_artifact' => (isa => 'Str', is => 'ro', required => 1);
+
 has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
 has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
 has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
@@ -304,11 +311,13 @@ Returns the metadata XML document for this SP.
 sub metadata {
     my ($self) = @_;
 
+    use Net::SAML2::Util qw/generate_id/;
+
     my $x = XML::Generator->new(':pretty', conformance => 'loose');
     my $md = ['md' => 'urn:oasis:names:tc:SAML:2.0:metadata'];
     my $ds = ['ds' => 'http://www.w3.org/2000/09/xmldsig#'];
 
-    $x->EntityDescriptor(
+    my $metadata = $x->EntityDescriptor(
         $md,
         {
             entityID => $self->id },
@@ -316,8 +325,9 @@ sub metadata {
             $md,
             { AuthnRequestsSigned => defined($self->authnreq_signed) ? $self->authnreq_signed : '1',
               WantAssertionsSigned => defined($self->want_assertions_signed) ? $self->want_assertions_signed : '1',
-              errorURL => $self->url . '/saml/error',
-              protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol' },
+              errorURL => $self->url . $self->error_url,
+              protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol',
+              ID => generate_id()},
             $x->KeyDescriptor(
                 $md,
                 {
@@ -336,29 +346,29 @@ sub metadata {
             $x->SingleLogoutService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
-                  Location  => $self->url . '/saml/slo-soap' },
+                  Location  => $self->url . $self->slo_url_soap },
             ),
             $x->SingleLogoutService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-                  Location  => $self->url . '/saml/sls-redirect-response' },
+                  Location  => $self->url . $self->slo_url_redirect },
             ),
             $x->SingleLogoutService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-                  Location  => $self->url . '/saml/sls-post-response' },
+                  Location  => $self->url . $self->slo_url_post },
             ),
             $x->AssertionConsumerService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-                  Location => $self->url . '/saml/consumer-post',
+                  Location => $self->url . $self->acs_url_post,
                   index => '1',
                   isDefault => 'true' },
             ),
             $x->AssertionConsumerService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
-                  Location => $self->url . '/saml/consumer-artifact',
+                  Location => $self->url . $self->acs_url_artifact,
                   index => '2',
                   isDefault => 'false' },
             ),
@@ -398,6 +408,21 @@ sub metadata {
             ),
         )
     );
+
+    use Net::SAML2::XML::Sig;
+
+    my $signer = Net::SAML2::XML::Sig->new({
+                        key => $self->key,
+                        cert => $self->cert,
+                        sig_hash => 'sha256',
+                        digest_hash => 'sha256',
+                        x509 => 1,
+                });
+
+    # create a signature
+    my $signed = $signer->sign($metadata);
+
+    return $signed;
 }
 
 __PACKAGE__->meta->make_immutable;
