@@ -28,6 +28,7 @@ requires "MooseX::Types::Common::String" => "0";
 requires "MooseX::Types::DateTime" => "0";
 requires "MooseX::Types::URI" => "0";
 requires "URI" => "0";
+requires "URI::Encode" => "0";
 requires "URI::QueryParam" => "0";
 requires "XML::Generator" => "0";
 requires "XML::LibXML" => "0";
