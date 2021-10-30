@@ -2,6 +2,27 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.42 -- Fri Oct 29 22:35:53 ADT 2021
+
+  [Significant Changes since 0.40]
+  - COMPATABILITY WARNING: version 0.44 will likely make sha256 the default
+  - HTTP-Redirect now supports signing and verifying with more than rsa-sha1
+  - include HTTP-Post for SingleLogoutService in generated metadata
+  - Destination missing in LogoutRequest
+  - Added PingIdentity to the tested IdPs
+  - Most other changes related to the testapp Saml2Test (in git repo)
+  - Fix issue with LogoutResponse on HTTP-Redirect for some IdP (Azure, Ping)
+  - Make SP metadata.xml more configuable and sign
+
+  [Change Log]
+  - b9d4786 Merge pull request #44 from timlegge/azure-lowercase
+  - 4f2a40c Update for latest build
+  - ffd4188 Add issuer to make testing between multiple IdPs clearer
+  - 1049084 Fix issues with LogoutResponse
+  - 378c815 Merge pull request #43 from timlegge/metadata
+  - bfe0966 Sign Metadata
+  - 1cd0003 Net::SAML2::SP configurable values for metadata
+
 0.41 -- Thu Oct 21 17:59:37 ADT 2021
 
   [Significant Changes since 0.40]
@@ -14,9 +35,12 @@ Revision history for Perl extension Net::SAML2.
   - Most other changes related to the testapp Saml2Test (in git repo)
 
   [Change Log]
-  - f694501 testapp: prevent app error if the are no slo_urls
-  - c2c9e4b testapp: revert previous change to sls-redirect-response
-  - c9532b3 Fixes #30 - Modules withou version and cleanup missing Abstract
+  - 07b68dd v0.41
+  - c4ec6e2 Merge pull request #38 from timlegge/dist-changes
+  - 54e612e Improve packaging and update changes
+  - 1d894a9 testapp: prevent app error if the are no slo_urls
+  - d6e2ab9 testapp: Change to decoding in sls-redirect-response
+  - 23240d8 Fixes #30 - Modules withou version and cleanup missing Abstract
   - 9c5585b Merge pull request #37 from timlegge/testapp
   - c51ba51 Tested compatiblity against PingIdentity
   - b4d3fe9 Remove end of line spaces
