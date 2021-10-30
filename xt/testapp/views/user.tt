@@ -14,6 +14,10 @@
     <th>Value</th>
   </tr>
   <tr>
+    <td>Issuer</td>
+    <td><% assertion.issuer %></td>
+  </tr>
+  <tr>
     <td>DN</td>
     <td><% assertion.attributes.DN %></td>
   </tr>
