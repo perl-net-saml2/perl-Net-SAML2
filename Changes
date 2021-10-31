@@ -2,6 +2,22 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.43 -- Sat Oct 30 23:09:24 ADT 2021
+
+  [Release Version of 0.42]
+
+  - No changes
+
+  [Significant Changes since 0.40]
+  - COMPATABILITY WARNING: version 0.44 will likely make sha256 the default
+  - HTTP-Redirect now supports signing and verifying with more than rsa-sha1
+  - include HTTP-Post for SingleLogoutService in generated metadata
+  - Destination missing in LogoutRequest
+  - Added PingIdentity to the tested IdPs
+  - Most other changes related to the testapp Saml2Test (in git repo)
+  - Fix issue with LogoutResponse on HTTP-Redirect for some IdP (Azure, Ping)
+  - Make SP metadata.xml more configuable and sign
+
 0.42 -- Fri Oct 29 22:35:53 ADT 2021
 
   [Significant Changes since 0.40]
