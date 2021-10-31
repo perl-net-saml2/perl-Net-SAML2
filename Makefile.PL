@@ -11,10 +11,10 @@ my %WriteMakefileArgs = (
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0
   },
-  "DISTNAME" => "Net-Saml2",
+  "DISTNAME" => "Net-SAML2",
   "LICENSE" => "perl",
   "MIN_PERL_VERSION" => "5.008001",
-  "NAME" => "Net::Saml2",
+  "NAME" => "Net::SAML2",
   "PREREQ_PM" => {
     "Carp" => 0,
     "Class::Accessor" => 0,
@@ -71,7 +71,7 @@ my %WriteMakefileArgs = (
     "URI::URL" => 0,
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.42",
+  "VERSION" => "0.44",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
