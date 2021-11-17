@@ -1,6 +1,6 @@
-package Net::SAML2;
 use strict;
 use warnings;
+package Net::SAML2;
 
 require 5.008_001;
 

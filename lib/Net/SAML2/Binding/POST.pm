@@ -1,7 +1,6 @@
-package Net::SAML2::Binding::POST;
-
 use strict;
 use warnings;
+package Net::SAML2::Binding::POST;
 
 use Moose;
 

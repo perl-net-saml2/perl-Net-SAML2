@@ -1,7 +1,6 @@
-package Net::SAML2::XML::Sig;
-
 use strict;
 use warnings;
+package Net::SAML2::XML::Sig;
 
 # ABSTRACT: Net::SAML2::XML::Sig - A toolkit to help sign and verify XML Digital Signatures
 
