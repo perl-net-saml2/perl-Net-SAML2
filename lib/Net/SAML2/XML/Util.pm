@@ -1,7 +1,6 @@
-package Net::SAML2::XML::Util;
-
 use strict;
 use warnings;
+package Net::SAML2::XML::Util;
 
 use XML::LibXML;
 

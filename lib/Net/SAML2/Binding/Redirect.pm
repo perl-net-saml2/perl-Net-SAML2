@@ -1,7 +1,6 @@
-package Net::SAML2::Binding::Redirect;
-
 use strict;
 use warnings;
+package Net::SAML2::Binding::Redirect;
 
 use Moose;
 use MooseX::Types::URI qw/ Uri /;

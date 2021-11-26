@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 package Net::SAML2::Protocol::LogoutRequest;
 use Moose;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;

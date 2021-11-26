@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 package Net::SAML2::Protocol::Assertion;
 use Moose;
 use MooseX::Types::DateTime qw/ DateTime /;

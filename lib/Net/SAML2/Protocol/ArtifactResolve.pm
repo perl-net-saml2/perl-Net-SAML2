@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 package Net::SAML2::Protocol::ArtifactResolve;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;

@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 package Net::SAML2::Binding::SOAP;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
