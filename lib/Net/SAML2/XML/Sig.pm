@@ -5,5 +5,6 @@
 # and Net::SAML2 have a common maintainer and the need to keep it
 # embedded no longer exists.  Indeed keeping the versions in sync
 # has become more bother than it is worth.
-
+use strict;
+use warnings;
 package Net::SAML2::XML::Sig; use base qw(XML::Sig); 1;
