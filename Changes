@@ -2,6 +2,14 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.47 -- Sun Dec 05 15:07:51 AST 2021
+
+  - e580299 Update version number
+  - 837aa20 add strict and warnings to quiet author critic
+  - 2ff8aeb Merge pull request #51 from timlegge/move-to-xml-sig
+  - 3634910 test of properly handling comments in nameid and email
+  - 4c20821 Moving to XML::Sig - keeping them in sync is a pain
+
 0.46 -- Thu Nov 25 21:53:52 AST 2021
 
   - dd9776e Merge pull request #50 from timlegge/issue-38
