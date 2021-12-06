@@ -8,3 +8,7 @@
 use strict;
 use warnings;
 package Net::SAML2::XML::Sig; use base qw(XML::Sig); 1;
+
+our $VERSION = '0.47';
+
+# ABSTRACT: Net::SAML2 subclass of XML::Sig
