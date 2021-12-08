@@ -2,6 +2,16 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.49 -- Tue Dec 07 21:22:58 AST 2021
+
+  [Significant Changes since 0.46]
+  - Net::SAML2::XML::Sig is now a subclass of XML::Sig
+  - XML::Sig 0.52 is now a dependency
+
+  - 6e76482 Simplify dist.ini and add SignReleaseNotes
+  - e96982c Bump Version
+  - 3fc63f5 v0.48
+
 0.48 -- Mon Dec 06 16:53:49 AST 2021
 
   - 8589b4a Update Version
