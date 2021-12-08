@@ -6,7 +6,7 @@ require 5.008_001;
 
 # ABSTRACT: SAML2 bindings and protocol implementation
 
-our $VERSION = '0.47';
+our $VERSION = '0.49';
 $VERSION = eval {$VERSION};
 
 =head1 NAME

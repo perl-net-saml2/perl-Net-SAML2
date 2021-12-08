@@ -9,7 +9,7 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 LogoutResponse Protocol object
 
-our $VERSION = '0.47';
+our $VERSION = '0.49';
 
 =head1 NAME
 
