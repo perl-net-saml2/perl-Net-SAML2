@@ -38,7 +38,7 @@ use URI;
 use URI::QueryParam;
 use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::X509;
-use File::Slurp qw/ read_file /;
+use File::Slurper qw/ read_text /;
 use URI::Encode qw/uri_decode/;
 
 =head2 new( ... )
@@ -127,7 +127,7 @@ sub sign {
     $u->query_param($self->param, $req);
     $u->query_param('RelayState', $relaystate) if defined $relaystate;
 
-    my $key_string = read_file($self->key);
+    my $key_string = read_text($self->key);
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
 
     if ( exists $self->{ sig_hash } && grep { $_ eq $self->{ sig_hash } } ('sha224', 'sha256', 'sha384', 'sha512'))
