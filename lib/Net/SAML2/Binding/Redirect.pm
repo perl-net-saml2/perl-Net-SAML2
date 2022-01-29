@@ -180,6 +180,19 @@ sub verify {
     my $saml_request;
     my $sig = $u->query_param_delete('Signature');
 
+    # During the verify the only query parameters that should be in the query are
+    # 'SAMLRequest', 'RelayState', 'Sig', 'SigAlg' the other parameter values are
+    # deleted from the URI query that was created from the URL that was passed
+    # to the verify function
+    my @signed_params = ('SAMLRequest', 'RelayState', 'Sig', 'SigAlg');
+
+    for my $key ($u->query_param) {
+        if (grep /$key/, @signed_params ) {
+            next;
+        }
+        $u->query_param_delete($key);
+    }
+
     # Some IdPs (PingIdentity) seem to double encode the LogoutResponse URL
     if (defined $self->sls_double_encoded_response and $self->sls_double_encoded_response == 1) {
         #if ($sigalg =~ m/%/) {
