@@ -38,7 +38,7 @@ use URI;
 use URI::QueryParam;
 use Crypt::OpenSSL::RSA;
 use Crypt::OpenSSL::X509;
-use File::Slurp qw/ read_file /;
+use File::Slurper qw/ read_text /;
 use URI::Encode qw/uri_decode/;
 
 =head2 new( ... )
@@ -127,7 +127,7 @@ sub sign {
     $u->query_param($self->param, $req);
     $u->query_param('RelayState', $relaystate) if defined $relaystate;
 
-    my $key_string = read_file($self->key);
+    my $key_string = read_text($self->key);
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
 
     if ( exists $self->{ sig_hash } && grep { $_ eq $self->{ sig_hash } } ('sha224', 'sha256', 'sha384', 'sha512'))
@@ -179,6 +179,19 @@ sub verify {
     my $signed;
     my $saml_request;
     my $sig = $u->query_param_delete('Signature');
+
+    # During the verify the only query parameters that should be in the query are
+    # 'SAMLRequest', 'RelayState', 'Sig', 'SigAlg' the other parameter values are
+    # deleted from the URI query that was created from the URL that was passed
+    # to the verify function
+    my @signed_params = ('SAMLRequest', 'RelayState', 'Sig', 'SigAlg');
+
+    for my $key ($u->query_param) {
+        if (grep /$key/, @signed_params ) {
+            next;
+        }
+        $u->query_param_delete($key);
+    }
 
     # Some IdPs (PingIdentity) seem to double encode the LogoutResponse URL
     if (defined $self->sls_double_encoded_response and $self->sls_double_encoded_response == 1) {

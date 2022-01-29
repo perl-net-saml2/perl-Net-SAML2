@@ -63,7 +63,7 @@ sent regardless
 
 has 'session'       => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'nameid'        => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
-has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 0);
 has 'destination'   => (isa => NonEmptySimpleStr, is => 'ro', required => 0);
 
 =head2 new_from_xml( ... )
@@ -91,13 +91,19 @@ sub new_from_xml {
     $xpath->registerNs('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
     $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
 
-    my $self = $class->new(
+    my %params = (
         id            => $xpath->findvalue('/samlp:LogoutRequest/@ID'),
         session       => $xpath->findvalue('/samlp:LogoutRequest/samlp:SessionIndex'),
         issuer        => $xpath->findvalue('/samlp:LogoutRequest/saml:Issuer'),
         nameid        => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID'),
-        nameid_format => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@Format'),
-        destination   => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@NameQualifier'),
+        destination   => $xpath->findvalue('/samlp:LogoutRequest/@Destination'),
+    );
+   
+    my $nameid_format = $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@Format');
+    if ( $nameid_format ne '' ) { $params{nameid_format} = $nameid_format; }
+                    
+    my $self = $class->new(
+        %params
     );
 
     return $self;

@@ -177,10 +177,10 @@ sub new_from_xml {
     {
         my $use = $key->getAttribute('use') || 'signing';
 
-        # We can't select by ds:KeyInfo/ds:X509Data/ds:X509Certificate
-        # because of https://rt.cpan.org/Public/Bug/Display.html?id=8784
+        $key->setNamespace('http://www.w3.org/2000/09/xmldsig#', 'ds');
+
         my ($text)
-            = $key->findvalue("//*[local-name()='X509Certificate']")
+            = $key->findvalue("ds:KeyInfo/ds:X509Data/ds:X509Certificate", $key)
             =~ /^\s*(.+?)\s*$/s;
 
         # rewrap the base64 data from the metadata; it may not
