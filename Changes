@@ -2,6 +2,19 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.50 -- Sun Jan 30 13:59:48 AST 2022
+
+  - 9b4db01 Add additional deveeloper files to .gitignore
+  - 461f348 Remove eol spaces
+  - 2c30092 Create a pid file for lighttpd
+  - 237ef74 NameId Format is optional in the LogoutRequest
+  - a8ee006 Fix an un reported issue validating URL with extra parameters
+  - b096862 Fixes issue in Discusion #54 when there are multiple
+        X509Certificate tags in the metadata
+  - 11ba7f4 Add information related to the LogoutRequest and
+        LogoutResponse that can be either SP of IdP initiated
+  - 5780c6c Move from File::Slurp to File::Slurper
+
 0.49 -- Tue Dec 07 21:22:58 AST 2021
 
   [Significant Changes since 0.46]
