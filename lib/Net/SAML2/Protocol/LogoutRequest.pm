@@ -98,10 +98,10 @@ sub new_from_xml {
         nameid        => $xpath->findvalue('/samlp:LogoutRequest/saml:NameID'),
         destination   => $xpath->findvalue('/samlp:LogoutRequest/@Destination'),
     );
-   
+
     my $nameid_format = $xpath->findvalue('/samlp:LogoutRequest/saml:NameID/@Format');
     if ( $nameid_format ne '' ) { $params{nameid_format} = $nameid_format; }
-                    
+
     my $self = $class->new(
         %params
     );
