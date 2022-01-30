@@ -12,3 +12,12 @@ MANIFEST.bak
 Makefile.old
 testapp/logs/*
 Net-Saml2*
+t/issues/issue-99.xml
+xt/testapp/chgprovider
+xt/testapp/dsaparam.pem
+xt/testapp/lighttpd.pid
+xt/testapp/metadata.xml
+xt/testapp/sign-certonly-dsa.pem
+xt/testapp/sign-nopw-cert-dsa.pem
+xt/testapp/sign-private-dsa.pem
+Release-*
