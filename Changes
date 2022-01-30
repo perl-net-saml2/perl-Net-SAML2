@@ -4,9 +4,11 @@ Revision history for Perl extension Net::SAML2.
 
 0.50 -- Sun Jan 30 13:59:48 AST 2022
 
-  - 9b4db01 Add additional deveeloper files to .gitignore
-  - 461f348 Remove eol spaces
-  - 2c30092 Create a pid file for lighttpd
+  - 8cc6d8e v0.50
+  - af1deee Add additional deveeloper files to .gitignore
+  - 8223e85 Remove eol spaces
+  - 3eb54d3 Create a pid file for lighttpd
+  - 89393ab Merge pull request #55 from timlegge/master
   - 237ef74 NameId Format is optional in the LogoutRequest
   - a8ee006 Fix an un reported issue validating URL with extra parameters
   - b096862 Fixes issue in Discusion #54 when there are multiple
@@ -21,6 +23,7 @@ Revision history for Perl extension Net::SAML2.
   - Net::SAML2::XML::Sig is now a subclass of XML::Sig
   - XML::Sig 0.52 is now a dependency
 
+  - 064f718 v0.49
   - 6e76482 Simplify dist.ini and add SignReleaseNotes
   - e96982c Bump Version
   - 3fc63f5 v0.48
