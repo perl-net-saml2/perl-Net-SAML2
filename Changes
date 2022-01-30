@@ -2,6 +2,10 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.51 -- Sun Jan 30 14:15:43 AST 2022
+
+- a9f5ca5 Fix the Commit ids - forgot to rebase before push
+
 0.50 -- Sun Jan 30 13:59:48 AST 2022
 
   - 8cc6d8e v0.50
