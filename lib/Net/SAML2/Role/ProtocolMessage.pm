@@ -12,7 +12,7 @@ use DateTime;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::Util qw(generate_id);
 
-our $VERSION = '0.49';
+our $VERSION = '0.52';
 
 =head1 NAME
 

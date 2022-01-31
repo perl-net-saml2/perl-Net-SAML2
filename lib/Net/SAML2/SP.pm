@@ -4,7 +4,7 @@ package Net::SAML2::SP;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
 
-our $VERSION = '0.49';
+our $VERSION = '0.52';
 
 # ABSTRACT: Net::SAML2::SP - SAML Service Provider object
 

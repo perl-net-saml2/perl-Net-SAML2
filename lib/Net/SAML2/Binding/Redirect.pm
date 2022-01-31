@@ -5,7 +5,7 @@ package Net::SAML2::Binding::Redirect;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
 
-our $VERSION = '0.49';
+our $VERSION = '0.52';
 
 # ABSTRACT: Net::SAML2::Binding::Redirect - HTTP Redirect binding for SAML
 
