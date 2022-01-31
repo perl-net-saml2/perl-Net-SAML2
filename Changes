@@ -2,9 +2,20 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.52 -- Sun Jan 30 23:17:19 AST 2022
+
+  [Significant Changes since 0.49]
+
+  - Document IdP and SP initiated LogoutRequest handling
+  - Fix issue if multiple X509Certificate tags are found in metadata
+
+  - 5d70bac Update for official release
+  - b753644 Update Makefile.PL and README
+
 0.51 -- Sun Jan 30 14:15:43 AST 2022
 
-- a9f5ca5 Fix the Commit ids - forgot to rebase before push
+  - d4153b5 v0.51
+  - a9f5ca5 Fix the Commit ids - forgot to rebase before push
 
 0.50 -- Sun Jan 30 13:59:48 AST 2022
 
