@@ -184,7 +184,7 @@ sub verify {
     # 'SAMLRequest', 'RelayState', 'Sig', 'SigAlg' the other parameter values are
     # deleted from the URI query that was created from the URL that was passed
     # to the verify function
-    my @signed_params = ('SAMLRequest', 'RelayState', 'Sig', 'SigAlg');
+    my @signed_params = ('SAMLRequest', 'SAMLResponse', 'RelayState', 'Sig', 'SigAlg');
 
     for my $key ($u->query_param) {
         if (grep /$key/, @signed_params ) {
