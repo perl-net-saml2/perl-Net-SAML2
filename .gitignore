@@ -21,3 +21,4 @@ xt/testapp/sign-certonly-dsa.pem
 xt/testapp/sign-nopw-cert-dsa.pem
 xt/testapp/sign-private-dsa.pem
 Release-*
+xt/testapp/IdPs/*/*

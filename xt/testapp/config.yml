@@ -2,7 +2,7 @@ layout: "main"
 #logger: "console"
 appname: "Saml2Test"
 charset: "UTF-8"
-
+template: "template_toolkit"
 idp: "http://localhost:8880/metadata.xml"
 issuer: "https://netsaml2-testapp.local"
 url: "https://netsaml2-testapp.local"

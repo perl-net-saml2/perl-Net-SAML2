@@ -1,4 +1,4 @@
-<h1>User: <% assertion.nameid %></h1>
+<h1>NameID: <% assertion.nameid %></h1>
 
 <p><a href="/logout-redirect?nameid=<% assertion.nameid | html %>&session=<% assertion.session | html %>">Logout (redirect binding)</a></p>
 
@@ -18,24 +18,20 @@
     <td><% assertion.issuer %></td>
   </tr>
   <tr>
-    <td>DN</td>
-    <td><% assertion.attributes.DN %></td>
-  </tr>
-  <tr>
-    <td>CN</td>
-    <td><% assertion.attributes.CN %></td>
-  </tr>
-  <tr>
     <td>EmailAddress</td>
-    <td><% assertion.attributes.EmailAddress %></td>
+    <td><% assertion.attributes.EmailAddress.0 %></td>
   </tr>
   <tr>
     <td>FirstName</td>
-    <td><% assertion.attributes.FirstName %></td>
+    <td><% assertion.attributes.FirstName.0 %><% assertion.attributes.fname.0 %></td>
+  </tr>
+  <tr>
+    <td>LastName</td>
+    <td><% assertion.attributes.LastName.0 %><% assertion.attributes.lname.0 %></td>
   </tr>
   <tr>
     <td>Address</td>
-    <td><% assertion.attributes.Address %></td>
+    <td><% assertion.attributes.Address.0 %></td>
   </tr>
   <tr>
     <td>Phone</td>
@@ -45,5 +41,4 @@
     <td>EmployeeNumber</td>
     <td><% assertion.attributes.EmployeeNumber %></td>
   </tr>
-  <% end %>
 </table>
