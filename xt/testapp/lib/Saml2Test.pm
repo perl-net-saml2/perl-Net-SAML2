@@ -47,10 +47,21 @@ get '/' => sub {
 };
 
 get '/login' => sub {
-    my $tokens = shift;
 
     config->{cacert} = 'IdPs/' . params->{idp} . '/cacert.pem';
     config->{idp} = 'http://localhost:8880/IdPs/' . params->{idp} . '/metadata.xml';
+    if ( -f 'IdPs/' . params->{idp} . '/config.yml' ) {
+        my $config_file = YAML::LoadFile('IdPs/' . params->{idp} . '/config.yml');
+        for my $key (keys %$config_file) {
+            config->{$key} = $config_file->{$key};
+        }
+    } else {
+        my $config_file = YAML::LoadFile('config.yml');
+        for my $key (keys %$config_file) {
+            config->{$key} = $config_file->{$key};
+        }
+
+    }
     my $idp = _idp();
     my $sp = _sp();
     my $authnreq = $sp->authn_request(
