@@ -33,7 +33,7 @@ Access http://localhost:3000
 
 ### Run lighttpd to proxy https to the Saml2Test application
 
-Many SAML2 Identity Providers will not allow the application (Service Provider) URL to be http and force you to specify https to use SAML2.  lighttpd is used to listen on port 443 and use https protocol so that the Identity Provider can redirect or POST to a https site.  lighttpd then proxies that communication to the Dancer application listening on port 3000.
+Many SAML2 Identity Providers will not allow the application (Service Provider) URL to be http and forces you to specify https to use SAML2.  lighttpd is used to listen on port 443 and use https protocol so that the Identity Provider can redirect or POST to a https site.  lighttpd then proxies that communication to the Dancer application listening on port 3000.
 
    1. cd xt/testapp
    2. sudo lighttpd -D -f lighttpd.conf
@@ -42,11 +42,30 @@ Note that the command requires sudo to allow it to use the default https port of
 
 TODO: maybe change it to use 8443
 
-### Create your metadata.xml file
+### Configure the testapp to connect to the Identity Provider
 
-Download the metadata for you configured application from your Identity Provider and save it to:
+The testapp now supports a simplified automatic configuration for testing against multiple Identity Providers (IdPs).
 
-    xt/testapp/metadata.xml
+   1. Simply create a directory in xt/testapp/IdPs for the name of the IdP (eg. google)
+   2. Download the metadata from your IdP and save it as IdPs/google/metadata.xml
+   3. Download the cacert.pem from the IdP and save it as IdPs/google/cacert.pem
+   4. Optionally create IdPs/google/config.yml for custom settings for the IdP (if the a custom config.yml does not exist it will refresh the settings from the default config.yml.
+
+The index page will automatically list each configured Identity Provider as a link to initiate login against that IdP.
+
+Your directory structure should look like:
+
+IdPs/
+    auth0/
+        cacert.pem
+        metadata.yml
+    azure/
+        cacert.pem
+        config.yml (optional)
+        metadata.yml
+    google/
+        cacert.pem
+        metadata.yml
 
 ### Run lighttpd to deliver metadata.xml
 
@@ -55,7 +74,7 @@ Net::SAML2 requires access to a URL containing the metadata.  The simplest metho
    1. cd xt/testapp
    2. lighttpd -D -f lighttpd-metadata.conf
 
-The metadata has been configured to be available at: http://localhost:8880/metadata.xml.
+The metadata has been configured to be available at: http://localhost:8880/metadata.xml.  The simplified IdP configuration will automatically access the metadata.xml at http://localhost:8880/IdPs/google/metadata.xml (if you followed the instructions above and created the google directory in xt/testapp/IdPs)
 
 Note that the configuration attempts to only deliver a file named metadata.xml from the xt/testapp directory.  There are no guarantees - this is a test application so verify your own security.
 

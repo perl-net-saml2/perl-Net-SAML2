@@ -1,3 +1,22 @@
-<p><a href="/metadata.xml">SP Metadata</a></p>
+    <% if idps.size >= 1 %>
+        <h2>Login with:</h2>
+    <ul>
+        <% FOREACH provider IN idps %>
+            <li><h3><a href ="/login?idp=<% provider.idp %>"><% provider.idp %> </a>
+            <% if provider.metadata == 'missing' %>metadata missing <% end %>
+            <% if provider.cacert == 'missing' %>cacert missing<% end %>
+            </h3>
+        <% END %>
+    </ul>
+    <% else %>
+        <h2>No Identity Providers (IdP) found!</h2>
+        <h3>Configure an Idp</h3>
+        <ol>
+            <li>Simply create a directory in xt/testapp/IdPs for the name of the IdP (eg. <i>google</i>)
+            <li>Download the metadata from your IdP and save it to IdPs/<i>google</i>/metadata.xml
+            <li>Download the cacert.pem from the IdP and save it to IdPs/<i>google</i>/cacert.pem
+        </ol>
+    <% end %>
 
-<p><a href="/login">Log In</a></p>
+    <h2>Download SP <a href="/metadata.xml">Metadata</a></h2>
+

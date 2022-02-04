@@ -16,14 +16,52 @@ Demo app to show use of Net::SAML2 as an SP.
 use Dancer ':syntax';
 use Net::SAML2;
 use MIME::Base64 qw/ decode_base64 /;
+use File::Slurper qw/ read_dir /;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 get '/' => sub {
-    template 'index';
+    if ( ! -x './IdPs' ) {
+        return "<html><pre>You must have a xt/testapp/IdPs directory</pre></html>";
+    }
+    my @dirs = read_dir('./IdPs');
+    my @idps;
+    for my $dir (sort @dirs) {
+        if ( $dir eq '.keep' ) { next ; }
+        my %tempidp;
+        $tempidp{'idp'} = $dir;
+        if ( -f "./IdPs/$dir/cacert.pem" ) {
+            $tempidp{'cacert'} = 'exists';
+        } else {
+            $tempidp{'cacert'} = 'missing';
+        }
+        if ( -f "./IdPs/$dir/metadata.xml" ) {
+            $tempidp{'metadata'} = 'exists';
+        } else {
+            $tempidp{'metadata'} = 'missing';
+        }
+        push @idps, \%tempidp;
+    }
+
+    template 'index', { 'idps' => \@idps };
 };
 
 get '/login' => sub {
+
+    config->{cacert} = 'IdPs/' . params->{idp} . '/cacert.pem';
+    config->{idp} = 'http://localhost:8880/IdPs/' . params->{idp} . '/metadata.xml';
+    if ( -f 'IdPs/' . params->{idp} . '/config.yml' ) {
+        my $config_file = YAML::LoadFile('IdPs/' . params->{idp} . '/config.yml');
+        for my $key (keys %$config_file) {
+            config->{$key} = $config_file->{$key};
+        }
+    } else {
+        my $config_file = YAML::LoadFile('config.yml');
+        for my $key (keys %$config_file) {
+            config->{$key} = $config_file->{$key};
+        }
+
+    }
     my $idp = _idp();
     my $sp = _sp();
     my $authnreq = $sp->authn_request(
@@ -86,7 +124,7 @@ get '/logout-soap' => sub {
         cert	 => 'sign-nopw-cert.pem',
         url	 => $slo_url,
         idp_cert => $idp_cert,
-        cacert   => 'saml_cacert.pem',
+        cacert   => config->{cacert},
     );
 
     my $res = $soap->request($logoutreq);
@@ -97,7 +135,7 @@ get '/logout-soap' => sub {
 
 post '/consumer-post' => sub {
     my $post = Net::SAML2::Binding::POST->new(
-        cacert => 'saml_cacert.pem',
+        cacert => config->{cacert},
     );
     my $ret = $post->handle_response(
         params->{SAMLResponse}
@@ -226,7 +264,7 @@ sub _sp {
 sub _idp {
     my $idp = Net::SAML2::IdP->new_from_url(
         url    => config->{idp},
-        cacert => 'saml_cacert.pem',
+        cacert => config->{cacert},
         sls_force_lcase_url_encoding => config->{sls_force_lcase_url_encoding},
         sls_double_encoded_response => config->{sls_double_encoded_response}
     );
