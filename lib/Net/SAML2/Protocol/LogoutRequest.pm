@@ -11,7 +11,7 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 LogoutRequest Protocol object
 
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 =head1 NAME
 

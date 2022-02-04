@@ -4,7 +4,7 @@ package Net::SAML2::Binding::POST;
 
 use Moose;
 
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 # ABSTRACT: Net::SAML2::Binding::POST - HTTP POST binding for SAML
 

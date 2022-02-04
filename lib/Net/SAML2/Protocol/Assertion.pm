@@ -12,7 +12,7 @@ use XML::LibXML;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 # ABSTRACT: Net::SAML2::Protocol::Assertion - SAML2 assertion object
 

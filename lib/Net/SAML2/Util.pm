@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Net::SAML2::Util;
 
-our $VERSION = '0.52';
+our $VERSION = '0.53';
 
 use Crypt::OpenSSL::Random qw(random_pseudo_bytes);
 
