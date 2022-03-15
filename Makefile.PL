@@ -41,8 +41,10 @@ my %WriteMakefileArgs = (
     "URI" => 0,
     "URI::Encode" => 0,
     "URI::QueryParam" => 0,
+    "XML::Enc" => "0.03",
     "XML::Generator" => 0,
     "XML::LibXML" => 0,
+    "XML::LibXML::XPathContext" => 0,
     "XML::Sig" => "0.52",
     "XML::Writer" => "0.625",
     "base" => 0,
@@ -66,7 +68,7 @@ my %WriteMakefileArgs = (
     "URI::URL" => 0,
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.53",
+  "VERSION" => "0.54",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -111,6 +113,7 @@ my %FallbackPrereqs = (
   "URI::Encode" => 0,
   "URI::QueryParam" => 0,
   "URI::URL" => 0,
+  "XML::Enc" => "0.03",
   "XML::Generator" => 0,
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,

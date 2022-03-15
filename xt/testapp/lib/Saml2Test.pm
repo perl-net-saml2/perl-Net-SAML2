@@ -143,7 +143,9 @@ post '/consumer-post' => sub {
 
     if ($ret) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-            xml => decode_base64(params->{SAMLResponse})
+            xml         => decode_base64(params->{SAMLResponse}),
+            key_file    => config->{key},
+            cacert      => config->{cacert},
         );
 
         template 'user', { assertion => $assertion };
