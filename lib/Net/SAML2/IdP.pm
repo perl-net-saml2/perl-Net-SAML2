@@ -1,10 +1,10 @@
 use strict;
 use warnings;
 package Net::SAML2::IdP;
+# VERSION
+
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
-
-our $VERSION = '0.53';
 
 # ABSTRACT: Net::SAML2::IdP - SAML Identity Provider object
 

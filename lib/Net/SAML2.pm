@@ -1,13 +1,11 @@
 use strict;
 use warnings;
 package Net::SAML2;
+# VERSION
 
 require 5.008_001;
 
 # ABSTRACT: SAML2 bindings and protocol implementation
-
-our $VERSION = '0.53';
-$VERSION = eval {$VERSION};
 
 =head1 NAME
 

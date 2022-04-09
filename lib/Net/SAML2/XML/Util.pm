@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 package Net::SAML2::XML::Util;
+# VERSION
 
 use XML::LibXML;
 
@@ -8,7 +9,6 @@ use XML::LibXML;
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
 
 $DEBUG = 0;
-our $VERSION = '0.53';
 
 # We are exporting functions
 use base qw/Exporter/;

@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 package Net::SAML2::Protocol::Assertion;
+# VERSION
+
 use Moose;
 use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
@@ -13,8 +15,6 @@ use XML::Enc;
 use XML::LibXML;
 
 with 'Net::SAML2::Role::ProtocolMessage';
-
-our $VERSION = '0.53';
 
 # ABSTRACT: Net::SAML2::Protocol::Assertion - SAML2 assertion object
 

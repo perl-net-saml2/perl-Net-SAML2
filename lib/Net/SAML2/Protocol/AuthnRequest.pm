@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 package Net::SAML2::Protocol::AuthnRequest;
+# VERSION
 
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
@@ -11,8 +12,6 @@ use List::Util qw(any);
 with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 AuthnRequest object
-
-our $VERSION = '0.53';
 
 =head1 NAME
 
