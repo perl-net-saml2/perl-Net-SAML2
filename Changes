@@ -2,6 +2,20 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.54 -- Sat Apr 09 18:13:04 ADT 2022
+
+  [ Significant Changes since 0.53 ]
+
+  Support for EncryptedAssertion
+
+  [ Commits ]
+  - b166c3e Updates for new Version
+  - ab8c986 Move to OurPkgVersion and remove VERSION from repo
+  - 6d1b058 Merge pull request #57 from timlegge/encrypted-assertions
+  - bff02f7 Minor lighttpd config update for testapp
+  - 94e42b0 Support EncryptedAssertions
+  - 34a432c v0.53
+
 0.53 -- Thu Feb 03 21:02:47 AST 2022
 
   [Significant Changes since 0.52]
