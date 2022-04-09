@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use utf8;
 use Test::Lib;
 use Test::Net::SAML2;
 
