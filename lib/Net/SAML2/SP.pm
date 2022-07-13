@@ -33,6 +33,7 @@ use Net::SAML2::Binding::Redirect;
 use Net::SAML2::Binding::SOAP;
 use Net::SAML2::Protocol::AuthnRequest;
 use Net::SAML2::Protocol::LogoutRequest;
+use Net::SAML2::Util ();
 
 =head2 new( ... )
 
@@ -116,6 +117,8 @@ has '_cert_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_b
 
 has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0, default => 1);
+
+has 'sign_metadata' => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 
 sub _build_cert_text {
     my ($self) = @_;
@@ -297,22 +300,25 @@ sub post_binding {
     return $post;
 }
 
+sub generate_sp_desciptor_id {
+    my $self = shift;
+    return Net::SAML2::Util::generate_id();
+}
+
 =head2 metadata( )
 
 Returns the metadata XML document for this SP.
 
 =cut
 
-sub metadata {
-    my ($self) = @_;
-
-    use Net::SAML2::Util qw/generate_id/;
+sub generate_metadata {
+    my $self = shift;
 
     my $x = XML::Generator->new(':pretty', conformance => 'loose');
     my $md = ['md' => 'urn:oasis:names:tc:SAML:2.0:metadata'];
     my $ds = ['ds' => 'http://www.w3.org/2000/09/xmldsig#'];
 
-    my $metadata = $x->EntityDescriptor(
+    return $x->EntityDescriptor(
         $md,
         {
             entityID => $self->id },
@@ -322,7 +328,8 @@ sub metadata {
               WantAssertionsSigned => $self->want_assertions_signed,
               errorURL => $self->url . $self->error_url,
               protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol',
-              ID => generate_id()},
+              ID => $self->generate_sp_desciptor_id(),
+            },
             $x->KeyDescriptor(
                 $md,
                 {
@@ -403,21 +410,25 @@ sub metadata {
             ),
         )
     );
+}
+
+sub metadata {
+    my ($self) = @_;
+
+    my $metadata = $self->generate_metadata();
+    return $metadata unless $self->sign_metadata;
 
     use Net::SAML2::XML::Sig;
-
-    my $signer = Net::SAML2::XML::Sig->new({
-                        key => $self->key,
-                        cert => $self->cert,
-                        sig_hash => 'sha256',
-                        digest_hash => 'sha256',
-                        x509 => 1,
-                });
-
-    # create a signature
-    my $signed = $signer->sign($metadata);
-
-    return $signed;
+    my $signer = Net::SAML2::XML::Sig->new(
+        {
+            key         => $self->key,
+            cert        => $self->cert,
+            sig_hash    => 'sha256',
+            digest_hash => 'sha256',
+            x509        => 1,
+        }
+    );
+    return $signer->sign($metadata);
 }
 
 __PACKAGE__->meta->make_immutable;
