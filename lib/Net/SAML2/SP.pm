@@ -327,14 +327,15 @@ sub generate_metadata {
     return $x->EntityDescriptor(
         $md,
         {
-            entityID => $self->id },
+            entityID => $self->id,
+            ID       => $self->generate_sp_desciptor_id(),
+        },
         $x->SPSSODescriptor(
             $md,
             { AuthnRequestsSigned => $self->authnreq_signed,
               WantAssertionsSigned => $self->want_assertions_signed,
               errorURL => $self->url . $self->error_url,
               protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol',
-              ID => $self->generate_sp_desciptor_id(),
             },
             $x->KeyDescriptor(
                 $md,
@@ -438,6 +439,8 @@ sub metadata {
             sig_hash    => 'sha256',
             digest_hash => 'sha256',
             x509        => 1,
+            ns          => { md => 'urn:oasis:names:tc:SAML:2.0:metadata' },
+            id_attr     => '/md:EntityDescriptor[@ID]',
         }
     );
     return $signer->sign($metadata);

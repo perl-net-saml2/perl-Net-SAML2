@@ -22,3 +22,5 @@ xt/testapp/sign-nopw-cert-dsa.pem
 xt/testapp/sign-private-dsa.pem
 Release-*
 xt/testapp/IdPs/*/*
+/Net-SAML2-*/**
+/Net-SAML2-*.tar.gz

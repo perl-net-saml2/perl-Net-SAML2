@@ -10,6 +10,7 @@ our @EXPORT = qw(
     get_xpath
     test_xml_attribute_ok
     test_xml_value_ok
+    get_single_node_ok
     net_saml2_sp
     looks_like_a_cert
     net_saml2_binding_redirect_request
@@ -214,6 +215,14 @@ sub get_xpath {
     $xp->registerNs($_, $ns{$_}) foreach keys %ns;
 
     return $xp;
+}
+
+sub get_single_node_ok {
+    my $xpc = shift;
+    my $xpath = shift;
+    my $nodes = $xpc->findnodes($xpath);
+    is($nodes->size, 1, "Got 1 node for $xpath");
+    return $nodes->get_node(1);
 }
 
 sub test_xml_attribute_ok {
