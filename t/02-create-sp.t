@@ -5,9 +5,17 @@ use Test::Net::SAML2;
 
 my $sp = net_saml2_sp();
 
-my $xpath = get_xpath(
-    $sp->metadata,
-    md => 'urn:oasis:names:tc:SAML:2.0:metadata'
+my $xpath
+    = get_xpath($sp->metadata, md => 'urn:oasis:names:tc:SAML:2.0:metadata');
+
+my $nodes = $xpath->findnodes('//md:EntityDescriptor/md:SPSSODescriptor');
+is($nodes->size, 1, "We have one PSSODescriptor");
+my $node = $nodes->get_node(1);
+ok(!$node->getAttribute('WantAssertionsSigned'),
+    'Wants assertions to be signed');
+ok(
+    !$node->getAttribute('AuthnRequestsSigned'),
+    '.. and also authn requests to be signed'
 );
 
 my @ssos = $xpath->findnodes(
@@ -25,5 +33,41 @@ if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
         "Returns the correct binding: HTTP-Artifact"
     );
 }
+
+{
+    my $sp = Net::SAML2::SP->new(
+        id               => 'http://localhost:3000',
+        url              => 'http://localhost:3000',
+        cert             => 't/sign-nopw-cert.pem',
+        key              => 't/sign-nopw-cert.pem',
+        cacert           => 't/cacert.pem',
+        org_name         => 'Test',
+        org_display_name => 'Test',
+        org_contact      => 'test@example.com',
+        org_url          => 'http://www.example.com',
+        slo_url_soap     => '/slo-soap',
+        slo_url_redirect => '/sls-redirect-response',
+        slo_url_post     => '/sls-post-response',
+        acs_url_post     => '/consumer-post',
+        acs_url_artifact => '/consumer-artifact',
+        org_name         => 'Net::SAML2 Saml2Test',
+        org_display_name => 'Saml2Test app for Net::SAML2',
+        org_contact      => 'saml2test@example.com',
+        error_url        => '/error',
+    );
+
+    my $xpath = get_xpath($sp->metadata,
+        md => 'urn:oasis:names:tc:SAML:2.0:metadata');
+    my $nodes = $xpath->findnodes('//md:EntityDescriptor/md:SPSSODescriptor');
+    is($nodes->size, 1, "We have one PSSODescriptor");
+    my $node = $nodes->get_node(1);
+    ok($node->getAttribute('WantAssertionsSigned'),
+        'Wants assertions to be signed');
+    ok(
+        $node->getAttribute('AuthnRequestsSigned'),
+        '.. and also authn requests to be signed'
+    );
+}
+
 
 done_testing;

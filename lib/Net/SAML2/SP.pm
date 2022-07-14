@@ -114,8 +114,8 @@ has 'org_url'          => (isa => 'Str', is => 'ro', required => 0);
 
 has '_cert_text' => (isa => 'Str', is => 'rw', required => 0);
 
-has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0);
-has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0);
+has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0, default => 1);
+has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 
 =head2 BUILD ( hashref of the parameters passed to the constructor )
 
@@ -326,8 +326,8 @@ sub metadata {
             entityID => $self->id },
         $x->SPSSODescriptor(
             $md,
-            { AuthnRequestsSigned => defined($self->authnreq_signed) ? $self->authnreq_signed : '1',
-              WantAssertionsSigned => defined($self->want_assertions_signed) ? $self->want_assertions_signed : '1',
+            { AuthnRequestsSigned => $self->authnreq_signed,
+              WantAssertionsSigned => $self->want_assertions_signed,
               errorURL => $self->url . $self->error_url,
               protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol',
               ID => generate_id()},
