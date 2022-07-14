@@ -112,26 +112,18 @@ has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
 has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
 has 'org_url'          => (isa => 'Str', is => 'ro', required => 0);
 
-has '_cert_text' => (isa => 'Str', is => 'rw', required => 0);
+has '_cert_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_cert_text', lazy => 1);
 
 has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0);
 has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0);
 
-=head2 BUILD ( hashref of the parameters passed to the constructor )
-
-Called after the object is created to load the cert from a file
-
-=cut
-
-sub BUILD {
+sub _build_cert_text {
     my ($self) = @_;
 
     my $cert = Crypt::OpenSSL::X509->new_from_file($self->cert);
     my $text = $cert->as_string;
     $text =~ s/-----[^-]*-----//gm;
-    $self->_cert_text($text);
-
-    return $self;
+    return $text;
 }
 
 =head2 authn_request( $destination, $nameid_format )
