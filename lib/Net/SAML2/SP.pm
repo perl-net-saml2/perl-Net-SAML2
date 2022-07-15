@@ -28,6 +28,8 @@ Net::SAML2::SP - SAML Service Provider object
 use Crypt::OpenSSL::X509;
 use XML::Generator;
 
+use Digest::MD5 ();
+
 use Net::SAML2::Binding::POST;
 use Net::SAML2::Binding::Redirect;
 use Net::SAML2::Binding::SOAP;
@@ -349,7 +351,12 @@ sub generate_metadata {
                             $ds,
                             $self->_cert_text,
                         )
-                    )
+                    ),
+                    $x->KeyName(
+                     $ds,
+                     Digest::MD5::md5_hex($self->_cert_text)
+                    ),
+
                 )
             ),
             $x->SingleLogoutService(

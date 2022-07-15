@@ -39,7 +39,7 @@ if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
 get_single_node_ok($xpath, '//ds:Signature');
 
 {
-    my $sp = net_saml2_sp(sign_metadata => 0);
+    my $sp    = net_saml2_sp(sign_metadata => 0);
     my $xpath = get_xpath(
         $sp->metadata,
         md => 'urn:oasis:names:tc:SAML:2.0:metadata',
@@ -72,13 +72,13 @@ get_single_node_ok($xpath, '//ds:Signature');
         error_url        => '/error',
     );
 
-    my $xpc = get_xpath(
+    my $xpath = get_xpath(
         $sp->metadata,
         md => 'urn:oasis:names:tc:SAML:2.0:metadata',
         ds => 'http://www.w3.org/2000/09/xmldsig#'
     );
 
-    my $node = get_single_node_ok($xpc, '/md:EntityDescriptor');
+    my $node = get_single_node_ok($xpath, '/md:EntityDescriptor');
     is(
         $node->getAttribute('entityID'),
         'Some entity ID',
@@ -89,67 +89,76 @@ get_single_node_ok($xpath, '//ds:Signature');
 
     {
         # Test ContactPerson
-        my $node = get_single_node_ok($xpc, '/node()/md:ContactPerson');
+        my $node = get_single_node_ok($xpath, '/node()/md:ContactPerson');
         my $p    = $node->nodePath();
 
-        my $company = get_single_node_ok($xpc, "$p/md:Company");
+        my $company = get_single_node_ok($xpath, "$p/md:Company");
         is(
             $company->textContent,
             'Net::SAML2::SP testsuite',
             "Got the correct company name for the contact person"
         );
 
-        my $email = get_single_node_ok($xpc, "$p/md:EmailAddress");
+        my $email = get_single_node_ok($xpath, "$p/md:EmailAddress");
         is($email->textContent, 'test@example.com',
             ".. and the correct email");
     }
 
     {
         # Test Organisation
-        my $node = get_single_node_ok($xpc, '/node()/md:Organization');
+        my $node = get_single_node_ok($xpath, '/node()/md:Organization');
         my $p    = $node->nodePath();
 
-        my $name = get_single_node_ok($xpc, "$p/md:OrganizationName");
-        is(
-            $name->textContent,
-            'Net::SAML2::SP',
-            "Got the correct company name"
-        );
+        my $name = get_single_node_ok($xpath, "$p/md:OrganizationName");
+        is($name->textContent, 'Net::SAML2::SP',
+            "Got the correct company name");
 
         my $display_name
-            = get_single_node_ok($xpc, "$p/md:OrganizationDisplayName");
+            = get_single_node_ok($xpath, "$p/md:OrganizationDisplayName");
         is(
             $display_name->textContent,
             'Net::SAML2::SP testsuite',
             ".. and the correct display name"
         );
 
-        my $url = get_single_node_ok($xpc, "$p/md:OrganizationURL");
+        my $url = get_single_node_ok($xpath, "$p/md:OrganizationURL");
         is($url->textContent, 'http://www.example.com',
             ".. and the correct URI");
     }
 
     {
         # Test SPSSODescriptor
-        my $node = get_single_node_ok($xpc, '/node()/md:SPSSODescriptor');
+        my $node = get_single_node_ok($xpath, '/node()/md:SPSSODescriptor');
         is($node->getAttribute('AuthnRequestsSigned'),
             '1', '.. and authn request needs signing');
         is($node->getAttribute('WantAssertionsSigned'),
             '1', '.. as does assertions');
-        is(
-            $node->getAttribute('errorURL'),
-            'http://localhost:3000/error',
-            'Got the correct error URI'
-        );
+        is($node->getAttribute('errorURL'),
+            'http://localhost:3000/error', 'Got the correct error URI');
 
-        # TODO: Add more tests for other metadata parts
+        my $p = $node->nodePath();
 
+        my $kd = get_single_node_ok($xpath, "$p/md:KeyDescriptor");
+
+        is($kd->getAttribute('use'),
+            "signing", "Key descriptor is there for signing only");
+
+        my $ki = get_single_node_ok($xpath, $kd->nodePath() . "/ds:KeyInfo");
+
+        my $cert = get_single_node_ok($xpath,
+            $ki->nodePath() . "/ds:X509Data/ds:X509Certificate");
+        ok($cert->textContent, "And we have the certificate data");
+
+        my $keyname
+            = get_single_node_ok($xpath, $ki->nodePath() . "/ds:KeyName");
+        ok($keyname->textContent, "... and we have a key name");
     }
 
-    {
-        # Test Signature
-        my $node = get_single_node_ok($xpc, '/node()/ds:Signature');
-    }
+}
+
+{
+    # Test Signature
+    my $node = get_single_node_ok($xpath, '/node()/ds:Signature');
 
 }
 

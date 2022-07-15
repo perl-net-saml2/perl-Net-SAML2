@@ -8,6 +8,7 @@ requires "Crypt::OpenSSL::X509" => "0";
 requires "DateTime" => "0";
 requires "DateTime::Format::XSD" => "0";
 requires "DateTime::HiRes" => "0";
+requires "Digest::MD5" => "0";
 requires "Exporter" => "0";
 requires "File::Slurper" => "0";
 requires "HTTP::Request::Common" => "0";
