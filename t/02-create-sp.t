@@ -5,8 +5,11 @@ use Test::Net::SAML2;
 
 my $sp = net_saml2_sp();
 
-my $xpath
-    = get_xpath($sp->metadata, md => 'urn:oasis:names:tc:SAML:2.0:metadata');
+my $xpath = get_xpath(
+    $sp->metadata,
+    md => 'urn:oasis:names:tc:SAML:2.0:metadata',
+    ds => 'http://www.w3.org/2000/09/xmldsig#'
+);
 
 my $nodes = $xpath->findnodes('//md:EntityDescriptor/md:SPSSODescriptor');
 is($nodes->size, 1, "We have one PSSODescriptor");
@@ -69,5 +72,20 @@ if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
     );
 }
 
+$nodes = $xpath->findnodes('//ds:Signature');
+is($nodes->size(), 1, "We have a signed metadata document ds:Signature present");
+
+{
+    my $sp = net_saml2_sp(sign_metadata => 0);
+    my $xpath = get_xpath(
+        $sp->metadata,
+        md => 'urn:oasis:names:tc:SAML:2.0:metadata',
+        ds => 'http://www.w3.org/2000/09/xmldsig#'
+    );
+
+    my $nodes = $xpath->findnodes('//ds:Signature');
+    is($nodes->size(), 0, "We don't have any ds:Signature present");
+
+}
 
 done_testing;
