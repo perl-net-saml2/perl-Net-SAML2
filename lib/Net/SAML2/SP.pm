@@ -300,14 +300,20 @@ sub post_binding {
     return $post;
 }
 
+=head2 generate_sp_desciptor_id ( )
+
+Returns the Net::SAML2 unique ID from Net::SAML2::Util::generate_id.
+
+=cut
+
 sub generate_sp_desciptor_id {
     my $self = shift;
     return Net::SAML2::Util::generate_id();
 }
 
-=head2 metadata( )
+=head2 generate_metadata( )
 
-Returns the metadata XML document for this SP.
+Generate the metadata XML document for this SP.
 
 =cut
 
@@ -411,6 +417,12 @@ sub generate_metadata {
         )
     );
 }
+
+=head2 metadata( )
+
+Returns the metadata XML document for this SP.
+
+=cut
 
 sub metadata {
     my ($self) = @_;
