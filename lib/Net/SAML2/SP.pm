@@ -28,6 +28,8 @@ Net::SAML2::SP - SAML Service Provider object
 use Crypt::OpenSSL::X509;
 use XML::Generator;
 
+use Digest::MD5 ();
+
 use Net::SAML2::Binding::POST;
 use Net::SAML2::Binding::Redirect;
 use Net::SAML2::Binding::SOAP;
@@ -327,14 +329,15 @@ sub generate_metadata {
     return $x->EntityDescriptor(
         $md,
         {
-            entityID => $self->id },
+            entityID => $self->id,
+            ID       => $self->generate_sp_desciptor_id(),
+        },
         $x->SPSSODescriptor(
             $md,
             { AuthnRequestsSigned => $self->authnreq_signed,
               WantAssertionsSigned => $self->want_assertions_signed,
               errorURL => $self->url . $self->error_url,
               protocolSupportEnumeration => 'urn:oasis:names:tc:SAML:2.0:protocol',
-              ID => $self->generate_sp_desciptor_id(),
             },
             $x->KeyDescriptor(
                 $md,
@@ -348,7 +351,12 @@ sub generate_metadata {
                             $ds,
                             $self->_cert_text,
                         )
-                    )
+                    ),
+                    $x->KeyName(
+                     $ds,
+                     Digest::MD5::md5_hex($self->_cert_text)
+                    ),
+
                 )
             ),
             $x->SingleLogoutService(
@@ -438,6 +446,8 @@ sub metadata {
             sig_hash    => 'sha256',
             digest_hash => 'sha256',
             x509        => 1,
+            ns          => { md => 'urn:oasis:names:tc:SAML:2.0:metadata' },
+            id_attr     => '/md:EntityDescriptor[@ID]',
         }
     );
     return $signer->sign($metadata);

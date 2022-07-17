@@ -24,6 +24,7 @@ my %WriteMakefileArgs = (
     "DateTime" => 0,
     "DateTime::Format::XSD" => 0,
     "DateTime::HiRes" => 0,
+    "Digest::MD5" => 0,
     "Exporter" => 0,
     "File::Slurper" => 0,
     "HTTP::Request::Common" => 0,
@@ -68,7 +69,7 @@ my %WriteMakefileArgs = (
     "URI::URL" => 0,
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.55",
+  "VERSION" => "0.56",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -84,6 +85,7 @@ my %FallbackPrereqs = (
   "DateTime" => 0,
   "DateTime::Format::XSD" => 0,
   "DateTime::HiRes" => 0,
+  "Digest::MD5" => 0,
   "Exporter" => 0,
   "File::Slurper" => 0,
   "HTTP::Request::Common" => 0,
