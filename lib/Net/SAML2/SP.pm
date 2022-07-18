@@ -104,9 +104,9 @@ has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
 
 has 'error_url'        => (isa => 'Str', is => 'ro', required => 1);
-has 'slo_url_soap'     => (isa => 'Str', is => 'ro', required => 1);
+has 'slo_url_soap'     => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_slo_url_soap');
+has 'slo_url_post'     => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_slo_url_post');
 has 'slo_url_redirect' => (isa => 'Str', is => 'ro', required => 1);
-has 'slo_url_post'     => (isa => 'Str', is => 'ro', required => 1);
 has 'acs_url_post'     => (isa => 'Str', is => 'ro', required => 1);
 has 'acs_url_artifact' => (isa => 'Str', is => 'ro', required => 1);
 
@@ -359,21 +359,29 @@ sub generate_metadata {
 
                 )
             ),
-            $x->SingleLogoutService(
-                $md,
-                { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
-                  Location  => $self->url . $self->slo_url_soap },
-            ),
+            $self->has_slo_url_soap ?
+                $x->SingleLogoutService(
+                    $md,
+                    { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
+                      Location  => $self->url . $self->slo_url_soap },
+                ) : (),
+
             $x->SingleLogoutService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                   Location  => $self->url . $self->slo_url_redirect },
             ),
-            $x->SingleLogoutService(
-                $md,
-                { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-                  Location  => $self->url . $self->slo_url_post },
-            ),
+
+            $self->has_slo_url_post ?
+                $x->SingleLogoutService(
+                    $md,
+                    {
+                        Binding =>
+                            'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+                        Location => $self->url . $self->slo_url_post
+                    },
+                ) : (),
+
             $x->AssertionConsumerService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',

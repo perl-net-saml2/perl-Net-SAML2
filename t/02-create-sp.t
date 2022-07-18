@@ -36,6 +36,27 @@ if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
     );
 }
 
+{
+    my $node = get_single_node_ok($xpath,
+        '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"]'
+    );
+    is(
+        $node->getAttribute('Location'),
+        'http://localhost:3000/slo-soap',
+        ".. with the correct location"
+    );
+
+    $node = get_single_node_ok($xpath,
+        '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]'
+    );
+    is(
+        $node->getAttribute('Location'),
+        'http://localhost:3000/sls-post-response',
+        ".. with the correct location"
+    );
+}
+
+
 get_single_node_ok($xpath, '//ds:Signature');
 
 {
@@ -64,9 +85,7 @@ get_single_node_ok($xpath, '//ds:Signature');
         org_contact      => 'test@example.com',
 
         org_url          => 'http://www.example.com',
-        slo_url_soap     => '/slo-soap',
         slo_url_redirect => '/sls-redirect-response',
-        slo_url_post     => '/sls-post-response',
         acs_url_post     => '/consumer-post',
         acs_url_artifact => '/consumer-artifact',
         error_url        => '/error',
@@ -154,11 +173,17 @@ get_single_node_ok($xpath, '//ds:Signature');
         ok($keyname->textContent, "... and we have a key name");
     }
 
-}
+    # These nodes are missing
+    ok(!$xpath->findnodes('//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"]'),
+        "No node found for slo_url_soap");
+    ok(!$xpath->findnodes('//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]'),
+        "No node found for slo_url_post");
 
-{
-    # Test Signature
-    my $node = get_single_node_ok($xpath, '/node()/ds:Signature');
+    {
+        # Test Signature
+        my $node = get_single_node_ok($xpath, '/node()/ds:Signature');
+
+    }
 
 }
 
