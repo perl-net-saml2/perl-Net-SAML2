@@ -30,7 +30,7 @@ jobs:
       - name: Install Net::SAML2 Depends
         run: |
           apt-get install libxml2 make gcc;
-          curl -sL https://cpanmin.us/ | perl - -nq --installdeps . ;
+          cpanm --installdeps . ;
       - name: Build Module
         run: |
           perl Makefile.PL;
