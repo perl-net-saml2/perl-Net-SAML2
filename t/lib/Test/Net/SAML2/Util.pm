@@ -34,26 +34,24 @@ use URI::URL;
 
 sub net_saml2_sp {
     return Net::SAML2::SP->new(
-        id               => 'http://localhost:3000',
-        url              => 'http://localhost:3000',
-        cert             => 't/sign-nopw-cert.pem',
-        key              => 't/sign-nopw-cert.pem',
-        cacert           => 't/cacert.pem',
-        org_name         => 'Test',
-        org_display_name => 'Test',
+
+
+        id     => 'Some entity ID',
+        cert   => 't/sign-nopw-cert.pem',
+        key    => 't/sign-nopw-cert.pem',
+        cacert => 't/cacert.pem',
+
+        org_name         => 'Net::SAML2::SP',
+        org_display_name => 'Net::SAML2::SP testsuite',
         org_contact      => 'test@example.com',
         org_url          => 'http://www.example.com',
-        slo_url_soap     => '/slo-soap',
+
+        url              => 'http://localhost:3000',
         slo_url_redirect => '/sls-redirect-response',
-        slo_url_post     => '/sls-post-response',
         acs_url_post     => '/consumer-post',
         acs_url_artifact => '/consumer-artifact',
-        org_name         => 'Net::SAML2 Saml2Test',
-        org_display_name => 'Saml2Test app for Net::SAML2',
-        org_contact      => 'saml2test@example.com',
         error_url        => '/error',
-        authnreq_signed  => '0',
-        want_assertions_signed => '0',
+
         @_,
     );
 }

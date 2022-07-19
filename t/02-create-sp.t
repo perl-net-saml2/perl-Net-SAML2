@@ -3,61 +3,71 @@ use warnings;
 use Test::Lib;
 use Test::Net::SAML2;
 
-my $sp = net_saml2_sp();
-
-my $xpath = get_xpath(
-    $sp->metadata,
-    md => 'urn:oasis:names:tc:SAML:2.0:metadata',
-    ds => 'http://www.w3.org/2000/09/xmldsig#'
-);
-
-my $node
-    = get_single_node_ok($xpath, '//md:EntityDescriptor/md:SPSSODescriptor');
-ok(!$node->getAttribute('WantAssertionsSigned'),
-    'Wants assertions to be signed');
-ok(
-    !$node->getAttribute('AuthnRequestsSigned'),
-    '.. and also authn requests to be signed'
-);
-
-my @ssos = $xpath->findnodes(
-    '//md:EntityDescriptor/md:SPSSODescriptor/md:AssertionConsumerService');
-
-if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
-    is(
-        $ssos[0]->getAttribute('Binding'),
-        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-        "Returns the correct binding: HTTP-POST"
-    );
-    is(
-        $ssos[1]->getAttribute('Binding'),
-        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
-        "Returns the correct binding: HTTP-Artifact"
-    );
-}
-
 {
-    my $node = get_single_node_ok($xpath,
-        '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"]'
-    );
-    is(
-        $node->getAttribute('Location'),
-        'http://localhost:3000/slo-soap',
-        ".. with the correct location"
+    my $sp = net_saml2_sp(
+        authnreq_signed        => 0,
+        want_assertions_signed => 0,
+        slo_url_post           => '/sls-post-response',
+        slo_url_soap           => '/slo-soap',
     );
 
-    $node = get_single_node_ok($xpath,
-        '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]'
+    my $xpath = get_xpath(
+        $sp->metadata,
+        md => 'urn:oasis:names:tc:SAML:2.0:metadata',
+        ds => 'http://www.w3.org/2000/09/xmldsig#'
     );
-    is(
-        $node->getAttribute('Location'),
-        'http://localhost:3000/sls-post-response',
-        ".. with the correct location"
+
+    my $node
+        = get_single_node_ok($xpath,
+        '//md:EntityDescriptor/md:SPSSODescriptor');
+    ok(!$node->getAttribute('WantAssertionsSigned'),
+        'Wants assertions to be signed');
+    ok(
+        !$node->getAttribute('AuthnRequestsSigned'),
+        '.. and also authn requests to be signed'
     );
+
+    my @ssos
+        = $xpath->findnodes(
+        '//md:EntityDescriptor/md:SPSSODescriptor/md:AssertionConsumerService'
+        );
+
+    if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
+        is(
+            $ssos[0]->getAttribute('Binding'),
+            'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+            "Returns the correct binding: HTTP-POST"
+        );
+        is(
+            $ssos[1]->getAttribute('Binding'),
+            'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
+            "Returns the correct binding: HTTP-Artifact"
+        );
+    }
+
+    {
+        my $node = get_single_node_ok($xpath,
+            '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"]'
+        );
+        is(
+            $node->getAttribute('Location'),
+            'http://localhost:3000/slo-soap',
+            ".. with the correct location"
+        );
+
+        $node = get_single_node_ok($xpath,
+            '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]'
+        );
+        is(
+            $node->getAttribute('Location'),
+            'http://localhost:3000/sls-post-response',
+            ".. with the correct location"
+        );
+    }
+
+
+    get_single_node_ok($xpath, '//ds:Signature');
 }
-
-
-get_single_node_ok($xpath, '//ds:Signature');
 
 {
     my $sp    = net_saml2_sp(sign_metadata => 0);
@@ -73,23 +83,7 @@ get_single_node_ok($xpath, '//ds:Signature');
 }
 
 {
-    my $sp = Net::SAML2::SP->new(
-        id     => 'Some entity ID',
-        url    => 'http://localhost:3000',
-        cert   => 't/sign-nopw-cert.pem',
-        key    => 't/sign-nopw-cert.pem',
-        cacert => 't/cacert.pem',
-
-        org_name         => 'Net::SAML2::SP',
-        org_display_name => 'Net::SAML2::SP testsuite',
-        org_contact      => 'test@example.com',
-
-        org_url          => 'http://www.example.com',
-        slo_url_redirect => '/sls-redirect-response',
-        acs_url_post     => '/consumer-post',
-        acs_url_artifact => '/consumer-artifact',
-        error_url        => '/error',
-    );
+    my $sp = net_saml2_sp();
 
     my $xpath = get_xpath(
         $sp->metadata,
@@ -174,10 +168,18 @@ get_single_node_ok($xpath, '//ds:Signature');
     }
 
     # These nodes are missing
-    ok(!$xpath->findnodes('//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"]'),
-        "No node found for slo_url_soap");
-    ok(!$xpath->findnodes('//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]'),
-        "No node found for slo_url_post");
+    ok(
+        !$xpath->findnodes(
+            '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"]'
+        ),
+        "No node found for slo_url_soap"
+    );
+    ok(
+        !$xpath->findnodes(
+            '//md:SingleLogoutService[@Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"]'
+        ),
+        "No node found for slo_url_post"
+    );
 
     {
         # Test Signature
