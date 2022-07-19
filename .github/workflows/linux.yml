@@ -29,7 +29,15 @@ jobs:
       - uses: actions/checkout@v1
       - name: Install Net::SAML2 Depends
         run: |
-          apt-get install libxml2 make gcc;
+          apt-get install libxml2 make gcc wget;
+          mkdir -p $HOME/.cpanm ;
+          cd $HOME/.cpanm;
+          wget https://src.fedoraproject.org/repo/pkgs/perl-Math-Pari/pari-2.3.4.tar.gz/35c896266e4257793387ba22d5d76078/pari-2.3.4.tar.gz \
+            -O pari-2.3.4.tar.gz ;
+          echo '35c896266e4257793387ba22d5d76078  pari-2.3.4.tar.gz' | md5sum -c - ;
+          tar zxf pari-2.3.4.tar.gz;
+          cd - ;
+          cpanm Math::Pari;
           cpanm --installdeps . ;
       - name: Build Module
         run: |
