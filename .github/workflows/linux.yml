@@ -38,7 +38,7 @@ jobs:
           echo '35c896266e4257793387ba22d5d76078  pari-2.3.4.tar.gz' | md5sum -c - ;
           tar zxf pari-2.3.4.tar.gz;
           cd - ;
-          cpanm Math::Pari;
+          cpanm Math::Pari Moose;
           cpanm --installdeps . ;
       - name: Build Module
         run: |
