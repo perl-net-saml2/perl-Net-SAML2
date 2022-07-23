@@ -153,6 +153,14 @@ has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
 has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
 has 'org_url'          => (isa => 'Str', is => 'ro', required => 0);
 
+# These are no longer in use, but are not removed by the off change that
+# someone that extended us or added a role to us with these params.
+has 'slo_url_soap'     => (isa => 'Str', is => 'ro', required => 0);
+has 'slo_url_post'     => (isa => 'Str', is => 'ro', required => 0);
+has 'slo_url_redirect' => (isa => 'Str', is => 'ro', required => 0);
+has 'acs_url_post'     => (isa => 'Str', is => 'ro', required => 0);
+has 'acs_url_artifact' => (isa => 'Str', is => 'ro', required => 0);
+
 has '_cert_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_cert_text', lazy => 1);
 
 has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0, default => 1);
@@ -172,7 +180,7 @@ around BUILDARGS => sub {
     if (!$args{single_logout_service}) {
         #warn "Deprecation warning, please upgrade your code to use ..";
         my @slo;
-        if (my $slo = delete $args{slo_url_soap}) {
+        if (my $slo = $args{slo_url_soap}) {
             push(
                 @slo,
                 {
@@ -181,7 +189,7 @@ around BUILDARGS => sub {
                 }
             );
         }
-        if (my $slo = delete $args{slo_url_redirect}) {
+        if (my $slo = $args{slo_url_redirect}) {
             push(
                 @slo,
                 {
@@ -190,7 +198,7 @@ around BUILDARGS => sub {
                 }
             );
         }
-        if (my $slo = delete $args{slo_url_post}) {
+        if (my $slo = $args{slo_url_post}) {
             push(
                 @slo,
                 {
@@ -219,7 +227,7 @@ around BUILDARGS => sub {
                 }
             );
         }
-        if (my $acs = delete $args{acs_url_artifact}) {
+        if (my $acs = $args{acs_url_artifact}) {
             push(
                 @acs,
                 {
@@ -459,7 +467,7 @@ sub generate_metadata {
                     'urn:oasis:names:tc:SAML:2.0:protocol',
             },
 
-            $self->_generate_keydescriptors($x),
+            $self->_generate_key_descriptors($x),
 
             $self->_generate_single_logout_service($x),
 
@@ -490,7 +498,7 @@ sub generate_metadata {
     );
 }
 
-sub _generate_keydescriptors {
+sub _generate_key_descriptors {
     my $self = shift;
     my $x    = shift;
 
@@ -523,13 +531,7 @@ sub _generate_keydescriptors {
 sub _generate_single_logout_service {
     my $self = shift;
     my $x    = shift;
-
-    my @slo;
-    foreach (@{ $self->single_logout_service }) {
-        push(@slo, $x->SingleLogoutService($md, $_));
-    }
-    return @slo;
-
+    return map { $x->SingleLogoutService($md, $_) } @{ $self->single_logout_service };
 }
 
 sub _generate_assertion_consumer_service {
@@ -560,7 +562,7 @@ Returns the metadata XML document for this SP.
 =cut
 
 sub metadata {
-    my ($self) = @_;
+    my $self = shift;
 
     my $metadata = $self->generate_metadata();
     return $metadata unless $self->sign_metadata;
