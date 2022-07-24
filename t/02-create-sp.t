@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::Lib;
 use Test::Net::SAML2;
+use URN::OASIS::SAML2 qw(:bindings :urn);
 
 {
     my $sp = net_saml2_sp(
@@ -13,8 +14,8 @@ use Test::Net::SAML2;
 
     my $xpath = get_xpath(
         $sp->metadata,
-        md => 'urn:oasis:names:tc:SAML:2.0:metadata',
-        ds => 'http://www.w3.org/2000/09/xmldsig#'
+        md => URN_METADATA,
+        ds => URN_SIGNATURE,
     );
 
     my $node
@@ -73,8 +74,8 @@ use Test::Net::SAML2;
     my $sp    = net_saml2_sp(sign_metadata => 0);
     my $xpath = get_xpath(
         $sp->metadata,
-        md => 'urn:oasis:names:tc:SAML:2.0:metadata',
-        ds => 'http://www.w3.org/2000/09/xmldsig#'
+        md => URN_METADATA,
+        ds => URN_SIGNATURE,
     );
 
     my $nodes = $xpath->findnodes('//ds:Signature');
@@ -87,8 +88,8 @@ use Test::Net::SAML2;
 
     my $xpath = get_xpath(
         $sp->metadata,
-        md => 'urn:oasis:names:tc:SAML:2.0:metadata',
-        ds => 'http://www.w3.org/2000/09/xmldsig#'
+        md => URN_METADATA,
+        ds => URN_SIGNATURE,
     );
 
     my $node = get_single_node_ok($xpath, '/md:EntityDescriptor');
@@ -186,6 +187,98 @@ use Test::Net::SAML2;
         my $node = get_single_node_ok($xpath, '/node()/ds:Signature');
 
     }
+
+}
+
+{
+
+    my $sp = net_saml2_sp(
+        single_logout_service => [
+            {
+                Binding  => BINDING_HTTP_POST,
+                Location => 'https://foo.example.com/slo-http-post'
+            }
+        ],
+        assertion_consumer_service => [
+            {
+                Binding  => BINDING_HTTP_POST,
+                Location => 'https://foo.example.com/acs-http-post',
+                isDefault => 'false'
+            },
+            {
+                Binding  => BINDING_HTTP_ARTIFACT,
+                Location => 'https://foo.example.com/acs-http-artifact',
+                isDefault => 'true'
+            }
+        ],
+    );
+
+    my $xpath = get_xpath(
+        $sp->metadata,
+        md => URN_METADATA,
+        ds => URN_SIGNATURE,
+    );
+
+    my @ssos
+        = $xpath->findnodes(
+        '//md:EntityDescriptor/md:SPSSODescriptor/md:AssertionConsumerService'
+        );
+
+    if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
+
+        is(
+            $ssos[0]->getAttribute('Binding'),
+            BINDING_HTTP_POST,
+            "Returns the correct binding: HTTP-POST"
+        );
+        is($ssos[0]->getAttribute('isDefault'),
+            'false', "... and is the default");
+
+        is($ssos[0]->getAttribute('index'), 1,
+            "... and has the correct index");
+
+        is(
+            $ssos[1]->getAttribute('Binding'),
+            BINDING_HTTP_ARTIFACT,
+            "Returns the correct binding: HTTP-Artifact"
+        );
+
+        is($ssos[1]->getAttribute('isDefault'),
+            'true', "... and is the default");
+
+        is($ssos[1]->getAttribute('index'), 2,
+            "... and has the correct index");
+    }
+
+    throws_ok(
+        sub {
+            my $sp = net_saml2_sp(
+                single_logout_service => [
+                ],
+                assertion_consumer_service => [
+                ],
+            );
+        },
+        qr/You don't have any Single Logout Services configured/,
+        "Needs at least one SLO",
+    );
+
+    throws_ok(
+        sub {
+            my $sp = net_saml2_sp(
+                single_logout_service => [
+                    {
+                        Binding => 'foo',
+                        Location => 'bar',
+                    }
+                ],
+                assertion_consumer_service => [
+                ],
+            );
+        },
+        qr/You don't have any Assertion Consumer Services configured/,
+        "Needs at least one ASC",
+    );
 
 }
 
