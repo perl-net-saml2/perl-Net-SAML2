@@ -443,8 +443,8 @@ Generate the metadata XML document for this SP.
 
 =cut
 
-my $md = ['md' => 'urn:oasis:names:tc:SAML:2.0:metadata'];
-my $ds = ['ds' => 'http://www.w3.org/2000/09/xmldsig#'];
+my $md = ['md' => URN_METADATA];
+my $ds = ['ds' => URN_SIGNATURE];
 
 sub generate_metadata {
     my $self = shift;
@@ -468,8 +468,7 @@ sub generate_metadata {
                 AuthnRequestsSigned        => $self->authnreq_signed,
                 WantAssertionsSigned       => $self->want_assertions_signed,
                 errorURL                   => $error_uri,
-                protocolSupportEnumeration =>
-                    'urn:oasis:names:tc:SAML:2.0:protocol',
+                protocolSupportEnumeration => URN_PROTOCOL,
             },
 
             $self->_generate_key_descriptors($x),

@@ -149,6 +149,11 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
             '1', '.. as does assertions');
         is($node->getAttribute('errorURL'),
             'http://localhost:3000/error', 'Got the correct error URI');
+        is(
+            $node->getAttribute('protocolSupportEnumeration'),
+            'urn:oasis:names:tc:SAML:2.0:protocol',
+            'Got the protocolSupportEnumeration'
+        );
 
         my $p = $node->nodePath();
 
