@@ -14,7 +14,7 @@ our @EXPORT_OK = qw(
 );
 
 sub generate_id {
-    return 'NETSAML2_' . unpack 'H*', random_pseudo_bytes(16);
+    return 'NETSAML2_' . unpack 'H*', random_pseudo_bytes(32);
 }
 
 
