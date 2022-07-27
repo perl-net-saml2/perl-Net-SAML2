@@ -3,6 +3,7 @@ use warnings;
 use Test::Lib;
 use Test::Net::SAML2;
 use Net::SAML2::IdP;
+use Test::Mock::One;
 
 my $xml = <<XML;
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -224,6 +225,154 @@ XML
 
     is($idp->format, undef, "No default format thus no format set");
 
+}
+
+{
+    my $xml = path('t/idp-metadata2.xml')->slurp;
+    my $override = Sub::Override->new(
+        'LWP::UserAgent::request' => sub {
+            return Test::Mock::One->new(
+                is_success      => 1,
+                decoded_content => $xml
+            )
+        }
+    );
+
+    my $idp = Net::SAML2::IdP->new_from_url(
+        url    => 'https://foo.example.com/auth/saml',
+        cacert => 't/cacert.pem'
+    );
+
+    isa_ok($idp, "Net::SAML2::IdP");
+
+    my $redirect_binding = $idp->binding('redirect');
+    my $soap_binding     = $idp->binding('soap');
+
+    is(
+        $redirect_binding,
+        'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+        "Has correct binding: HTTP-Redirect"
+    );
+    is(
+        $soap_binding,
+        'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
+        "Has correct binding: SOAP"
+    );
+
+    is(
+        $idp->sso_url($redirect_binding),
+        'http://sso.dev.venda.com/opensso/SSORedirect/metaAlias/idp',
+        'Has correct sso_url'
+    );
+    is(
+        $idp->slo_url($redirect_binding),
+        'http://sso.dev.venda.com/opensso/IDPSloRedirect/metaAlias/idp',
+        'Has correct slo_url'
+    );
+    is(
+        $idp->art_url($soap_binding),
+        'http://sso.dev.venda.com/opensso/ArtifactResolver/metaAlias/idp',
+        'Has correct art_url'
+    );
+
+    looks_like_a_cert($idp->cert('signing'), 'Looks like signing certificate');
+
+    is(
+        $idp->entityid,
+        'http://sso.dev.venda.com/opensso',
+        "Has the correct entityid"
+    );
+
+    is(
+        $idp->format('transient'),
+        'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+        "has correct transient format"
+    );
+    is(
+        $idp->format,
+        'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+        'has correct persistent format'
+    );
+}
+
+{
+
+    my $xml = path('t/idp-metadata2.xml')->slurp;
+    my $ua;
+    my $override = Sub::Override->new(
+        'LWP::UserAgent::request' => sub {
+            $ua = shift;
+            return Test::Mock::One->new(
+                is_success      => 1,
+                decoded_content => $xml
+            )
+        }
+    );
+
+    Net::SAML2::IdP->new_from_url(
+        url    => 'https://foo.example.com/auth/saml',
+        cacert => 't/cacert.pem'
+    );
+
+    like($ua->agent, qr/^libwww-perl\/\d+\.\d+/, "Is the default user agent");
+
+    Net::SAML2::IdP->new_from_url(
+        url    => 'https://foo.example.com/auth/saml',
+        cacert => 't/cacert.pem',
+        ssl_opts => { verify_hostname => 1, SSL_ca_file => '/path/to/ca' },
+    );
+    like($ua->agent, qr/^libwww-perl\/\d+\.\d+/, "Is the default user agent");
+    my %opts = map { $_ => $ua->ssl_opts($_) } $ua->ssl_opts;
+    cmp_deeply(\%opts,
+        {
+            verify_hostname => 1,
+            SSL_ca_file     => '/path/to/ca',
+        },
+        ".. and has the correct SSL options"
+    );
+
+    Net::SAML2::IdP->new_from_url(
+        url    => 'https://foo.example.com/auth/saml',
+        cacert => 't/cacert.pem',
+        ua => LWP::UserAgent->new(
+            agent    => "Foo",
+            ssl_opts => { verify_hostname => 0 }
+        ),
+    );
+    is($ua->agent, "Foo", "We have our custom agent");
+    %opts = map { $_ => $ua->ssl_opts($_) } $ua->ssl_opts;
+    cmp_deeply(\%opts,
+        {
+            verify_hostname => 0,
+        },
+        ".. and has the correct SSL options"
+    );
+
+}
+
+{
+    my $xml = path('t/idp-metadata2.xml')->slurp;
+    my $ua;
+    my $override = Sub::Override->new(
+        'LWP::UserAgent::request' => sub {
+            $ua = shift;
+            return Test::Mock::One->new(
+                is_success      => 0,
+                message         => "I'm a teapot",
+                code            => 418,
+            )
+        }
+    );
+    throws_ok(
+        sub {
+            Net::SAML2::IdP->new_from_url(
+                url    => 'https://foo.example.com/auth/saml',
+                cacert => 't/cacert.pem',
+            );
+        },
+        qr/Error retrieving metadata: I'm a teapot \(418\)/,
+        "Unable to get metadata because we're talking to a teapot",
+    );
 }
 
 done_testing;
