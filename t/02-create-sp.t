@@ -211,6 +211,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
                 isDefault => 'true'
             }
         ],
+        error_url => 'https://foo.example.com/error-url',
     );
 
     my $xpath = get_xpath(
@@ -219,10 +220,15 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
         ds => URN_SIGNATURE,
     );
 
-    my @ssos
-        = $xpath->findnodes(
-        '//md:EntityDescriptor/md:SPSSODescriptor/md:AssertionConsumerService'
-        );
+
+    # Test SPSSODescriptor
+    my $node = get_single_node_ok($xpath, '//md:SPSSODescriptor');
+    is($node->getAttribute('errorURL'),
+        'https://foo.example.com/error-url', 'Got the correct error URI');
+
+    my $path = $node->nodePath;
+
+    my @ssos = $xpath->findnodes("$path/md:AssertionConsumerService");
 
     if (is(@ssos, 2, "Got two assertionConsumerService(s)")) {
 

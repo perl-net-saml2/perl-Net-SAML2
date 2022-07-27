@@ -147,7 +147,7 @@ has 'cert'   => (isa => 'Str', is => 'ro', required => 1);
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
 
-has 'error_url'        => (isa => 'Str', is => 'ro', required => 1);
+has 'error_url'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
 has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
 has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
@@ -451,6 +451,11 @@ sub generate_metadata {
 
     my $x = XML::Generator->new(':pretty', conformance => 'loose');
 
+    my $error_uri = $self->error_url;
+    if (!$error_uri->scheme) {
+        $error_uri = $self->url . $self->error_url;
+    }
+
     return $x->EntityDescriptor(
         $md,
         {
@@ -462,7 +467,7 @@ sub generate_metadata {
             {
                 AuthnRequestsSigned        => $self->authnreq_signed,
                 WantAssertionsSigned       => $self->want_assertions_signed,
-                errorURL                   => $self->url . $self->error_url,
+                errorURL                   => $error_uri,
                 protocolSupportEnumeration =>
                     'urn:oasis:names:tc:SAML:2.0:protocol',
             },
