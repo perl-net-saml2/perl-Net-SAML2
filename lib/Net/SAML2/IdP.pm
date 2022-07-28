@@ -67,10 +67,16 @@ has 'sso_urls' => (isa => 'HashRef[Str]', is => 'ro', required => 1);
 has 'slo_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
 has 'art_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
 has 'certs'    => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
-has 'formats'  => (isa => 'HashRef[Str]',        is => 'ro', required => 1);
 has 'sls_force_lcase_url_encoding'    => (isa => 'Bool', is => 'ro', required => 0);
 has 'sls_double_encoded_response' => (isa => 'Bool', is => 'ro', required => 0);
-has 'default_format'          => (isa => 'Str',  is => 'ro', required => 1);
+
+has 'formats' => (
+    isa      => 'HashRef[Str]',
+    is       => 'ro',
+    required => 0,
+    default  => sub { {} }
+);
+has 'default_format' => (isa => 'Str', is => 'ro', required => 0);
 
 =head2 new_from_url( url => $url, cacert => $cacert, ssl_opts => {} )
 
@@ -100,11 +106,11 @@ sub new_from_url {
     my $xml = $res->content;
 
     return $class->new_from_xml(
-                    xml => $xml,
-                    cacert => $args{cacert},
-                    sls_force_lcase_url_encoding => $args{sls_force_lcase_url_encoding},
-                    sls_double_encoded_response => $args{sls_double_encoded_response},
-                    );
+        xml                          => $xml,
+        cacert                       => $args{cacert},
+        sls_force_lcase_url_encoding => $args{sls_force_lcase_url_encoding},
+        sls_double_encoded_response  => $args{sls_double_encoded_response},
+    );
 }
 
 =head2 new_from_xml( xml => $xml, cacert => $cacert )
@@ -156,20 +162,16 @@ sub new_from_xml {
         $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:NameIDFormat'))
     {
         $format = $format->string_value;
-        $format =~ s/^\s+|\s+$//g;
+        $format =~ s/^\s+//g;
+        $format =~ s/\s+$//g;
+
         my($short_format)
             = $format =~ /urn:oasis:names:tc:SAML:(?:2.0|1.1):nameid-format:(.*)$/;
+
         if(defined $short_format) {
-            $data->{NameIDFormat}->{$short_format} = $format;
+            $data->{NameIDFormat}{$short_format} = $format;
             $data->{DefaultFormat} = $short_format unless exists $data->{DefaultFormat};
         }
-    }
-
-    # NameIDFormat is an optional field and not provided in all metadata xml
-    # Microsoft in particular does not provide this field
-    if(!defined($data->{NameIDFormat})){
-        $data->{NameIDFormat}->{unspecified} = 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified';
-        $data->{DefaultFormat} = 'unspecified' unless exists $data->{DefaultFormat};
     }
 
     for my $key (
@@ -202,16 +204,20 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
-        entityid       => $xpath->findvalue('//md:EntityDescriptor/@entityID'),
-        sso_urls       => $data->{SSO},
-        slo_urls       => $data->{SLO} || {},
-        art_urls       => $data->{Art} || {},
-        certs          => $data->{Cert},
-        formats        => $data->{NameIDFormat},
-        default_format => $data->{DefaultFormat},
-        cacert         => $args{cacert},
+        entityid => $xpath->findvalue('//md:EntityDescriptor/@entityID'),
+        sso_urls => $data->{SSO},
+        slo_urls => $data->{SLO} || {},
+        art_urls => $data->{Art} || {},
+        certs                        => $data->{Cert},
+        cacert                       => $args{cacert},
         sls_force_lcase_url_encoding => $args{sls_force_lcase_url_encoding},
-        sls_double_encoded_response => $args{sls_double_encoded_response},
+        sls_double_encoded_response  => $args{sls_double_encoded_response},
+        $data->{DefaultFormat}
+        ? (
+            default_format => $data->{DefaultFormat},
+            formats        => $data->{NameIDFormat},
+            )
+        : (),
     );
 
     return $self;
