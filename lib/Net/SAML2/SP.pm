@@ -145,7 +145,7 @@ has 'url'    => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'id'     => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'   => (isa => 'Str', is => 'ro', required => 1);
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
-has 'cacert' => (isa => 'Maybe[Str]', is => 'ro', required => 1);
+has 'cacert' => (isa => 'Str', is => 'rw', required => 0, predicate => 'has_cacert');
 
 has 'error_url'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
@@ -398,7 +398,11 @@ XXX UA
 sub soap_binding {
     my ($self, $ua, $idp_url, $idp_cert) = @_;
 
-    my $soap = Net::SAML2::Binding::SOAP->new(
+    if (!$self->has_cacert) {
+        croak("Unable to create SOAP binding, no CA certificate provided");
+    }
+
+    return Net::SAML2::Binding::SOAP->new(
         ua       => $ua,
         key      => $self->key,
         cert     => $self->cert,
@@ -406,8 +410,6 @@ sub soap_binding {
         idp_cert => $idp_cert,
         cacert   => $self->cacert,
     );
-
-    return $soap;
 }
 
 =head2 post_binding( )
@@ -419,11 +421,9 @@ Returns a POST binding object for this SP.
 sub post_binding {
     my ($self) = @_;
 
-    my $post = Net::SAML2::Binding::POST->new(
-        cacert => $self->cacert,
+    return Net::SAML2::Binding::POST->new(
+        $self->has_cacert ? (cacert => $self->cacert) : ()
     );
-
-    return $post;
 }
 
 =head2 generate_sp_desciptor_id ( )
