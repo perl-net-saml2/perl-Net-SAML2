@@ -7,7 +7,9 @@
 # has become more bother than it is worth.
 use strict;
 use warnings;
-package Net::SAML2::XML::Sig; use base qw(XML::Sig); 1;
-# VERSION
-
+package Net::SAML2::XML::Sig; use base qw(XML::Sig);
+#VERSION
+#
 # ABSTRACT: Net::SAML2 subclass of XML::Sig
+
+1;
