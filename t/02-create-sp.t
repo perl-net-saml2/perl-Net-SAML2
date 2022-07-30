@@ -261,6 +261,13 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
             "... and has the correct index");
     }
 
+    my $default = $sp->get_default_assertion_service;
+    is($default->{Binding}, BINDING_HTTP_ARTIFACT,
+        "We found the default assertion service");
+    is($default->{Location}, 'https://foo.example.com/acs-http-artifact',
+        "... with the correct URI");
+    is($default->{index}, 2, "... and index");
+
     throws_ok(
         sub {
             my $sp = net_saml2_sp(
