@@ -8,6 +8,7 @@ use Moose;
 use Carp qw(croak);
 use Crypt::OpenSSL::X509;
 use Digest::MD5 ();
+use List::Util qw(first none);
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::Binding::POST;
 use Net::SAML2::Binding::Redirect;
@@ -107,7 +108,7 @@ Services
     {
         Binding => BINDING_HTTP_POST,
         Location => https://foo.example.com/your-post-endpoint,
-    }
+    },
     {
         Binding => BINDING_HTTP_ARTIFACT,
         Location => https://foo.example.com/your-artifact-endpoint,
@@ -124,16 +125,19 @@ This expects an array of hash refs where you define one or more Assertion
 Consumer Services.
 
   [
-    # Order decides the index
+    # Order decides the index if not supplied, else we assume you have an index
     {
         Binding => BINDING_HTTP_POST,
         Location => https://foo.example.com/your-post-endpoint,
         isDefault => 'false',
-    }
+        # optionally
+        index => 1,
+    },
     {
         Binding => BINDING_HTTP_ARTIFACT,
         Location => https://foo.example.com/your-artifact-endpoint,
         isDefault => 'true',
+        index => 2,
     }
   ]
 
@@ -243,6 +247,16 @@ around BUILDARGS => sub {
     if (!@{$args{assertion_consumer_service}}) {
       croak("You don't have any Assertion Consumer Services configured!");
     }
+
+    my $acs_index = 1;
+    if (none { $_->{index} } @{$args{assertion_consumer_service}}) {
+        foreach (@{$args{assertion_consumer_service}}) {
+            $_->{index} = $acs_index;
+            ++$acs_index;
+        }
+    }
+
+
     return $self->$orig(%args);
 };
 
@@ -541,21 +555,7 @@ sub _generate_single_logout_service {
 sub _generate_assertion_consumer_service {
     my $self = shift;
     my $x    = shift;
-
-    my @services = @{ $self->assertion_consumer_service };
-    my $size     = @services;
-
-    my @acs;
-    for (my $i = 0; $i < $size; ++$i) {
-        push(
-            @acs,
-            $x->AssertionConsumerService(
-                $md, { %{ $services[$i] }, index => $i + 1, },
-            )
-        );
-    }
-    return @acs;
-
+    return map { $x->AssertionConsumerService($md, $_) } @{ $self->assertion_consumer_service };
 }
 
 
@@ -584,6 +584,18 @@ sub metadata {
         }
     );
     return $signer->sign($metadata);
+}
+
+=head2 get_default_assertion_service
+
+Return the assertion service which is the default
+
+=cut
+
+sub get_default_assertion_service {
+    my $self = shift;
+    return first { $_->{isDefault} eq 1 || $_->{isDefault} eq 'true' }
+        @{ $self->assertion_consumer_service };
 }
 
 __PACKAGE__->meta->make_immutable;
