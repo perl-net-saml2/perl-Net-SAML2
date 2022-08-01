@@ -5,6 +5,7 @@ package Net::SAML2::Binding::Redirect;
 
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
+use Net::SAML2::Types qw(signingAlgorithm SAMLRequestType);
 
 # ABSTRACT: Net::SAML2::Binding::Redirect - HTTP Redirect binding for SAML
 
@@ -67,6 +68,7 @@ IdP's SSO (Single Sign Out) service url for the Redirect binding
 =item B<param>
 
 query param name to use (SAMLRequest, SAMLResponse)
+Defaults to C<SAMLRequest>.
 
 =item B<sig_hash>
 
@@ -76,7 +78,7 @@ Supported:
 
 sha1, sha224, sha256, sha384, sha512
 
-sha1 is current default but will change by version 44
+Defaults to C<sha1>.
 
 =item B<sls_force_lcase_url_encoding>
 
@@ -94,13 +96,37 @@ The double encoding requires it to be decoded prior to processing.
 
 =cut
 
-has 'key'   => (isa => 'Str', is => 'ro', required => 1);
-has 'cert'  => (isa => 'Str', is => 'ro', required => 1);
-has 'url'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'param' => (isa => 'Str', is => 'ro', required => 1);
-has 'sig_hash' => (isa => 'Str', is => 'ro', required => 0);
-has 'sls_force_lcase_url_encoding'    => (isa => 'Bool', is => 'ro', required => 0);
-has 'sls_double_encoded_response' => (isa => 'Bool', is => 'ro', required => 0);
+has 'key'  => (isa => 'Str', is => 'ro', required => 1);
+has 'cert' => (isa => 'Str', is => 'ro', required => 1);
+has 'url'  => (isa => Uri, is => 'ro', required => 1, coerce => 1);
+
+has 'param' => (
+    isa      => SAMLRequestType,
+    is       => 'ro',
+    required => 0,
+    default  => 'SAMLRequest'
+);
+
+has 'sig_hash' => (
+    isa      => signingAlgorithm,
+    is       => 'ro',
+    required => 0,
+    default  => 'sha1'
+);
+
+has 'sls_force_lcase_url_encoding' => (
+    isa      => 'Bool',
+    is       => 'ro',
+    required => 0,
+    default  => 0
+);
+
+has 'sls_double_encoded_response' => (
+    isa      => 'Bool',
+    is       => 'ro',
+    required => 0,
+    default  => 0
+);
 
 =head2 sign( $request, $relaystate )
 
@@ -129,32 +155,19 @@ sub sign {
     my $key_string = read_text($self->key);
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
 
-    if ( exists $self->{ sig_hash } && grep { $_ eq $self->{ sig_hash } } ('sha224', 'sha256', 'sha384', 'sha512'))
-    {
-        if ($self->{ sig_hash } eq 'sha224') {
-            $rsa_priv->use_sha224_hash;
-        } elsif ($self->{ sig_hash } eq 'sha256') {
-            $rsa_priv->use_sha256_hash;
-        } elsif ($self->{ sig_hash } eq 'sha384') {
-            $rsa_priv->use_sha384_hash;
-        } elsif ($self->{ sig_hash } eq 'sha512') {
-            $rsa_priv->use_sha512_hash;
-        } else {
-            die "Unsupported Signing Hash";
-        }
-        $u->query_param('SigAlg', 'http://www.w3.org/2001/04/xmldsig-more#rsa-' . $self->{ sig_hash });
-    }
-    else { #$self->{ sig_hash } eq 'sha1' or something unsupported
-        $rsa_priv->use_sha1_hash;
-        $u->query_param('SigAlg', 'http://www.w3.org/2000/09/xmldsig#rsa-sha1');
-    }
+    my $method = "use_" . $self->sig_hash . "_hash";
+    $rsa_priv->$method;
+
+    $u->query_param('SigAlg',
+        $self->sig_hash eq 'sha1'
+        ? 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
+        : 'http://www.w3.org/2001/04/xmldsig-more#rsa-' . $self->sig_hash);
 
     my $to_sign = $u->query;
     my $sig = encode_base64($rsa_priv->sign($to_sign), '');
     $u->query_param('Signature', $sig);
 
-    my $url = $u->as_string;
-    return $url;
+    return $u->as_string;
 }
 
 =head2 verify( $url )
@@ -193,7 +206,7 @@ sub verify {
     }
 
     # Some IdPs (PingIdentity) seem to double encode the LogoutResponse URL
-    if (defined $self->sls_double_encoded_response and $self->sls_double_encoded_response == 1) {
+    if ($self->sls_double_encoded_response) {
         #if ($sigalg =~ m/%/) {
         $signed = uri_decode($u->query);
         $sig = uri_decode($sig);
@@ -207,7 +220,7 @@ sub verify {
     # What can we say about this one Microsoft Azure uses lower case in the
     # URL encoding %2f not %2F.  As it is signed as %2f the resulting signed
     # needs to change it to lowercase if the application layer reencoded the URL.
-    if (defined $self->sls_force_lcase_url_encoding and $self->sls_force_lcase_url_encoding == 1) {
+    if ($self->sls_force_lcase_url_encoding) {
         # TODO: This is a hack.
         $signed =~ s/(%..)/lc($1)/ge;
     }
