@@ -5,7 +5,7 @@ package Net::SAML2::Util;
 
 use Crypt::OpenSSL::Random qw(random_pseudo_bytes);
 
-# ABSTRACT: Utility functions for Net:SAML2
+# ABSTRACT: Utility functions for Net::SAML2
 
 use Exporter qw(import);
 

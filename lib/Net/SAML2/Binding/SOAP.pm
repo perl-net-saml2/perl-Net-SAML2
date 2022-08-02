@@ -1,11 +1,12 @@
-use strict;
-use warnings;
 package Net::SAML2::Binding::SOAP;
+use Moose;
+
 # VERSION
 
-use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
+
+with 'Net::SAML2::Role::VerifyXML';
 
 # ABSTRACT: Net::SAML2::Binding::Artifact - SOAP binding for SAML
 
@@ -142,35 +143,15 @@ Accepts a string containing the complete SOAP response.
 sub handle_response {
     my ($self, $response) = @_;
 
-    # verify the response
-    my $x = Net::SAML2::XML::Sig->new(
-    {
-        x509 => 1,
-        cert_text => $self->idp_cert,
-        exclusive => 1,
+    my $saml = _get_saml_from_soap($response);
+    $self->verify_xml(
+        $saml,
         no_xml_declaration => 1,
-    });
+        cert_text          => $self->idp_cert,
+        cacert             => $self->cacert,
+    );
+    return $saml;
 
-    my $ret = $x->verify($response);
-    die "bad SOAP response" unless $ret;
-
-    # verify the signing certificate
-    my $cert = $x->signer_cert;
-    my $ca = Crypt::OpenSSL::Verify->new($self->cacert, { strict_certs => 0, });
-    $ret = $ca->verify($cert);
-    die "bad signer cert" unless $ret;
-
-    my $subject = sprintf("%s (verified)", $cert->subject);
-
-    # parse the SOAP response and return the payload
-    my $dom = no_comments($response);
-
-    my $parser = XML::LibXML::XPathContext->new($dom);
-    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-
-    my $saml = $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
-    return ($subject, $saml);
 }
 
 =head2 handle_request( $request )
@@ -184,30 +165,26 @@ Accepts a string containing the complete SOAP request.
 sub handle_request {
     my ($self, $request) = @_;
 
-    my $dom = no_comments($request);
-
-    my $parser = XML::LibXML::XPathContext->new($dom);
-    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-
-    my ($nodes) = $parser->findnodes('/soap-env:Envelope/soap-env:Body/*');
-    my $saml = $nodes->toString;
-
+    my $saml = _get_saml_from_soap($request);
     if (defined $saml) {
-        my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert, exclusive => 1, });
-        my $ret = $x->verify($saml);
-        die "bad signature" unless $ret;
-
-        my $cert = $x->signer_cert;
-        my $ca = Crypt::OpenSSL::Verify->new($self->cacert, { strict_certs => 0, });
-        $ret = $ca->verify($cert);
-        die "bad certificate in request: ".$cert->subject unless $ret;
-
-        my $subject = $cert->subject;
-        return ($subject, $saml);
+        $self->verify_xml(
+            $saml,
+            cert_text => $self->idp_cert,
+            cacert    => $self->cacert
+        );
+        return $saml;
     }
 
     return;
+}
+
+sub _get_saml_from_soap {
+    my $soap  = shift;
+    my $dom = no_comments($soap);
+    my $parser = XML::LibXML::XPathContext->new($dom);
+    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
+    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    return $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
 }
 
 =head2 create_soap_envelope( $message )

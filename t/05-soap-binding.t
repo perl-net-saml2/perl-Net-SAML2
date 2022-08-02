@@ -50,12 +50,7 @@ my $soap_req = $soap->create_soap_envelope($request_xml);
 $xp = get_xpath($soap_req);
 isa_ok($xp, "XML::LibXML::XPathContext");
 
-my ($subject, $xml) = $soap->handle_request($soap_req);
-is(
-    $subject,
-    'C=US, O=local, OU=ct, CN=saml, emailAddress=saml@ct.local',
-    "Subject is ok"
-);
+my $xml = $soap->handle_request($soap_req);
 like($xml, qr/\Q<samlp:LogoutRequest\E/, "Logout XML found");
 $xp = get_xpath($xml);
 isa_ok($xp, "XML::LibXML::XPathContext");
