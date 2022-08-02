@@ -94,7 +94,7 @@ has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'key'      => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'     => (isa => 'Str', is => 'ro', required => 1);
 has 'idp_cert' => (isa => 'Str', is => 'ro', required => 1);
-has 'cacert'   => (isa => 'Str', is => 'ro', required => 1);
+has 'cacert'   => (isa => 'Str', is => 'ro', required => 0);
 
 =head2 request( $message )
 

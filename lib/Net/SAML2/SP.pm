@@ -413,17 +413,13 @@ XXX UA
 sub soap_binding {
     my ($self, $ua, $idp_url, $idp_cert) = @_;
 
-    if (!$self->has_cacert) {
-        croak("Unable to create SOAP binding, no CA certificate provided");
-    }
-
     return Net::SAML2::Binding::SOAP->new(
         ua       => $ua,
         key      => $self->key,
         cert     => $self->cert,
         url      => $idp_url,
         idp_cert => $idp_cert,
-        cacert   => $self->cacert,
+        $self->has_cacert ? (cacert => $self->cacert) : (),
     );
 }
 
