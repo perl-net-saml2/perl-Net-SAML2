@@ -45,6 +45,8 @@ Arguments:
 =item B<ua>
 
 (optional) a LWP::UserAgent-compatible UA
+You can build the user agent to your liking when extending this class by
+overriding C<build_user_agent>
 
 =item B<url>
 
@@ -73,9 +75,19 @@ the CA for the SAML CoT
 has 'ua' => (
     isa      => 'Object',
     is       => 'ro',
-    required => 1,
-    default  => sub { LWP::UserAgent->new }
+    lazy     => 1,
+    builder  => 'build_user_agent',
 );
+
+=head2 build_user_agent
+
+Builder for the user agent
+
+=cut
+
+sub build_user_agent {
+    return LWP::UserAgent->new();
+}
 
 has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'key'      => (isa => 'Str', is => 'ro', required => 1);
