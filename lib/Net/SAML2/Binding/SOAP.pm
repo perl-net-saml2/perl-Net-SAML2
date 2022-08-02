@@ -97,16 +97,26 @@ sub request {
 
     my $soap_action = 'http://www.oasis-open.org/committees/security';
 
-    my $req = POST $self->url;
-    $req->header('SOAPAction' => $soap_action);
-    $req->header('Content-Type' => 'text/xml');
+    my $req = POST $self->url, Content => $request;
+    # SOAP actions should be wrapped in double quotes:
+    # https://www.w3.org/TR/2000/NOTE-SOAP-20000508/#_Toc478383528
+    $req->header('SOAPAction'     => sprintf('"%s"', $soap_action));
+    $req->header('Content-Type'   => 'text/xml');
     $req->header('Content-Length' => length $request);
-    $req->content($request);
 
-    my $ua = $self->ua;
-    my $res = $ua->request($req);
+    my $res = $self->ua->request($req);
 
-    return $self->handle_response($res->content);
+    if (!$res->is_success) {
+        croak(
+            sprintf(
+                "Unable to perform request: %s (%s)",
+                $res->message, $res->code
+            )
+        );
+    }
+
+    return $self->handle_response($res->decoded_content);
+
 }
 
 =head2 handle_response( $response )
