@@ -5,14 +5,15 @@ use Moose;
 
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
+use Carp qw(croak);
 
 with 'Net::SAML2::Role::VerifyXML';
 
-# ABSTRACT: Net::SAML2::Binding::Artifact - SOAP binding for SAML
+# ABSTRACT: Net::SAML2::Binding::SOAP - SOAP binding for SAML
 
 =head1 NAME
 
-Net::SAML2::Binding::Artifact - SOAP binding for SAML2
+Net::SAML2::Binding::SOAP - SOAP binding for SAML2
 
 =head1 SYNOPSIS
 
@@ -94,7 +95,18 @@ has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'key'      => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'     => (isa => 'Str', is => 'ro', required => 1);
 has 'idp_cert' => (isa => 'Str', is => 'ro', required => 1);
-has 'cacert'   => (isa => 'Str', is => 'ro', required => 0);
+has 'cacert' => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    predicate => 'has_cacert'
+);
+has 'anchors' => (
+    is        => 'ro',
+    isa       => 'HashRef',
+    required  => 0,
+    predicate => 'has_anchors'
+);
 
 =head2 request( $message )
 
@@ -149,6 +161,7 @@ sub handle_response {
         no_xml_declaration => 1,
         cert_text          => $self->idp_cert,
         cacert             => $self->cacert,
+        anchors            => $self->anchors
     );
     return $saml;
 
@@ -180,11 +193,15 @@ sub handle_request {
 
 sub _get_saml_from_soap {
     my $soap  = shift;
-    my $dom = no_comments($soap);
+    my $dom   = no_comments($soap);
     my $parser = XML::LibXML::XPathContext->new($dom);
     $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
     $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-    return $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
+    my $set = $parser->findnodes('/soap-env:Envelope/soap-env:Body/*');
+    if ($set->size) {
+        return $set->get_node(1)->toString();
+    }
+    return;
 }
 
 =head2 create_soap_envelope( $message )
