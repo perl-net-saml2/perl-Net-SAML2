@@ -39,6 +39,8 @@ jobs:
           tar zxf pari-2.3.4.tar.gz;
           cd - ;
           cpanm Math::Pari;
+          rm -rf $HOME/.cpanm;
+          cpanm Sub::Name || cat $HOME/.cpanm/.work/*/build.log;
           cpanm Package::DeprecationManager;
           cpanm Moose;
           cpanm --installdeps . ;
