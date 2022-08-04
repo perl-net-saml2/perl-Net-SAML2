@@ -87,23 +87,29 @@ Dies if the metadata can't be retrieved with reason.
 =cut
 
 sub new_from_url {
-    my($class, %args) = @_;
+    my ($class, %args) = @_;
 
     my $req = GET $args{url};
-    my $ua  = LWP::UserAgent->new;
-
-    if ( defined $args{ssl_opts} ) {
-        require LWP::Protocol::https;
-        $ua->ssl_opts( %{$args{ssl_opts}} );
+    my $ua = $args{ua};
+    if (!$ua) {
+        $ua = LWP::UserAgent->new;
+        if (defined $args{ssl_opts}) {
+            require LWP::Protocol::https;
+            $ua->ssl_opts(%{ $args{ssl_opts} });
+        }
     }
 
     my $res = $ua->request($req);
-    if (! $res->is_success ) {
-        my $msg = "no metadata: " . $res->code . ": " . $res->message . "\n";
-        die $msg;
+    if (!$res->is_success) {
+        die(
+            sprintf(
+                "Error retrieving metadata: %s (%s)\n",
+                $res->message, $res->code
+            )
+        );
     }
 
-    my $xml = $res->content;
+    my $xml = $res->decoded_content;
 
     return $class->new_from_xml(
         xml                          => $xml,

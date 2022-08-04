@@ -52,6 +52,7 @@ on 'test' => sub {
   requires "Test::Exception" => "0";
   requires "Test::Fatal" => "0";
   requires "Test::Lib" => "0";
+  requires "Test::Mock::One" => "0";
   requires "Test::More" => "0";
   requires "Test::NoTabs" => "0";
   requires "Test::Pod" => "1.14";
