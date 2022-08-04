@@ -277,16 +277,14 @@ given destination, which should be the identity URI of the IdP.
 =cut
 
 sub authn_request {
-    my ($self, $destination, $nameid_format) = @_;
-
-    my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
+    my $self = shift;
+    return Net::SAML2::Protocol::AuthnRequest->new(
         issueinstant  => DateTime->now,
         issuer        => $self->id,
-        destination   => $destination,
-        nameid_format => $nameid_format,
+        destination   => $_[0],
+        nameid_format => $_[1],
     );
 
-    return $authnreq;
 }
 
 =head2 logout_request( $destination, $nameid, $nameid_format, $session )
