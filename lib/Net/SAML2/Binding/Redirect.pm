@@ -6,6 +6,7 @@ package Net::SAML2::Binding::Redirect;
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::Types qw(signingAlgorithm SAMLRequestType);
+use Carp qw(croak);
 
 # ABSTRACT: Net::SAML2::Binding::Redirect - HTTP Redirect binding for SAML
 
@@ -96,9 +97,9 @@ The double encoding requires it to be decoded prior to processing.
 
 =cut
 
-has 'key'  => (isa => 'Str', is => 'ro', required => 1);
 has 'cert' => (isa => 'Str', is => 'ro', required => 1);
-has 'url'  => (isa => Uri, is => 'ro', required => 1, coerce => 1);
+has 'url'  => (isa => Uri, is => 'ro', required => 0, coerce => 1, predicate => 'has_url');
+has 'key'  => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_key');
 
 has 'param' => (
     isa      => SAMLRequestType,
@@ -127,6 +128,16 @@ has 'sls_double_encoded_response' => (
     required => 0,
     default  => 0
 );
+
+sub BUILD {
+    my $self = shift;
+
+    if ($self->param eq 'SAMLRequest') {
+        croak("Need to have an URL specified") unless $self->has_url;
+        croak("Need to have a key specified") unless $self->has_key;
+    }
+    # other params don't need to have these per-se
+}
 
 =head2 sign( $request, $relaystate )
 
