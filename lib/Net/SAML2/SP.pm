@@ -303,7 +303,7 @@ sub logout_request {
         issuer        => $self->id,
         destination   => $destination,
         nameid        => $nameid,
-        nameid_format => $nameid_format,
+        $nameid_format ? (nameid_format => $nameid_format) : (),
         session       => $session,
     );
 

@@ -92,7 +92,7 @@ get '/logout-redirect' => sub {
     my $logoutreq = $sp->logout_request(
         $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         params->{nameid},
-        $idp->format,
+        $idp->format || undef,
         params->{session}
     )->as_xml;
 
