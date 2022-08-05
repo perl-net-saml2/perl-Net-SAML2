@@ -31,19 +31,15 @@ jobs:
       - name: Install Net::SAML2 Depends
         run: |
           apt-get install libxml2 make gcc wget;
-          mkdir -p $HOME/.cpanm ;
-          cd $HOME/.cpanm;
-          wget https://src.fedoraproject.org/repo/pkgs/perl-Math-Pari/pari-2.3.4.tar.gz/35c896266e4257793387ba22d5d76078/pari-2.3.4.tar.gz \
+          cpanm App::cpm
+          mkdir -p $HOME/.perl-cpm ;
+          cd $HOME/.perl-cpm;
+          wget -q https://src.fedoraproject.org/repo/pkgs/perl-Math-Pari/pari-2.3.4.tar.gz/35c896266e4257793387ba22d5d76078/pari-2.3.4.tar.gz \
             -O pari-2.3.4.tar.gz ;
           echo '35c896266e4257793387ba22d5d76078  pari-2.3.4.tar.gz' | md5sum -c - ;
           tar zxf pari-2.3.4.tar.gz;
           cd - ;
-          cpanm Math::Pari;
-          rm -rf $HOME/.cpanm;
-          cpanm Sub::Name || cat $HOME/.cpanm/.work/*/build.log;
-          cpanm Package::DeprecationManager;
-          cpanm Moose;
-          cpanm --installdeps . ;
+          cpm install -g --test --show-build-log-on-failure --cpanfile cpanfile ;
       - name: Build Module
         run: |
           perl Makefile.PL;
