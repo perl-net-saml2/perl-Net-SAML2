@@ -39,7 +39,8 @@ jobs:
           echo '35c896266e4257793387ba22d5d76078  pari-2.3.4.tar.gz' | md5sum -c - ;
           tar zxf pari-2.3.4.tar.gz;
           cd - ;
-          cpm install -g --test --show-build-log-on-failure --cpanfile cpanfile ;
+          cpm install -g --test --show-build-log-on-failure Sub::Name;
+          cpm install -g --test --show-build-log-on-failure --cpanfile cpanfile;
       - name: Build Module
         run: |
           perl Makefile.PL;
