@@ -2,6 +2,18 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.57 -- Fri Aug 05 23:34:05 ADT 2022
+
+  [ Release 0.56-TRIAL as 0.57 ]
+
+  [ Significant Changes since 0.55 ]
+
+  - Numerous fixes and cleanups thanks to Wesley Schwengle (waterkip)
+  - Functionality changes mostly limited to Net::SAML2::SP
+  - metadata signing has been improved
+  - updates to github actions
+  - new API for ACS/SLO data in metadata
+
 0.56 -- Sun Jul 24 23:52:56 ADT 2022
 
   [ Significant Changes since 0.55 ]
