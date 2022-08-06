@@ -10,6 +10,7 @@ use Crypt::OpenSSL::X509;
 use Digest::MD5 ();
 use List::Util qw(first none);
 use MooseX::Types::URI qw/ Uri /;
+use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use Net::SAML2::Binding::POST;
 use Net::SAML2::Binding::Redirect;
 use Net::SAML2::Binding::SOAP;
@@ -300,11 +301,13 @@ sub logout_request {
     my ($self, $destination, $nameid, $nameid_format, $session) = @_;
 
     my $logout_req = Net::SAML2::Protocol::LogoutRequest->new(
-        issuer        => $self->id,
-        destination   => $destination,
-        nameid        => $nameid,
-        $nameid_format ? (nameid_format => $nameid_format) : (),
-        session       => $session,
+        issuer      => $self->id,
+        destination => $destination,
+        nameid      => $nameid,
+        session     => $session,
+        NonEmptySimpleStr->check($nameid_format)
+            ? (nameid_format => $nameid_format)
+            : (),
     );
 
     return $logout_req;
