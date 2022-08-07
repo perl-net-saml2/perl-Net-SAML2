@@ -188,10 +188,22 @@ sub name {
     return $self->attributes->{CN}->[0];
 }
 
+=head2 nameid
+
+Returns the NameID
+
+=cut
+
 sub nameid {
     my $self = shift;
     return $self->nameid_object->textContent;
 }
+
+=head2 nameid
+
+Returns the NameID Format
+
+=cut
 
 sub nameid_format {
     my $self = shift;
