@@ -199,7 +199,7 @@ sub nameid {
     return $self->nameid_object->textContent;
 }
 
-=head2 nameid
+=head2 nameid_format
 
 Returns the NameID Format
 
