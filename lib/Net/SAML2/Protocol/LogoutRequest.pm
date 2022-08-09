@@ -1,7 +1,6 @@
 package Net::SAML2::Protocol::LogoutRequest;
-# VERSION
-
 use Moose;
+# VERSION
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
