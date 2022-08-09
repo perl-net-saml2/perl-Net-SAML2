@@ -129,6 +129,10 @@ has 'sls_double_encoded_response' => (
     default  => 0
 );
 
+=for Pod::Coverage BUILD
+
+=cut
+
 sub BUILD {
     my $self = shift;
 

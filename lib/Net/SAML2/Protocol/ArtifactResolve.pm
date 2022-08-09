@@ -1,7 +1,7 @@
 package Net::SAML2::Protocol::ArtifactResolve;
+use Moose;
 # VERSION
 
-use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use URN::OASIS::SAML2 qw(:urn);
 

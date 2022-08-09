@@ -1,0 +1,6 @@
+[TestingAndDebugging::RequireUseStrict]
+equivalent_modules = Moose Test::Net::SAML2
+
+[TestingAndDebugging::RequireUseWarnings]
+equivalent_modules = Moose Test::Net::SAML2
+

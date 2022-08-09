@@ -1,7 +1,8 @@
 package Net::SAML2::Types;
-# VERSION
 use warnings;
 use strict;
+
+# VERSION
 
 # ABSTRACT: Custom Moose types for Net::SAML2
 
