@@ -2,6 +2,56 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.58 -- Fri Aug 12 16:25:59 ADT 2022
+
+  [ Significant Changes since 0.57 ]
+
+  You will want to test this release.  There are numerous changes and
+  improvements but nothing that obviously breaks functionality.
+
+  - Numerous fixes and cleanups thanks to Wesley Schwengle (waterkip)
+  - Allow error URI to be a full fledged URI (waterkip)
+  - id is now 32 bytes of randomness (was 16) (waterkip)
+  - SAML2 constants moved to URN::OASIS::SAML2 (waterkip)
+  - Add Indexes to the assertion_consumer_service (waterkip)
+  - Refactor and improve SOAP support (waterkip)
+  - Allow injecting own LWP::UserAgent to IdP new_from_url (waterkip)
+
+  [ Change Log ]
+
+  - a245b94 Add test for lowercase url escaping
+  - ba0a803 Fix author tests with dzil
+  - 97898a2 fix pod for Assertion->nameid_format
+  - 523ba92 Add missing POD for nameid, nameid_format in Protocol::Assertion
+  - fb3085d Update Changes for 0.57
+  - 6c63ed1 Make attributes in NameID optional
+  - d69b7dd Install sub::name first to prevent pipeline failures
+  - 7310b6c Bump version string post .57 release
+  - 8b83b3e Make params optional in Binding::Redirect for SAMLResponse
+  - 3b2b96b Use cpm instead of cpanminus
+  - bc7eb07 nameid_format cannot be a zero length string
+  - 1c5af31 Be able to inject own LWP::UserAgent to IdP new_from_url
+  - 2abeb49 Add license to distro
+  - 3f7c673 Install deps manually
+  - 7f400a0 Install deps manually
+  - 14c075c Fix documentation and general code cleanup
+  - ca9fce1 Small refactor on Protocol::AuthnRequest
+  - 14fb479 Add builder to Binding::SOAP for LWP::UA
+  - 70ac5d0 Refactor Binding::SOAP::request
+  - 830275f Add nameid as a node so we can get the value and/or the format
+  - 066100f Really make provider optional in Protocol::ArtifactResolve
+  - 5673bb5 v0.56
+  - 3c7f390 Set version in main module for downstream developers
+  - 22dbf06 Remove Dockerfile, we have github actions now
+  - 18fa0ed Add defaults to Net::SAML2::Binding::Redirect
+  - 6fe4bdc Fix contributers automaticly from git
+  - 1348af5 Add the index in the assertion_consumer_service
+  - 02ab7be Make cacert optional in Net::SAML2::SP
+  - 858dc57 Remove setting default format when not present in metadata
+  - 9e7c88a Introduce URN_XXX constants in NET::SAML2::SP
+  - b2e3020 Change from 16 to 32 bytes of randomness
+  - 42159bc Allow error URI to be a full fledged URI
+
 0.57 -- Fri Aug 05 23:34:05 ADT 2022
 
   [ Release 0.56-TRIAL as 0.57 ]
