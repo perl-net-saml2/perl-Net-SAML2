@@ -9,13 +9,40 @@ Revision history for Perl extension Net::SAML2.
   You will want to test this release.  There are numerous changes and
   improvements but nothing that obviously breaks functionality.
 
-  - Numerous fixes and cleanups thanks to Wesley Schwengle (waterkip)
-  - Allow error URI to be a full fledged URI (waterkip)
-  - id is now 32 bytes of randomness (was 16) (waterkip)
-  - SAML2 constants moved to URN::OASIS::SAML2 (waterkip)
-  - Add Indexes to the assertion_consumer_service (waterkip)
-  - Refactor and improve SOAP support (waterkip)
-  - Allow injecting own LWP::UserAgent to IdP new_from_url (waterkip)
+  - Fix bug where NameID Format was an empty string and broke the
+    constructor for the LogoutRequest in Net::SAML::SP logout_request.
+  - Add tests for lowercase URL encoded data
+    A potential change is upcoming, so we want to have tests to ack/nack
+    the claims of that new change.
+  - Enclose SOAP action in double quotes
+  - Allow error URI to be a full fledged URI in Net::SAML::SP
+  - The generated id is now 32 bytes of randomness instead of 16 bytes
+    previously
+  - SAML2 constants moved to URN::OASIS::SAML2
+  - Make cacert optional in Net::SAML2::SP as it is only needed for the
+    SOAP request call
+  - Add Indexes to the assertion_consumer_service in Net::SAML::SP
+    This allows you to later on ask for the default assertion service by
+    using get_default_assertion_service().
+  - Allow injecting own LWP::UserAgent to IdP new_from_url
+  - When reading metadata we previously always provided a default NameID
+    Format. We no longer do this, we only return the NameID format if it
+    was provided by the metadata.
+  - Make provider optional in Protocol::ArtifactResolve
+    Previous versions supplied a default when as_xml was called, this
+    default has been removed.
+  - Optional parameters in Binding::Redirect
+    You now need to supply less parameters when verifying the redirect
+    request (SAMLResponse).
+  - Optional attributes for NameID in LogoutRequest
+    In order to respect the SAML specifications the NameQualifier and
+    SPNameQualifier are omitted from the LogoutRequest. In case you need
+    the NameQualifier and the SPNameQualifier you'll now need
+    include_name_qualifier to be set in the constructor. When the NameID
+    Format is urn:oasis:names:tc:SAML:2.0:nameidformat:persistent, both
+    become mandatory. For those who need to set the SPNameQualifier to
+    be the Affiliation Group ID we have affiliation_group_id for you in
+    the constructor.
 
   [ Change Log ]
 
