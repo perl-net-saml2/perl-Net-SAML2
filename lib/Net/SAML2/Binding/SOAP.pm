@@ -11,10 +11,6 @@ with 'Net::SAML2::Role::VerifyXML';
 
 # ABSTRACT: Net::SAML2::Binding::SOAP - SOAP binding for SAML
 
-=head1 NAME
-
-Net::SAML2::Binding::SOAP - SOAP binding for SAML2
-
 =head1 SYNOPSIS
 
   my $soap = Net::SAML2::Binding::SOAP->new(
