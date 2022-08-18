@@ -44,10 +44,11 @@ sub no_comments {
 
     # Remove comments from XML to mitigate XML comment auth bypass
     my $dom = XML::LibXML->load_xml(
-                    string => $xml,
-                    no_network => 1,
-                    load_ext_dtd => 0,
-                    expand_entities => 0 );
+        string          => $xml,
+        no_network      => 1,
+        load_ext_dtd    => 0,
+        expand_entities => 0
+    );
 
     for my $comment_node ($dom->findnodes('//comment()')) {
         $comment_node->parentNode->removeChild($comment_node);

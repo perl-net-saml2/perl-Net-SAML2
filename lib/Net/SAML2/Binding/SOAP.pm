@@ -1,17 +1,19 @@
-use strict;
-use warnings;
 package Net::SAML2::Binding::SOAP;
+use Moose;
+
 # VERSION
 
-use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
+use Carp qw(croak);
 
-# ABSTRACT: Net::SAML2::Binding::Artifact - SOAP binding for SAML
+with 'Net::SAML2::Role::VerifyXML';
+
+# ABSTRACT: Net::SAML2::Binding::SOAP - SOAP binding for SAML
 
 =head1 NAME
 
-Net::SAML2::Binding::Artifact - SOAP binding for SAML2
+Net::SAML2::Binding::SOAP - SOAP binding for SAML2
 
 =head1 SYNOPSIS
 
@@ -93,7 +95,18 @@ has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'key'      => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'     => (isa => 'Str', is => 'ro', required => 1);
 has 'idp_cert' => (isa => 'Str', is => 'ro', required => 1);
-has 'cacert'   => (isa => 'Str', is => 'ro', required => 1);
+has 'cacert' => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 0,
+    predicate => 'has_cacert'
+);
+has 'anchors' => (
+    is        => 'ro',
+    isa       => 'HashRef',
+    required  => 0,
+    predicate => 'has_anchors'
+);
 
 =head2 request( $message )
 
@@ -142,35 +155,16 @@ Accepts a string containing the complete SOAP response.
 sub handle_response {
     my ($self, $response) = @_;
 
-    # verify the response
-    my $x = Net::SAML2::XML::Sig->new(
-    {
-        x509 => 1,
-        cert_text => $self->idp_cert,
-        exclusive => 1,
+    my $saml = _get_saml_from_soap($response);
+    $self->verify_xml(
+        $saml,
         no_xml_declaration => 1,
-    });
+        cert_text          => $self->idp_cert,
+        cacert             => $self->cacert,
+        anchors            => $self->anchors
+    );
+    return $saml;
 
-    my $ret = $x->verify($response);
-    die "bad SOAP response" unless $ret;
-
-    # verify the signing certificate
-    my $cert = $x->signer_cert;
-    my $ca = Crypt::OpenSSL::Verify->new($self->cacert, { strict_certs => 0, });
-    $ret = $ca->verify($cert);
-    die "bad signer cert" unless $ret;
-
-    my $subject = sprintf("%s (verified)", $cert->subject);
-
-    # parse the SOAP response and return the payload
-    my $dom = no_comments($response);
-
-    my $parser = XML::LibXML::XPathContext->new($dom);
-    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-
-    my $saml = $parser->findnodes_as_string('/soap-env:Envelope/soap-env:Body/*');
-    return ($subject, $saml);
 }
 
 =head2 handle_request( $request )
@@ -184,29 +178,29 @@ Accepts a string containing the complete SOAP request.
 sub handle_request {
     my ($self, $request) = @_;
 
-    my $dom = no_comments($request);
+    my $saml = _get_saml_from_soap($request);
+    if (defined $saml) {
+        $self->verify_xml(
+            $saml,
+            cert_text => $self->idp_cert,
+            cacert    => $self->cacert
+        );
+        return $saml;
+    }
 
+    return;
+}
+
+sub _get_saml_from_soap {
+    my $soap  = shift;
+    my $dom   = no_comments($soap);
     my $parser = XML::LibXML::XPathContext->new($dom);
     $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
     $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-
-    my ($nodes) = $parser->findnodes('/soap-env:Envelope/soap-env:Body/*');
-    my $saml = $nodes->toString;
-
-    if (defined $saml) {
-        my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert_text => $self->idp_cert, exclusive => 1, });
-        my $ret = $x->verify($saml);
-        die "bad signature" unless $ret;
-
-        my $cert = $x->signer_cert;
-        my $ca = Crypt::OpenSSL::Verify->new($self->cacert, { strict_certs => 0, });
-        $ret = $ca->verify($cert);
-        die "bad certificate in request: ".$cert->subject unless $ret;
-
-        my $subject = $cert->subject;
-        return ($subject, $saml);
+    my $set = $parser->findnodes('/soap-env:Envelope/soap-env:Body/*');
+    if ($set->size) {
+        return $set->get_node(1)->toString();
     }
-
     return;
 }
 
