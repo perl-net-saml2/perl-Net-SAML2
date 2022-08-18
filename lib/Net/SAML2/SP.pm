@@ -46,7 +46,11 @@ Arguments:
 
 =item B<url>
 
-base for all SP service URLs
+Base for all SP service URLs
+
+=item B<error_url>
+
+The error URI. Can be relative to the base URI or a regular URI
 
 =item B<id>
 
@@ -54,15 +58,15 @@ SP's identity URI.
 
 =item B<cert>
 
-path to the signing certificate
+Path to the signing certificate
 
 =item B<key>
 
-path to the private key for the signing certificate
+Path to the private key for the signing certificate
 
 =item B<cacert>
 
-path to the CA certificate for verification
+Path to the CA certificate for verification
 
 =item B<org_name>
 
