@@ -55,16 +55,19 @@ Arguments:
 The SP's (Service Provider) also known as your application's signing key
 that your application uses to sign the AuthnRequest.  Some IdPs may not
 verify the signature.
+Required with B<param> being C<SAMLRequest>.
 
 =item B<cert>
 
 IdP's (Identity Provider's) certificate that is used to verify a signed
 Redirect from the IdP.  It is used to verify the signature of the Redirect
 response.
+Required with B<param> being C<SAMLResponse>.
 
 =item B<url>
 
 IdP's SSO (Single Sign Out) service url for the Redirect binding
+Required with B<param> being C<SAMLRequest>.
 
 =item B<param>
 
@@ -150,10 +153,9 @@ sub BUILD {
         croak("Need to have an URL specified") unless $self->has_url;
         croak("Need to have a key specified") unless $self->has_key;
     }
-    if ($self->param eq 'SAMLResponse') {
+    elsif ($self->param eq 'SAMLResponse') {
         croak("Need to have a cert specified") unless $self->has_cert;
     }
-    # other params don't need to have these per-se
 }
 
 # BUILDARGS
