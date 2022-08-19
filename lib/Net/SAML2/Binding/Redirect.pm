@@ -1,18 +1,23 @@
-use strict;
-use warnings;
 package Net::SAML2::Binding::Redirect;
+use Moose;
+
 # VERSION
 
-use Moose;
+use Carp qw(croak);
+use Crypt::OpenSSL::RSA;
+use Crypt::OpenSSL::X509;
+use File::Slurper qw/ read_text /;
+use IO::Compress::RawDeflate qw/ rawdeflate /;
+use IO::Uncompress::RawInflate qw/ rawinflate /;
+use MIME::Base64 qw/ encode_base64 decode_base64 /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::Types qw(signingAlgorithm SAMLRequestType);
-use Carp qw(croak);
+use URI::Encode qw/uri_decode/;
+use URI::Escape qw(uri_unescape);
+use URI::QueryParam;
+use URI;
 
 # ABSTRACT: Net::SAML2::Binding::Redirect - HTTP Redirect binding for SAML
-
-=head1 NAME
-
-Net::SAML2::Binding::Redirect
 
 =head1 SYNOPSIS
 
@@ -31,16 +36,6 @@ Net::SAML2::Binding::Redirect
 =head1 METHODS
 
 =cut
-
-use MIME::Base64 qw/ encode_base64 decode_base64 /;
-use IO::Compress::RawDeflate qw/ rawdeflate /;
-use IO::Uncompress::RawInflate qw/ rawinflate /;
-use URI;
-use URI::QueryParam;
-use Crypt::OpenSSL::RSA;
-use Crypt::OpenSSL::X509;
-use File::Slurper qw/ read_text /;
-use URI::Encode qw/uri_decode/;
 
 =head2 new( ... )
 
@@ -220,7 +215,7 @@ sub sign {
     return $u->as_string;
 }
 
-sub _verified {
+sub _verify {
     my ($self, $sigalg, $signed, $sig) = @_;
 
     foreach my $crt (@{$self->cert}) {
@@ -237,84 +232,60 @@ sub _verified {
             $rsa_pub->use_sha512_hash;
         } elsif ($sigalg eq 'http://www.w3.org/2000/09/xmldsig#rsa-sha1') {
             $rsa_pub->use_sha1_hash;
-        } else {
-            warn "Unsupported Signature Algorithim: $sigalg" if ($self->debug);
+        }
+        else {
+            warn "Unsupported Signature Algorithim: $sigalg, defaulting to sha256" if $self->debug;
         }
 
-        if ($rsa_pub->verify($signed, $sig)) {
-            return 1;
-        }
+        return 1 if $rsa_pub->verify($signed, $sig);
 
-        warn "Unable to verify with " . $cert->subject if ($self->debug);
+        warn "Unable to verify with " . $cert->subject if $self->debug;
     }
 
-    die "bad sig";
+    croak("Unable to verify the XML signature");
 }
 
-=head2 verify( $url )
+=head2 verify( $query_string )
 
 Decode a Redirect binding URL.
 
 Verifies the signature on the response.
 
+Requires the *raw* query string to be passed, because L<URI> parses and
+re-encodes URI-escapes in uppercase (C<%3f> becomes C<%3F>, for instance),
+which leads to signature verification failures if the other party uses lower
+case (or mixed case).
+
 =cut
 
 sub verify {
     my ($self, $url) = @_;
-    my $u = URI->new($url);
 
-    # verify the response
-    my $sigalg = $u->query_param('SigAlg');
+    # This now becomes the query string
+    $url =~ s#^https?://.+\?##;
 
-    my $signed;
-    my $saml_request;
-    my $sig = $u->query_param_delete('Signature');
+    my %params = map { split(/=/, $_, 2) } split(/&/, $url);
 
-    # During the verify the only query parameters that should be in the query are
-    # 'SAMLRequest', 'RelayState', 'Sig', 'SigAlg' the other parameter values are
-    # deleted from the URI query that was created from the URL that was passed
-    # to the verify function
-    my @signed_params = ('SAMLRequest', 'SAMLResponse', 'RelayState', 'Sig', 'SigAlg');
+    my $sigalg = uri_unescape($params{SigAlg});
 
-    for my $key ($u->query_param) {
-        if (grep /$key/, @signed_params ) {
-            next;
-        }
-        $u->query_param_delete($key);
+    my $encoded_sig = uri_unescape($params{Signature});
+    my $sig = decode_base64($encoded_sig);
+
+    my @signed_parts;
+    for my $p ($self->param, qw(RelayState SigAlg)) {
+        push @signed_parts, join('=', $p, $params{$p}) if exists $params{$p};
     }
+    my $signed = join('&', @signed_parts);
 
-    # Some IdPs (PingIdentity) seem to double encode the LogoutResponse URL
-    if ($self->sls_double_encoded_response) {
-        #if ($sigalg =~ m/%/) {
-        $signed = uri_decode($u->query);
-        $sig = uri_decode($sig);
-        $sigalg = uri_decode($sigalg);
-        $saml_request = uri_decode($u->query_param($self->param));
-    } else {
-        $signed = $u->query;
-        $saml_request = $u->query_param($self->param);
-    }
-
-    # What can we say about this one Microsoft Azure uses lower case in the
-    # URL encoding %2f not %2F.  As it is signed as %2f the resulting signed
-    # needs to change it to lowercase if the application layer reencoded the URL.
-    if ($self->sls_force_lcase_url_encoding) {
-        # TODO: This is a hack.
-        $signed =~ s/(%..)/lc($1)/ge;
-    }
-
-    $sig = decode_base64($sig);
-
-    $self->_verified($sigalg, $signed, $sig);
+    $self->_verify($sigalg, $signed, $sig);
 
     # unpack the SAML request
-    my $deflated = decode_base64($saml_request);
+    my $deflated = decode_base64(uri_unescape($params{$self->param}));
     my $request = '';
     rawinflate \$deflated => \$request;
 
     # unpack the relaystate
-    my $relaystate = $u->query_param('RelayState');
-
+    my $relaystate = uri_unescape($params{'RelayState'});
     return ($request, $relaystate);
 }
 
