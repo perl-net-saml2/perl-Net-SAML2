@@ -262,7 +262,7 @@ sub verify {
     my ($self, $url) = @_;
 
     # This now becomes the query string
-    $url =~ s#^https?://.+\?##;
+    $url =~ s#^.*\?##;
 
     my %params = map { split(/=/, $_, 2) } split(/&/, $url);
 
