@@ -79,18 +79,6 @@ sha1, sha224, sha256, sha384, sha512
 
 Defaults to C<sha1>.
 
-=item B<sls_force_lcase_url_encoding>
-
-Specifies that the IdP requires the encoding of a URL to be in lowercase.
-Necessary for a HTTP-Redirect of a LogoutResponse from Azure in particular.
-True (1) or False (0). Some web frameworks and underlying http requests assume
-that the encoding should be in the standard uppercase (%2F not %2f)
-
-=item B<sls_double_encoded_response>
-
-Specifies that the IdP response sent to the HTTP-Redirect is double encoded.
-The double encoding requires it to be decoded prior to processing.
-
 =item B<debug>
 
 Output extra debugging information
@@ -115,20 +103,6 @@ has 'sig_hash' => (
     is       => 'ro',
     required => 0,
     default  => 'sha1'
-);
-
-has 'sls_force_lcase_url_encoding' => (
-    isa      => 'Bool',
-    is       => 'ro',
-    required => 0,
-    default  => 0
-);
-
-has 'sls_double_encoded_response' => (
-    isa      => 'Bool',
-    is       => 'ro',
-    required => 0,
-    default  => 0
 );
 
 has debug => (

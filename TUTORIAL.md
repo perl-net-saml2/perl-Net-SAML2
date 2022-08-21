@@ -452,8 +452,6 @@ The following is from Foswiki's SamlLoginContrib function:
 ￼    my $idp = Net::SAML2::IdP->new_from_url(
 ￼        url     => $this->{Saml}{metadata},
 ￼        cacert  => $this->{Saml}{cacert},
-￼        sls_force_lcase_url_encoding => $this->{Saml}{sls_force_lcase_url_encoding},
-￼        sls_double_encoded_response => $this->{Saml}{sls_double_encoded_response}
 ￼    );
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
@@ -461,8 +459,6 @@ The following is from Foswiki's SamlLoginContrib function:
         key => $this->{Saml}{sp_signing_key},
         cert => $idp->cert('signing'),
         param => 'SAMLResponse',
-        sls_force_lcase_url_encoding => $this->{Saml}{sls_force_lcase_url_encoding},
-        sls_double_encoded_response => $this->{Saml}{sls_double_encoded_response}
     );
 
     my ($response, $relaystate) = $redirect->verify($uri);
@@ -498,7 +494,7 @@ The SP needs to create the Net::SAML2::IdP object as is done above (in this case
     );
 
 ```
-Create the Net::SAML2::Binding::Redirect object.  Note the sls_force_lcase_url_encoding is used if the IdP sends a URL that has meen URL encoded with lower case characters %2f instead of %2F.
+Create the Net::SAML2::Binding::Redirect object.
 
 ```
     my $redirect = Net::SAML2::Binding::Redirect->new(
@@ -508,7 +504,6 @@ Create the Net::SAML2::Binding::Redirect object.  Note the sls_force_lcase_url_e
         param => 'SAMLRequest',
         # The ssl_url destination for redirect
         url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-        #sls_force_lcase_url_encoding => 1,
     );
 ```
 Verify signature on the URL, decode the request and retrieve the XML request and RelayState.
