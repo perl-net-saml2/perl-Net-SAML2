@@ -45,18 +45,6 @@ Constructor
 
 =item B<entityid>
 
-=item B<sls_force_lcase_url_encoding>
-
-Specifies that the IdP requires the encoding of a URL to be in lowercase.
-Necessary for a HTTP-Redirect of a LogoutResponse from Azure in particular.
-True (1) or False (0). Some web frameworks and underlying http requests assume
-that the encoding should be in the standard uppercase (%2F not %2f)
-
-=item B<sls_double_encoded_response>
-
-Specifies that the IdP response sent to the HTTP-Redirect is double encoded.
-The double encoding requires it to be decoded prior to processing.
-
 =back
 
 =cut
@@ -67,8 +55,6 @@ has 'sso_urls' => (isa => 'HashRef[Str]', is => 'ro', required => 1);
 has 'slo_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
 has 'art_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
 has 'certs'    => (isa => 'HashRef[ArrayRef[Str]]', is => 'ro', required => 1);
-has 'sls_force_lcase_url_encoding'    => (isa => 'Bool', is => 'ro', required => 0);
-has 'sls_double_encoded_response' => (isa => 'Bool', is => 'ro', required => 0);
 
 has 'formats' => (
     isa      => 'HashRef[Str]',
@@ -114,8 +100,6 @@ sub new_from_url {
     return $class->new_from_xml(
         xml                          => $xml,
         cacert                       => $args{cacert},
-        sls_force_lcase_url_encoding => $args{sls_force_lcase_url_encoding},
-        sls_double_encoded_response  => $args{sls_double_encoded_response},
     );
 }
 
@@ -224,8 +208,6 @@ sub new_from_xml {
         art_urls => $data->{Art} || {},
         certs                        => \@certs,
         cacert                       => $args{cacert},
-        sls_force_lcase_url_encoding => $args{sls_force_lcase_url_encoding},
-        sls_double_encoded_response  => $args{sls_double_encoded_response},
         $data->{DefaultFormat}
         ? (
             default_format => $data->{DefaultFormat},

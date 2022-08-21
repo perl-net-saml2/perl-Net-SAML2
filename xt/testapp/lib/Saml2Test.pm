@@ -267,8 +267,6 @@ sub _idp {
     my $idp = Net::SAML2::IdP->new_from_url(
         url    => config->{idp},
         cacert => config->{cacert},
-        sls_force_lcase_url_encoding => config->{sls_force_lcase_url_encoding},
-        sls_double_encoded_response => config->{sls_double_encoded_response}
     );
     return $idp;
 }
