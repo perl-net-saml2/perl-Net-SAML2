@@ -50,7 +50,8 @@ Arguments:
 The SP's (Service Provider) also known as your application's signing key
 that your application uses to sign the AuthnRequest.  Some IdPs may not
 verify the signature.
-Required with B<param> being C<SAMLRequest>.
+
+If not provided, C<sign> will return a non-signed URL.
 
 =item B<cert>
 
@@ -120,7 +121,6 @@ sub BUILD {
 
     if ($self->param eq 'SAMLRequest') {
         croak("Need to have an URL specified") unless $self->has_url;
-        croak("Need to have a key specified") unless $self->has_key;
     }
     elsif ($self->param eq 'SAMLResponse') {
         croak("Need to have a cert specified") unless $self->has_cert;
@@ -170,6 +170,8 @@ sub sign {
     my $u = URI->new($self->url);
     $u->query_param($self->param, $req);
     $u->query_param('RelayState', $relaystate) if defined $relaystate;
+
+    return $u->as_string unless $self->has_key;
 
     my $key_string = read_text($self->key);
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
