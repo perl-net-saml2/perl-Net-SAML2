@@ -261,6 +261,9 @@ around BUILDARGS => sub {
         }
     }
 
+    foreach (@{$args{assertion_consumer_service}}) {
+        $_->{isDefault} = 'false' if !exists $_->{isDefault};
+    }
 
     return $self->$orig(%args);
 };
