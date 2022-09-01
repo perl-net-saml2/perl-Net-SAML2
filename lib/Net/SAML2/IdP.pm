@@ -1,9 +1,8 @@
-use strict;
-use warnings;
 package Net::SAML2::IdP;
+use Moose;
+
 # VERSION
 
-use Moose;
 use MooseX::Types::URI qw/ Uri /;
 
 # ABSTRACT: Net::SAML2::IdP - SAML Identity Provider object
@@ -121,36 +120,24 @@ sub new_from_xml {
 
     my $data;
 
-    for my $sso (
-        $xpath->findnodes(
-            '//md:EntityDescriptor/md:IDPSSODescriptor/md:SingleSignOnService')
-        )
-    {
+    my $basepath  = '//md:EntityDescriptor/md:IDPSSODescriptor';
+
+    for my $sso ($xpath->findnodes("$basepath/md:SingleSignOnService")) {
         my $binding = $sso->getAttribute('Binding');
         $data->{SSO}->{$binding} = $sso->getAttribute('Location');
     }
 
-    for my $slo (
-        $xpath->findnodes(
-            '//md:EntityDescriptor/md:IDPSSODescriptor/md:SingleLogoutService')
-        )
-    {
+    for my $slo ($xpath->findnodes("$basepath/md:SingleLogoutService")) {
         my $binding = $slo->getAttribute('Binding');
         $data->{SLO}->{$binding} = $slo->getAttribute('Location');
     }
 
-    for my $art (
-        $xpath->findnodes(
-            '//md:EntityDescriptor/md:IDPSSODescriptor/md:ArtifactResolutionService')
-        )
-    {
+    for my $art ($xpath->findnodes("$basepath/md:ArtifactResolutionService")) {
         my $binding = $art->getAttribute('Binding');
         $data->{Art}->{$binding} = $art->getAttribute('Location');
     }
 
-    for my $format (
-        $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:NameIDFormat'))
-    {
+    for my $format ($xpath->findnodes("$basepath/md:NameIDFormat")) {
         $format = $format->string_value;
         $format =~ s/^\s+//g;
         $format =~ s/\s+$//g;
@@ -164,50 +151,26 @@ sub new_from_xml {
         }
     }
 
-    my @certs = ();
-
-    for my $key (
-        $xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor'))
-    {
-        my @uses;
-        push (@uses, $key->getAttribute('use') || 'signing');
-        push (@uses, 'encryption') if !$key->getAttribute('use');
-
-
-        $key->setNamespace('http://www.w3.org/2000/09/xmldsig#', 'ds');
-
-        my ($text)
-            = $key->findvalue("ds:KeyInfo/ds:X509Data/ds:X509Certificate", $key)
-            =~ /^\s*(.+?)\s*$/s;
-
-        # rewrap the base64 data from the metadata; it may not
-        # be wrapped at 64 characters as PEM requires
-        $text =~ s/\n//g;
-
-        my @lines;
-        while(length $text > 64) {
-            push @lines, substr $text, 0, 64, '';
+    my %certs = ();
+    for my $key ($xpath->findnodes("$basepath/md:KeyDescriptor")) {
+        my $use = $key->getAttribute('use');
+        my $pem = $class->_get_pem_from_keynode($key);
+        if (!$use) {
+            push(@{$certs{signing}}, $pem);
+            push(@{$certs{encryption}}, $pem);
         }
-        push @lines, $text;
-
-        $text = join "\n", @lines;
-
-        # form a PEM certificate
-        for my $use (@uses) {
-            my $pem->{$use}
-                = sprintf("-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----\n",
-                $text);
-            push (@certs, $pem);
+        else {
+            push(@{$certs{$use}}, $pem);
         }
     }
 
-    my $self = $class->new(
+    return $class->new(
         entityid => $xpath->findvalue('//md:EntityDescriptor/@entityID'),
         sso_urls => $data->{SSO},
         slo_urls => $data->{SLO} || {},
         art_urls => $data->{Art} || {},
-        certs                        => \@certs,
-        cacert                       => $args{cacert},
+        certs    => \%certs,
+        cacert   => $args{cacert},
         $data->{DefaultFormat}
         ? (
             default_format => $data->{DefaultFormat},
@@ -216,8 +179,33 @@ sub new_from_xml {
         : (),
     );
 
-    return $self;
 }
+
+sub _get_pem_from_keynode {
+    my $self = shift;
+    my $node = shift;
+
+    $node->setNamespace('http://www.w3.org/2000/09/xmldsig#', 'ds');
+
+    my ($text)
+        = $node->findvalue("ds:KeyInfo/ds:X509Data/ds:X509Certificate", $node)
+        =~ /^\s*(.+?)\s*$/s;
+
+    # rewrap the base64 data from the metadata; it may not
+    # be wrapped at 64 characters as PEM requires
+    $text =~ s/\n//g;
+
+    my @lines;
+    while(length $text > 64) {
+        push @lines, substr $text, 0, 64, '';
+    }
+    push @lines, $text;
+
+    $text = join "\n", @lines;
+
+    return "-----BEGIN CERTIFICATE-----\n$text\n-----END CERTIFICATE-----\n";
+}
+
 
 # BUILDARGS ( hashref of the parameters passed to the constructor )
 #
@@ -233,32 +221,22 @@ around BUILDARGS => sub {
     if ($params{cacert}) {
         my $ca = Crypt::OpenSSL::Verify->new($params{cacert}, { strict_certs => 0, });
 
-        my $verified = 0;
-        my %errors;
-        my %certs;
-
-        for my $pem (@{ $params{certs} }) {
-            for my $use (keys %{$pem}) {
-                my @tmpcrt;
-                my $cert = Crypt::OpenSSL::X509->new_from_string($pem->{$use});
+        my %certificates;
+        for my $use (keys %{$params{certs}}) {
+            my $certs = $params{certs}{$use};
+            for my $pem (@{$certs}) {
+                my $cert = Crypt::OpenSSL::X509->new_from_string($pem);
                 ## BUGBUG this is failing for valid things ...
                 eval { $ca->verify($cert) };
                 if ($@) {
-                    $errors{$cert->fingerprint_sha256} = $@;
+                    warn "Can't verify IdP cert: $@";
                     next;
                 }
-                $verified = 1;
-                push @tmpcrt, $pem->{$use};
-
-                $certs{$use} = \@tmpcrt;
+                push(@{$certificates{$use}}, $pem);
             }
         }
 
-        $params{certs} = \%certs;
-
-        if (!$verified) {
-             warn "Can't verify IdP signing cert: ", %errors, "\n";
-        }
+        $params{certs} = \%certificates;
     }
 
     return $self->$orig(%params);

@@ -387,4 +387,22 @@ XML
     );
 }
 
+{
+    my $xml = path('t/data/idp-metadata-signing-encryption.xml')->slurp;
+    my $idp = Net::SAML2::IdP->new_from_xml(
+        xml => $xml,
+    );
+
+    isa_ok($idp, "Net::SAML2::IdP");
+    is(@{$idp->cert('signing')}, 1, 'Got one signing cert');
+    is(@{$idp->cert('encryption')}, 1, 'Got one encryption cert');
+}
+
+{
+    my $xml = path('t/data/idp-metadata-multiple-invalid-use.xml')->slurp;
+    my $idp = Net::SAML2::IdP->new_from_xml(xml => $xml);
+    is(@{$idp->cert('signing')}, 1, 'Got one signing cert');
+    is(@{$idp->cert('encryption')}, 2, 'Got two encryption certs');
+}
+
 done_testing;
