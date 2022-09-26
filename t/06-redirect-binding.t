@@ -85,4 +85,26 @@ throws_ok(
     "Need an URL for SAMLRequest"
 );
 
+throws_ok(
+    sub {
+        Net::SAML2::Binding::Redirect->new(
+            url   => 'https://foo.example.com',
+        );
+    },
+    qr/Need to have a key specified/,
+    "Need a key for SAMLRequest"
+);
+
+lives_ok(
+    sub {
+        Net::SAML2::Binding::Redirect->new(
+            url      => 'https://foo.example.com',
+            insecure => 1,
+        );
+    },
+    "We don't need a key for an insecure SAMLRequest"
+);
+
+
+
 done_testing;
