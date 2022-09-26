@@ -53,7 +53,7 @@ verify the signature.
 
 Usually required when B<param> is C<SAMLRequest>.
 
-If you don't want to sign the request, you can pass B<< insecure => 1
+If you don't want to sign the request, you can pass C<< insecure => 1
 >> and not provide a key; in this case, C<sign> will return a
 non-signed URL.
 
