@@ -50,7 +50,12 @@ Arguments:
 The SP's (Service Provider) also known as your application's signing key
 that your application uses to sign the AuthnRequest.  Some IdPs may not
 verify the signature.
-Required with B<param> being C<SAMLRequest>.
+
+Usually required when B<param> is C<SAMLRequest>.
+
+If you don't want to sign the request, you can pass C<< insecure => 1
+>> and not provide a key; in this case, C<sign> will return a
+non-signed URL.
 
 =item B<cert>
 
@@ -91,6 +96,8 @@ has 'cert' => (isa => 'ArrayRef[Str]', is => 'ro', required => 0, predicate => '
 has 'url'  => (isa => Uri, is => 'ro', required => 0, coerce => 1, predicate => 'has_url');
 has 'key'  => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_key');
 
+has 'insecure'  => (isa => 'Bool', is => 'ro', default => 0 );
+
 has 'param' => (
     isa      => SAMLRequestType,
     is       => 'ro',
@@ -120,7 +127,7 @@ sub BUILD {
 
     if ($self->param eq 'SAMLRequest') {
         croak("Need to have an URL specified") unless $self->has_url;
-        croak("Need to have a key specified") unless $self->has_key;
+        croak("Need to have a key specified") unless $self->has_key || $self->insecure;
     }
     elsif ($self->param eq 'SAMLResponse') {
         croak("Need to have a cert specified") unless $self->has_cert;
@@ -170,6 +177,8 @@ sub sign {
     my $u = URI->new($self->url);
     $u->query_param($self->param, $req);
     $u->query_param('RelayState', $relaystate) if defined $relaystate;
+
+    return $u->as_string if $self->insecure;
 
     my $key_string = read_text($self->key);
     my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
