@@ -154,6 +154,65 @@ around BUILDARGS => sub {
     return $self->$orig(%params);
 };
 
+=head2 get_redirect_uri($authn_request, $relaystate)
+
+Get the redirect URI for a given request, and returns the URL to which the
+user's browser should be redirected.
+
+Accepts an optional RelayState parameter, a string which will be
+returned to the requestor when the user returns from the
+authentication process with the IdP.
+
+The request is signed unless the the object has been instantiated with
+C<<insecure => 1>>.
+
+=cut
+
+sub get_redirect_uri {
+    my $self    = shift;
+    my $request = shift;
+
+    if (!defined $request) {
+        croak("Unable to create redirect URI without a request");
+    }
+
+    my $relaystate = shift;
+
+    my $input  = "$request";
+    my $output = '';
+
+    rawdeflate \$input => \$output;
+    my $req = encode_base64($output, '');
+
+    my $uri = URI->new($self->url);
+    $uri->query_param($self->param, $req);
+    $uri->query_param('RelayState', $relaystate) if defined $relaystate;
+
+    return $uri->as_string if $self->insecure;
+    return $self->_sign_redirect_uri($uri);
+}
+
+sub _sign_redirect_uri {
+    my $self = shift;
+    my $uri  = shift;
+
+    my $key_string = read_text($self->key);
+    my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
+
+    my $method = "use_" . $self->sig_hash . "_hash";
+    $rsa_priv->$method;
+
+    $uri->query_param('SigAlg',
+        $self->sig_hash eq 'sha1'
+        ? 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
+        : 'http://www.w3.org/2001/04/xmldsig-more#rsa-' . $self->sig_hash);
+
+    my $to_sign = $uri->query;
+    my $sig = encode_base64($rsa_priv->sign($to_sign), '');
+    $uri->query_param('Signature', $sig);
+    return $uri->as_string;
+}
+
 =head2 sign( $request, $relaystate )
 
 Signs the given request, and returns the URL to which the user's
@@ -166,66 +225,13 @@ authentication process with the IdP.
 =cut
 
 sub sign {
-    my ($self, $request, $relaystate) = @_;
+    my $self = shift;
 
-    my $input = "$request";
-    my $output = '';
-
-    rawdeflate \$input => \$output;
-    my $req = encode_base64($output, '');
-
-    my $u = URI->new($self->url);
-    $u->query_param($self->param, $req);
-    $u->query_param('RelayState', $relaystate) if defined $relaystate;
-
-    return $u->as_string if $self->insecure;
-
-    my $key_string = read_text($self->key);
-    my $rsa_priv = Crypt::OpenSSL::RSA->new_private_key($key_string);
-
-    my $method = "use_" . $self->sig_hash . "_hash";
-    $rsa_priv->$method;
-
-    $u->query_param('SigAlg',
-        $self->sig_hash eq 'sha1'
-        ? 'http://www.w3.org/2000/09/xmldsig#rsa-sha1'
-        : 'http://www.w3.org/2001/04/xmldsig-more#rsa-' . $self->sig_hash);
-
-    my $to_sign = $u->query;
-    my $sig = encode_base64($rsa_priv->sign($to_sign), '');
-    $u->query_param('Signature', $sig);
-
-    return $u->as_string;
-}
-
-sub _verify {
-    my ($self, $sigalg, $signed, $sig) = @_;
-
-    foreach my $crt (@{$self->cert}) {
-        my $cert = Crypt::OpenSSL::X509->new_from_string($crt);
-        my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
-
-        if ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256') {
-            $rsa_pub->use_sha256_hash;
-        } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224') {
-            $rsa_pub->use_sha224_hash;
-        } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384') {
-            $rsa_pub->use_sha384_hash;
-        } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512') {
-            $rsa_pub->use_sha512_hash;
-        } elsif ($sigalg eq 'http://www.w3.org/2000/09/xmldsig#rsa-sha1') {
-            $rsa_pub->use_sha1_hash;
-        }
-        else {
-            warn "Unsupported Signature Algorithim: $sigalg, defaulting to sha256" if $self->debug;
-        }
-
-        return 1 if $rsa_pub->verify($signed, $sig);
-
-        warn "Unable to verify with " . $cert->subject if $self->debug;
+    if ($self->insecure) {
+        croak("Cannot sign an insecure request!");
     }
 
-    croak("Unable to verify the XML signature");
+    return $self->get_redirect_uri(@_);
 }
 
 =head2 verify( $query_string )
@@ -270,6 +276,36 @@ sub verify {
     # unpack the relaystate
     my $relaystate = uri_unescape($params{'RelayState'});
     return ($request, $relaystate);
+}
+
+sub _verify {
+    my ($self, $sigalg, $signed, $sig) = @_;
+
+    foreach my $crt (@{$self->cert}) {
+        my $cert = Crypt::OpenSSL::X509->new_from_string($crt);
+        my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
+
+        if ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256') {
+            $rsa_pub->use_sha256_hash;
+        } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha224') {
+            $rsa_pub->use_sha224_hash;
+        } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384') {
+            $rsa_pub->use_sha384_hash;
+        } elsif ($sigalg eq 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512') {
+            $rsa_pub->use_sha512_hash;
+        } elsif ($sigalg eq 'http://www.w3.org/2000/09/xmldsig#rsa-sha1') {
+            $rsa_pub->use_sha1_hash;
+        }
+        else {
+            warn "Unsupported Signature Algorithim: $sigalg, defaulting to sha256" if $self->debug;
+        }
+
+        return 1 if $rsa_pub->verify($signed, $sig);
+
+        warn "Unable to verify with " . $cert->subject if $self->debug;
+    }
+
+    croak("Unable to verify the XML signature");
 }
 
 __PACKAGE__->meta->make_immutable;
