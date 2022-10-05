@@ -2,6 +2,16 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.61 -- Tue Oct 04 23:37:21 ADT 2022
+
+  [ Significant Changes since 0.59 ]
+
+  There are multiple potentially BREAKING CHANGES depending on how you
+  have written your application.  Your application may need updates for
+  this version.
+
+  Same a version 0.60-TRIAL
+
 0.60 -- Mon Sep 19 10:53:23 ADT 2022
 
   [ Significant Changes since 0.59 ]
