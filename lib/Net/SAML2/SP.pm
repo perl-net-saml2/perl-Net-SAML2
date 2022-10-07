@@ -376,10 +376,20 @@ parameter involved - typically C<SAMLRequest>.
 sub sso_redirect_binding {
     my ($self, $idp, $param) = @_;
 
+    unless ($idp) {
+        croak("Unable to create a redirect binding without an IDP");
+    }
+
+    $param = 'SAMLRequest' unless $param;
+
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         cert  => $idp->cert('signing'),
-        key   => $self->key,
+        $self->authnreq_signed ? (
+            key   => $self->key,
+        ) : (
+            insecure => 1,
+        ),
         param => $param,
     );
 
