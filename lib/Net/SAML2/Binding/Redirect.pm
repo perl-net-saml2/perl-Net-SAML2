@@ -163,6 +163,8 @@ Accepts an optional RelayState parameter, a string which will be
 returned to the requestor when the user returns from the
 authentication process with the IdP.
 
+Returns the signed (or unsigned) URL for the SAML2 redirect
+
 =cut
 
 sub sign {
@@ -238,6 +240,9 @@ Requires the *raw* query string to be passed, because L<URI> parses and
 re-encodes URI-escapes in uppercase (C<%3f> becomes C<%3F>, for instance),
 which leads to signature verification failures if the other party uses lower
 case (or mixed case).
+
+Returns an ARRAY of containing the verified request and relaystate (if it exists).
+Croaks on errors.
 
 =cut
 
