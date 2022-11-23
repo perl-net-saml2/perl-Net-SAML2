@@ -25,6 +25,8 @@ Net::SAML2::Protocol::AuthnRequest - SAML2 AuthnRequest object
     destination   => $destination,	# Identity Provider (IdP) SSO URL
     provider_name => $provider_name,	# Service Provider (SP) Human Readable Name
     issue_instant => DateTime->now,	# Defaults to Current Time
+    force_authn   => $force_authn,	# Force new authentication (Default: false)
+    is_passive    => $is_passive,	# IdP should not take control of UI (Default: false)
   );
 
   my $request_id = $authnreq->id;	# Store and Compare to InResponseTo
@@ -39,6 +41,8 @@ Net::SAML2::Protocol::AuthnRequest - SAML2 AuthnRequest object
     destination   => $destination,	# Identity Provider (IdP) SSO URL
     provider_name => $provider_name,	# Service Provider (SP) Human Readable Name
     issue_instant => DateTime->now,	# Defaults to Current Time
+    force_authn   => $force_authn,	# Force new authentication (Default: false)
+    is_passive    => $is_passive,	# IdP should not take control of UI (Default: false)
   );
 
 =head1 METHODS
@@ -147,6 +151,20 @@ has 'RequestedAuthnContext_Comparison' => (
     default => 'exact'
 );
 
+has 'force_authn' => (
+    isa     => 'Bool',
+    is      => 'ro',
+    required => 0,
+    predicate => 'has_force_authn',
+);
+
+has 'is_passive' => (
+    isa     => 'Bool',
+    is      => 'ro',
+    required => 0,
+    predicate => 'has_is_passive',
+);
+
 around BUILDARGS => sub {
     my $orig = shift;
     my $self = shift;
@@ -201,12 +219,15 @@ sub as_xml {
         'destination'          => 'Destination',
         'issuer_namequalifier' => 'NameQualifier',
         'issuer_format'        => 'Format',
+        'force_authn'          => 'ForceAuthn',
+        'is_passive'           => 'IsPassive',
     );
 
     my @opts = qw(
         assertion_url assertion_index protocol_binding
         attribute_index provider_name destination
-        issuer_namequalifier issuer_format
+        issuer_namequalifier issuer_format force_authn
+        is_passive
     );
 
     foreach my $opt (@opts) {
@@ -219,6 +240,9 @@ sub as_xml {
         }
         elsif (any { $opt eq $_ } qw(issuer_namequalifier issuer_format)) {
             $issuer_attrs{ $att_map{$opt} } = $val;
+        }
+        elsif (any { $opt eq $_ } qw(force_authn is_passive)) {
+            $req_atts{ $att_map{$opt} } = ( $val ? 'true' : 'false' );
         }
         else {
             $req_atts{ $att_map{$opt} } = $val;

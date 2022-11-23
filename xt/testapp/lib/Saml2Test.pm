@@ -64,9 +64,16 @@ get '/login' => sub {
     }
     my $idp = _idp();
     my $sp = _sp();
+
+    my %params = (
+        defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
+        defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
+    );
+
     my $authnreq = $sp->authn_request(
         $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-        $idp->format, # default format.
+        $idp->format || '', # default format.
+        %params,
     )->as_xml;
 
     my $redirect = $sp->sso_redirect_binding($idp, 'SAMLRequest');

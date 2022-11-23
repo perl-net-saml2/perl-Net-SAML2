@@ -277,20 +277,43 @@ sub _build_cert_text {
     return $text;
 }
 
-=head2 authn_request( $destination, $nameid_format )
+=head2 authn_request( $destination, $nameid_format, %params )
 
 Returns an AuthnRequest object created by this SP, intended for the
 given destination, which should be the identity URI of the IdP.
+
+%params is a hash containing parameters valid for
+Net::SAML2::Protocol::AuthnRequest.  For example:
+
+=over
+
+my %params = (
+        force_authn => 1,
+        is_passive  => 1,
+    )
+
+my $authnreq = authn_request(
+                'https://keycloak.local:8443/realms/Foswiki/protocol/saml',
+                'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+                %params
+            );
+
+=back
 
 =cut
 
 sub authn_request {
     my $self = shift;
+    my $destination     = shift;
+    my $nameid_format   = shift;
+    my (%params)        = @_;
+
     return Net::SAML2::Protocol::AuthnRequest->new(
         issueinstant  => DateTime->now,
         issuer        => $self->id,
-        destination   => $_[0],
-        nameid_format => $_[1],
+        destination   => $destination,
+        nameid_format => $nameid_format || '',
+        %params,
     );
 
 }
