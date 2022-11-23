@@ -281,6 +281,7 @@ sub _sp {
         org_display_name => config->{org_display_name},
         org_contact	 => config->{org_contact},
         authnreq_signed => config->{authnreq_signed},
+        sign_metadata => config->{sign_metadata},
     );
     return $sp;
 }
