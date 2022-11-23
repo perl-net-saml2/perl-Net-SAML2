@@ -17,6 +17,7 @@ use Dancer ':syntax';
 use Net::SAML2;
 use MIME::Base64 qw/ decode_base64 /;
 use File::Slurper qw/ read_dir /;
+use URN::OASIS::SAML2 qw(:bindings :urn);
 
 our $VERSION = '0.2';
 
@@ -245,6 +246,7 @@ post '/sls-post-response' => sub {
 
 get '/metadata.xml' => sub {
     content_type 'application/octet-stream';
+
     my $sp = _sp();
     return $sp->metadata;
 };
@@ -255,17 +257,30 @@ sub _sp {
         url    => config->{url},
         cert   => config->{cert},
         key    => config->{key},
-        cacert => config->{cacert},
+        cacert => config->{cacert} || '',
         slo_url_soap => config->{slo_url_soap},
         slo_url_redirect => config->{slo_url_redirect},
         slo_url_post => config->{slo_url_post},
-        acs_url_post => config->{acs_url_post},
-        acs_url_artifact => config->{acs_url_artifact},
+        assertion_consumer_service => [
+        {
+            Binding => BINDING_HTTP_POST,
+            Location => config->{slo_url_post},
+            isDefault => 'false',
+            # optionally
+            index => 1,
+        },
+        {
+            Binding => BINDING_HTTP_ARTIFACT,
+            Location => config->{acs_url_artifact},
+            isDefault => 'true',
+            index => 2,
+        }],
         error_url => config->{error_url},
 		
         org_name	 => config->{org_name},
         org_display_name => config->{org_display_name},
         org_contact	 => config->{org_contact},
+        authnreq_signed => config->{authnreq_signed},
     );
     return $sp;
 }
