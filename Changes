@@ -2,7 +2,12 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+  - TBD     Add missing Credit for Gianni in 0.62
+
 0.62 -- Wed Nov 30 21:13:55 AST 2022
+
+  Thanks to Gianni Ceccarelli for providing an "insecure" option
+  to allow a Net::SAML2::Binding::Redirect to be unsigned.
 
   - e59ce1b Increment Version in Git Repo
   - 165661e testapp allow the metadata or authnreq to be unsigned
