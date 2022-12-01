@@ -141,23 +141,25 @@ use Net::SAML2::Protocol::ArtifactResolve;
 
 =over
 
+=item Alessandro Ranellucci <aar@cpan.org>
+
+=item Ali Zia <ziali088@gmail.com>
+
 =item Chris Andrews <chris@nodnol.org>
+
+=item Gianni Ceccarelli <gianni.ceccarelli@broadbean.com>
+
+=item Jeff Fearn <jfearn@redhat.com>
+
+=item Mike Wisener <xmikew@cpan.org>, <mwisener@secureworks.com>, xmikew <github@32ths.com>
 
 =item Oskari Okko Ojala <okko@frantic.com>
 
 =item Peter Marschall <peter@adpm.de>
 
-=item Mike Wisener <xmikew@cpan.org>
-
-=item Jeff Fearn <jfearn@redhat.com>
-
-=item Alessandro Ranellucci <aar@cpan.org>
-
-=item Mike Wisener <mwisener@secureworks.com>, xmikew <github@32ths.com>
-
-=item xmikew <github@32ths.com>
-
 =item Timothy Legge <timlegge@gmail.com>
+
+=item Wesley Schwengle <waterkip@cpan.org>
 
 =back
 
