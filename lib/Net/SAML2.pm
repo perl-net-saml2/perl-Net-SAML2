@@ -1,15 +1,31 @@
 use strict;
 use warnings;
 package Net::SAML2;
-our $VERSION = "0.62";
+our $VERSION = "0.63";
 
 require 5.008_001;
 
 # ABSTRACT: SAML2 bindings and protocol implementation
 
-=head1 NAME
+# entities
+use Net::SAML2::IdP;
+use Net::SAML2::SP;
 
-Net::SAML2 - SAML bindings and protocol implementation
+# bindings
+use Net::SAML2::Binding::Redirect;
+use Net::SAML2::Binding::POST;
+use Net::SAML2::Binding::SOAP;
+
+# protocol
+use Net::SAML2::Protocol::AuthnRequest;
+use Net::SAML2::Protocol::LogoutRequest;
+use Net::SAML2::Protocol::LogoutResponse;;
+use Net::SAML2::Protocol::Assertion;
+use Net::SAML2::Protocol::ArtifactResolve;
+
+1;
+
+__END__
 
 =head1 SYNOPSIS
 
@@ -116,66 +132,3 @@ SP applications if EncryptedAssertions are not in use.
 =item Requires XML metadata from the IdP
 
 =back
-
-=cut
-
-# entities
-use Net::SAML2::IdP;
-use Net::SAML2::SP;
-
-# bindings
-use Net::SAML2::Binding::Redirect;
-use Net::SAML2::Binding::POST;
-use Net::SAML2::Binding::SOAP;
-
-# protocol
-use Net::SAML2::Protocol::AuthnRequest;
-use Net::SAML2::Protocol::LogoutRequest;
-use Net::SAML2::Protocol::LogoutResponse;;
-use Net::SAML2::Protocol::Assertion;
-use Net::SAML2::Protocol::ArtifactResolve;
-
-=pod
-
-=head1 CONTRIBUTORS
-
-=over
-
-=item Alessandro Ranellucci <aar@cpan.org>
-
-=item Ali Zia <ziali088@gmail.com>
-
-=item Chris Andrews <chris@nodnol.org>
-
-=item Gianni Ceccarelli <gianni.ceccarelli@broadbean.com>
-
-=item Jeff Fearn <jfearn@redhat.com>
-
-=item Mike Wisener <xmikew@cpan.org>, <mwisener@secureworks.com>, xmikew <github@32ths.com>
-
-=item Oskari Okko Ojala <okko@frantic.com>
-
-=item Peter Marschall <peter@adpm.de>
-
-=item Timothy Legge <timlegge@gmail.com>
-
-=item Wesley Schwengle <waterkip@cpan.org>
-
-=back
-
-=head1 COPYRIGHT
-
-The following copyright notice applies to all the files provided in
-this distribution, including binary files, unless explicitly noted
-otherwise.
-
-Copyright 2010, 2011 Venda Ltd.
-
-=head1 LICENCE
-
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
-
-=cut
-
-1;
