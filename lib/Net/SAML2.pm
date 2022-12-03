@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package Net::SAML2;
-our $VERSION = "0.62";
+our $VERSION = "0.63";
 
 require 5.008_001;
 
