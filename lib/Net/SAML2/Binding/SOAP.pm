@@ -90,7 +90,7 @@ sub build_user_agent {
 has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'key'      => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'     => (isa => 'Str', is => 'ro', required => 1);
-has 'idp_cert' => (isa => 'Str', is => 'ro', required => 1);
+has 'idp_cert' => (isa => 'ArrayRef[Str]', is => 'ro', required => 1, predicate => 'has_idp_cert');
 has 'cacert' => (
     is        => 'ro',
     isa       => 'Str',
@@ -103,6 +103,26 @@ has 'anchors' => (
     required  => 0,
     predicate => 'has_anchors'
 );
+
+# BUILDARGS
+
+# Earlier versions expected the idp_cert to be a string.  However, metadata
+# can include multiple signing certificates so the $idp->cert is now
+# expected to be an arrayref to the certificates.  To avoid breaking existing
+# applications this changes the the cert to an arrayref if it is not
+# already an array ref.
+
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my %params = @_;
+    if ($params{idp_cert} && ref($params{idp_cert}) ne 'ARRAY') {
+            $params{idp_cert} = [$params{idp_cert}];
+    }
+
+    return $self->$orig(%params);
+};
 
 =head2 request( $message )
 
@@ -152,13 +172,15 @@ sub handle_response {
     my ($self, $response) = @_;
 
     my $saml = _get_saml_from_soap($response);
-    $self->verify_xml(
-        $saml,
-        no_xml_declaration => 1,
-        cert_text          => $self->idp_cert,
-        cacert             => $self->cacert,
-        anchors            => $self->anchors
-    );
+    foreach my $cert (@{$self->idp_cert}) {
+        $self->verify_xml(
+            $saml,
+            no_xml_declaration => 1,
+            cert_text          => $cert,
+            cacert             => $self->cacert,
+            anchors            => $self->anchors
+        );
+    }
     return $saml;
 
 }
@@ -176,11 +198,13 @@ sub handle_request {
 
     my $saml = _get_saml_from_soap($request);
     if (defined $saml) {
-        $self->verify_xml(
-            $saml,
-            cert_text => $self->idp_cert,
-            cacert    => $self->cacert
-        );
+        foreach my $cert (@{$self->idp_cert}) {
+            $self->verify_xml(
+                $saml,
+                cert_text => $cert,
+                cacert    => $self->cacert
+            );
+        }
         return $saml;
     }
 
@@ -241,11 +265,7 @@ sub create_soap_envelope {
     die "failed to sign" unless $ret;
 
     my $soap = <<"SOAP";
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
-<SOAP-ENV:Body>
-$signed_message
-</SOAP-ENV:Body>
-</SOAP-ENV:Envelope>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body>$signed_message</SOAP-ENV:Body></SOAP-ENV:Envelope>
 SOAP
     return $soap;
 }

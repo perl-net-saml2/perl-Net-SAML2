@@ -128,9 +128,9 @@ get '/logout-soap' => sub {
     )->as_xml;
 
     my $soap = Net::SAML2::Binding::SOAP->new(
-        key	 => 'sign-nopw-cert.pem',
-        cert	 => 'sign-nopw-cert.pem',
-        url	 => $slo_url,
+        key     => 'sign-nopw-cert.pem',
+        cert    => 'sign-nopw-cert.pem',
+        url     => $slo_url,
         idp_cert => $idp_cert,
         cacert   => config->{cacert},
     );
@@ -174,9 +174,9 @@ get '/consumer-artifact' => sub {
     my $request = $sp->artifact_request($idp->entityid, $artifact)->as_xml;
 
     my $soap = Net::SAML2::Binding::SOAP->new(
-        url	 => $art_url,
-        key	 => 'sign-private.pem',
-        cert	 => 'sign-certonly.pem',
+        url     => $art_url,
+        key     => 'sign-private.pem',
+        cert    => 'sign-certonly.pem',
         idp_cert => $idp_cert
     );
     my $response = $soap->request($request);
