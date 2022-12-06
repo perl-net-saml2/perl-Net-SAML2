@@ -128,9 +128,9 @@ get '/logout-soap' => sub {
     )->as_xml;
 
     my $soap = Net::SAML2::Binding::SOAP->new(
-        key	 => 'sign-nopw-cert.pem',
-        cert	 => 'sign-nopw-cert.pem',
-        url	 => $slo_url,
+        key      => config->{key},
+        cert     => config->{cert},
+        url      => $slo_url,
         idp_cert => $idp_cert,
         cacert   => config->{cacert},
     );
@@ -173,12 +173,19 @@ get '/consumer-artifact' => sub {
     my $sp = _sp();
     my $request = $sp->artifact_request($idp->entityid, $artifact)->as_xml;
 
+    my $ua = LWP::UserAgent->new;
+
+    require LWP::Protocol::https;
+    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+
     my $soap = Net::SAML2::Binding::SOAP->new(
-        url	 => $art_url,
-        key	 => 'sign-private.pem',
-        cert	 => 'sign-certonly.pem',
-        idp_cert => $idp_cert
+        ua       => $ua,
+        url      => $art_url,
+        key      => config->{key},
+        cert     => config->{cert},
+        idp_cert => $idp_cert,
     );
+
     my $response = $soap->request($request);
 
     if ($response) {

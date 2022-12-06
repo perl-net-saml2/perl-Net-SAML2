@@ -20,3 +20,4 @@ force_authn: 1
 is_passive: 0
 sign_metadata: 1
 authnreq_signed: 1
+ssl_verify_hostname: 0

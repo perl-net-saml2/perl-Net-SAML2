@@ -48,7 +48,7 @@ my $xp = get_xpath($request_xml);
 isa_ok($xp, "XML::LibXML::XPathContext");
 
 my $ua   = LWP::UserAgent->new;
-my $soap = $sp->soap_binding($ua, $slo_url, $idp_cert);
+my $soap = $sp->soap_binding($ua, $slo_url, $idp->cert('signing'));
 isa_ok($soap, "Net::SAML2::Binding::SOAP");
 
 my $soap_req = $soap->create_soap_envelope($request_xml);
