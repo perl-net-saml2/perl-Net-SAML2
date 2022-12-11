@@ -257,6 +257,7 @@ sub _sp {
         url    => config->{url},
         cert   => config->{cert},
         key    => config->{key},
+        config->{encryption_key} ? (encryption_key => config->{encryption_key}) : (),
         cacert => config->{cacert} || '',
         slo_url_soap => config->{slo_url_soap},
         slo_url_redirect => config->{slo_url_redirect},
