@@ -171,7 +171,7 @@ get '/consumer-artifact' => sub {
     my $artifact = params->{SAMLart};
 
     my $sp = _sp();
-    my $request = $sp->artifact_request($idp->entityid, $artifact)->as_xml;
+    my $request = $sp->artifact_request($art_url, $artifact)->as_xml;
 
     my $ua = LWP::UserAgent->new;
 
@@ -190,7 +190,8 @@ get '/consumer-artifact' => sub {
 
     if ($response) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-            xml => $response
+            xml => $response,
+            key_file => config->{key},
         );
 
         template 'user', { assertion => $assertion };
@@ -271,14 +272,14 @@ sub _sp {
         assertion_consumer_service => [
         {
             Binding => BINDING_HTTP_POST,
-            Location => config->{slo_url_post},
+            Location => config->{url} . config->{slo_url_post},
             isDefault => 'false',
             # optionally
             index => 1,
         },
         {
             Binding => BINDING_HTTP_ARTIFACT,
-            Location => config->{acs_url_artifact},
+            Location => config->{url} . config->{acs_url_artifact},
             isDefault => 'true',
             index => 2,
         }],
