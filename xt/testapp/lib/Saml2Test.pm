@@ -44,7 +44,7 @@ get '/' => sub {
         push @idps, \%tempidp;
     }
 
-    template 'index', { 'idps' => \@idps };
+    template 'index', { 'idps' => \@idps, 'sign_metadata' => config->{sign_metadata} };
 };
 
 get '/login' => sub {
@@ -253,9 +253,15 @@ post '/sls-post-response' => sub {
 };
 
 get '/metadata.xml' => sub {
+
     content_type 'application/octet-stream';
 
     my $sp = _sp();
+    if (defined params->{signmetadata} and params->{signmetadata} = 'on') {
+        $sp->{sign_metadata} = 1;
+    } else {
+        $sp->{sign_metadata} = 0;
+    }
     return $sp->metadata;
 };
 
@@ -289,7 +295,6 @@ sub _sp {
         org_display_name => config->{org_display_name},
         org_contact	 => config->{org_contact},
         authnreq_signed => config->{authnreq_signed},
-        sign_metadata => config->{sign_metadata},
     );
     return $sp;
 }
