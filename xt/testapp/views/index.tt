@@ -18,5 +18,22 @@
         </ol>
     <% end %>
 
-    <h2>Download SP <a href="/metadata.xml">Metadata</a></h2>
+    <h2>Download SP Metadata</h2>
+
+    <form action="/metadata.xml">
+        <div>
+            <button type="submit">Get Metadata</button>
+            <input
+              type="checkbox"
+              id="signmetadata"
+              name="signmetadata"
+              <% if sign_metadata == 1 %>
+                checked
+              <% end %>
+            />
+            <label for="signmetadata">Sign Metadata?</label>
+        </div>
+        <div>
+        </div>
+    </form>
 
