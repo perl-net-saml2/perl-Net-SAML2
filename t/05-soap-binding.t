@@ -132,4 +132,29 @@ is($soaped_request->nameid, $request->nameid,
     )
 }
 
+$metadata = path('t/idp-samlid-metadata.xml')->slurp;
+
+$idp = Net::SAML2::IdP->new_from_xml(
+    xml    => $metadata,
+    cacert => 't/cacert-samlid.pem'
+);
+isa_ok($idp, "Net::SAML2::IdP");
+
+my $sso_url = $idp->sso_url($idp->binding('soap')); #'urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
+
+use Data::Dumper;
+
+is(
+    $sso_url,
+    'https://samltest.id/idp/profile/SAML2/SOAP/ECP',
+    'SSO url is correct'
+);
+
+foreach my $use (keys %{$idp->certs}) {
+    for my $cert (@{$idp->cert($use)}) {
+        $idp_cert = $cert;
+        ok(looks_like_a_cert($idp_cert), "Certificate for: \"$use\" looks like a cert");
+    }
+};
+
 done_testing;
