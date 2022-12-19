@@ -97,11 +97,21 @@ get '/logout-redirect' => sub {
         return; # "Redirected\n";
     }
 
+    my %logout_params = (
+                            params->{name_qualifier} ?
+                            ( name_qualifier => params->{name_qualifier}) :
+                            (),
+                            params->{sp_name_qualifier} ?
+                            (sp_name_qualifier => params->{sp_name_qualifier}) :
+                            (),
+                         );
+
     my $logoutreq = $sp->logout_request(
         $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         params->{nameid},
         $idp->format || undef,
-        params->{session}
+        params->{session},
+        \%logout_params,
     )->as_xml;
 
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLRequest');
@@ -123,11 +133,28 @@ get '/logout-soap' => sub {
     my $idp_cert = $idp->cert('signing');
 
     my $sp = _sp();
+
+    my %logout_params = (
+                            params->{name_qualifier} ?
+                            ( name_qualifier => params->{name_qualifier}) :
+                            (),
+                            params->{sp_name_qualifier} ?
+                            (sp_name_qualifier => params->{sp_name_qualifier}) :
+                            (),
+                         );
+
     my $logoutreq = $sp->logout_request(
-        $idp->entityid, params->{nameid}, $idp->format, params->{session}
+        $idp->entityid, params->{nameid}, $idp->format, params->{session},
+        \%logout_params
     )->as_xml;
 
+    my $ua = LWP::UserAgent->new;
+
+    require LWP::Protocol::https;
+    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+
     my $soap = Net::SAML2::Binding::SOAP->new(
+        ua          => $ua,
         key         => config->{key},
         cert        => config->{cert},
         url         => $slo_url,
@@ -156,7 +183,14 @@ post '/consumer-post' => sub {
             cacert      => config->{cacert},
         );
 
-        template 'user', { assertion => $assertion };
+        my $name_qualifier      = $assertion->nameid_name_qualifier();
+        my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
+
+        template 'user', {
+                            assertion => $assertion,
+                            (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
+                            (defined $sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                         };
     }
     else {
         return "<html><pre>Bad Assertion</pre></html>";
@@ -190,11 +224,18 @@ get '/consumer-artifact' => sub {
 
     if ($response) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-            xml => $response,
             key_file => config->{key},
+            xml => $response
         );
 
-        template 'user', { assertion => $assertion };
+        my $name_qualifier      = $assertion->nameid_name_qualifier();
+        my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
+
+        template 'user', {
+                            assertion => $assertion,
+                            ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
+                            ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                         };
     }
     else {
         return "<html><pre>Bad Assertion</pre></html>";

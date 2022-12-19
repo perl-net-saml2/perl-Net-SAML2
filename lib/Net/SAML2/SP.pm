@@ -318,17 +318,29 @@ sub authn_request {
 
 }
 
-=head2 logout_request( $destination, $nameid, $nameid_format, $session )
+=head2 logout_request( $destination, $nameid, $nameid_format, $session, $params )
 
 Returns a LogoutRequest object created by this SP, intended for the
 given destination, which should be the identity URI of the IdP.
 
 Also requires the nameid (+format) and session to be logged out.
 
+=over
+
+$params is a HASH reference for parameters to Net::SAML2::Protocol::LogoutRequest
+
+$params =   (
+                # name qualifier parameters from Assertion NameId
+                name_qualifier      => "https://idp.shibboleth.local/idp/shibboleth"
+                sp_name_qualifier   => "https://netsaml2-testapp.local"
+            );
+
+=back
+
 =cut
 
 sub logout_request {
-    my ($self, $destination, $nameid, $nameid_format, $session) = @_;
+    my ($self, $destination, $nameid, $nameid_format, $session, $params) = @_;
 
     my $logout_req = Net::SAML2::Protocol::LogoutRequest->new(
         issuer      => $self->id,
@@ -338,8 +350,16 @@ sub logout_request {
         NonEmptySimpleStr->check($nameid_format)
             ? (nameid_format => $nameid_format)
             : (),
+        (defined $params->{sp_name_qualifier})
+            ? (affiliation_group_id => $params->{sp_name_qualifier})
+            : (),
+        (defined $params->{name_qualifier})
+            ? (name_qualifier => $params->{name_qualifier})
+            : (),
+        (defined $params->{include_name_qualifier})
+            ? ( include_name_qualifier => $params->{include_name_qualifier} )
+            : ( include_name_qualifier => 1),
     );
-
     return $logout_req;
 }
 
