@@ -334,7 +334,7 @@ sub authn_request {
 
 }
 
-=head2 logout_request( $destination, $nameid, $nameid_format, $session )
+=head2 logout_request( $destination, $nameid, $nameid_format, $session, $name_qualifier, $sp_name_qualifier, $include_name_qualifier )
 
 Returns a LogoutRequest object created by this SP, intended for the
 given destination, which should be the identity URI of the IdP.
@@ -344,7 +344,7 @@ Also requires the nameid (+format) and session to be logged out.
 =cut
 
 sub logout_request {
-    my ($self, $destination, $nameid, $nameid_format, $session) = @_;
+    my ($self, $destination, $nameid, $nameid_format, $session, $name_qualifier, $sp_name_qualifier, $include_name_qualifier) = @_;
 
     my $logout_req = Net::SAML2::Protocol::LogoutRequest->new(
         issuer      => $self->id,
@@ -354,8 +354,16 @@ sub logout_request {
         NonEmptySimpleStr->check($nameid_format)
             ? (nameid_format => $nameid_format)
             : (),
+        ((defined $sp_name_qualifier) && NonEmptySimpleStr->check($sp_name_qualifier))
+            ? (affiliation_group_id => $sp_name_qualifier)
+            : (),
+        ((defined $name_qualifier) && NonEmptySimpleStr->check($name_qualifier))
+            ? (name_qualifier => $name_qualifier)
+            : (),
+        ((defined $include_name_qualifier))
+            ? ( include_name_qualifier => $include_name_qualifier )
+            : ( include_name_qualifier => 1),
     );
-
     return $logout_req;
 }
 

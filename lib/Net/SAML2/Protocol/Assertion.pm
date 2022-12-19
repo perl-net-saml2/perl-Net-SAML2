@@ -210,6 +210,39 @@ sub nameid_format {
     return $self->nameid_object->getAttribute('Format');
 }
 
+=head2 nameid_name_qualifier
+
+Returns the NameID NameQualifier
+
+=cut
+
+sub nameid_name_qualifier {
+    my $self = shift;
+    return $self->nameid_object->getAttribute('NameQualifier');
+}
+
+=head2 nameid_sp_name_qualifier
+
+Returns the NameID SPNameQualifier
+
+=cut
+
+sub nameid_sp_name_qualifier {
+    my $self = shift;
+    return $self->nameid_object->getAttribute('SPNameQualifier');
+}
+
+=head2 nameid_sp_provided_id
+
+Returns the NameID SPProvidedID
+
+=cut
+
+sub nameid_sp_provided_id {
+    my $self = shift;
+    return $self->nameid_object->getAttribute('SPProvidedID');
+}
+
 =head2 valid( $audience, $in_response_to )
 
 Returns true if this Assertion is currently valid for the given audience.

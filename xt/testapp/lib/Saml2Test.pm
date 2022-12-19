@@ -101,7 +101,9 @@ get '/logout-redirect' => sub {
         $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         params->{nameid},
         $idp->format || undef,
-        params->{session}
+        params->{session},
+        params->{name_qualifier} || undef,
+        params->{sp_name_qualifier} || undef,
     )->as_xml;
 
     my $redirect = $sp->slo_redirect_binding($idp, 'SAMLRequest');
@@ -156,7 +158,14 @@ post '/consumer-post' => sub {
             cacert      => config->{cacert},
         );
 
-        template 'user', { assertion => $assertion };
+        my $name_qualifier      = $assertion->nameid_name_qualifier();
+        my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
+
+        template 'user', {
+                            assertion => $assertion,
+                            ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
+                            ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                         };
     }
     else {
         return "<html><pre>Bad Assertion</pre></html>";
@@ -194,7 +203,14 @@ get '/consumer-artifact' => sub {
             key_file => config->{key},
         );
 
-        template 'user', { assertion => $assertion };
+        my $name_qualifier      = $assertion->nameid_name_qualifier();
+        my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
+
+        template 'user', {
+                            assertion => $assertion,
+                            ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
+                            ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                         };
     }
     else {
         return "<html><pre>Bad Assertion</pre></html>";
