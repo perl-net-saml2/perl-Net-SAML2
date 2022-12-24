@@ -11,6 +11,7 @@ requires "DateTime::Format::XSD" => "0";
 requires "DateTime::HiRes" => "0";
 requires "Digest::MD5" => "0";
 requires "Exporter" => "0";
+requires "Feature::Compat::Try" => "0";
 requires "File::Slurper" => "0";
 requires "HTTP::Request::Common" => "0";
 requires "IO::Compress::RawDeflate" => "0";
@@ -46,6 +47,7 @@ requires "vars" => "0";
 requires "warnings" => "0";
 
 on 'test' => sub {
+  requires "Data::Dumper" => "0";
   requires "Import::Into" => "0";
   requires "Path::Tiny" => "0";
   requires "Sub::Override" => "0";
