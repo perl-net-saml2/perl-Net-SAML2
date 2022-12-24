@@ -268,5 +268,18 @@ $soap = Net::SAML2::Binding::SOAP->new(
     );
 
 my $assertion =  $soap->handle_response($art_response);
+
+like(Net::SAML2::Binding::SOAP::_extract_artifact_message($assertion),
+        qr/^<saml2p:Response/, "Extracting Response from ArtifactResponse - ok");
+
+$assertion =~ s/saml2p:Response/saml2p:LogoutResponse/g;
+
+like(Net::SAML2::Binding::SOAP::_extract_artifact_message($assertion),
+        qr/^<saml2p:LogoutResponse/, "Extracting LogoutResponse from ArtifactResponse - ok");
+
+$assertion =~ s/saml2p:LogoutResponse/saml2p:LogoutRequest/g;
+
+ok(Net::SAML2::Binding::SOAP::_extract_artifact_message($assertion) eq
+        $assertion, "Returning unmodified ArtifactResponse - ok");
 }
 done_testing;
