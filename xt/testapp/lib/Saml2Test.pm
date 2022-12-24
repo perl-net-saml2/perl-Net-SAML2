@@ -197,9 +197,11 @@ get '/consumer-artifact' => sub {
 
     my $response = $soap->request($request);
 
-    if ($response) {
+    my $assertion_xml = $soap->extract_artifact_message($response, 'Response');
+
+    if ($assertion_xml) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-            xml => $response,
+            xml => $assertion_xml,
             key_file => config->{key},
         );
 
@@ -255,6 +257,49 @@ post '/sls-post-response' => sub {
     if ($ret) {
         my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
             xml => decode_base64(params->{SAMLResponse})
+        );
+        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
+
+    redirect '/', 302;
+    return "Redirected\n";
+};
+
+get '/sls-consumer-artifact' => sub {
+    my $idp = _idp();
+    my $idp_cert = $idp->cert('signing');
+    my $art_url  = $idp->art_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
+
+    my $artifact = params->{SAMLart};
+
+    my $sp = _sp();
+    my $request = $sp->artifact_request($art_url, $artifact)->as_xml;
+
+    my $ua = LWP::UserAgent->new;
+
+    require LWP::Protocol::https;
+    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+
+    my $soap = Net::SAML2::Binding::SOAP->new(
+        ua       => $ua,
+        url      => $art_url,
+        key      => config->{key},
+        cert     => config->{cert},
+        idp_cert => $idp_cert,
+    );
+
+    my $response = $soap->request($request);
+
+    my $logout_xml = $soap->extract_artifact_message($response, 'LogoutResponse');
+
+    if ($logout_xml) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => $logout_xml,
         );
         if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
             print STDERR "\nLogout Success Status - $logout->{issuer}\n";
