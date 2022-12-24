@@ -5,6 +5,7 @@ use Moose;
 
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
+use URN::OASIS::SAML2 qw(:urn);
 use Carp qw(croak);
 use Try::Tiny;
 
@@ -230,6 +231,38 @@ sub handle_request {
     }
 
     return;
+}
+
+=head2 extract_artifact_message( $response, $message )
+
+Extract the message from the ArtifactResponse.
+
+  extract_artifact_message(
+          $artifact,
+          'Response' || 'LogoutResponse'
+  );
+
+=cut
+
+sub extract_artifact_message {
+    my $self        = shift;
+    my $artifact    = shift;
+    my $message     = shift;
+
+    my $dom = no_comments($artifact);
+
+    my $parser = XML::LibXML::XPathContext->new($dom);
+    $parser->registerNs('samlp', URN_PROTOCOL);
+
+    my $set = $parser->findnodes(
+                        "/samlp:ArtifactResponse/samlp:$message", $dom);
+
+    if ($set->size) {
+        my $logout = $set->get_node(1)->cloneNode( 1 );
+        return $logout->toString();
+    }
+
+    return $artifact;
 }
 
 sub _get_saml_from_soap {
