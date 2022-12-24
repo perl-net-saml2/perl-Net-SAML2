@@ -5,6 +5,7 @@ use Moose;
 
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
+use URN::OASIS::SAML2 qw(:urn);
 use Carp qw(croak);
 
 with 'Net::SAML2::Role::VerifyXML';
@@ -172,15 +173,27 @@ sub handle_response {
     my ($self, $response) = @_;
 
     my $saml = _get_saml_from_soap($response);
+    use Feature::Compat::Try;
+    my $error;
     foreach my $cert (@{$self->idp_cert}) {
-        $self->verify_xml(
-            $saml,
-            no_xml_declaration => 1,
-            cert_text          => $cert,
-            cacert             => $self->cacert,
-            anchors            => $self->anchors
-        );
+        try
+        {
+            $self->verify_xml(
+                $saml,
+                no_xml_declaration => 1,
+                cert_text          => $cert,
+                cacert             => $self->cacert,
+                anchors            => $self->anchors
+            );
+            $error = undef;
+            last;
+        }
+        catch ($e) {
+            $error = $e;
+            next;
+        }
     }
+    die $error if (defined $error);
     return $saml;
 
 }
