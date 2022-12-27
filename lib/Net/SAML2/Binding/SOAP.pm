@@ -125,16 +125,20 @@ around BUILDARGS => sub {
     return $self->$orig(%params);
 };
 
-=head2 request( $message )
+=head2 request( $message, $trust_insecure )
 
 Submit the message to the IdP's service.
 
 Returns the Response, or dies if there was an error.
 
+Optionally if $trust_insecure is true it will not check for a signature.
+Shibboleth in particular may not sign responses that it considers to be
+transfered on a secure channel.
+
 =cut
 
 sub request {
-    my ($self, $message) = @_;
+    my ($self, $message, $trust_insecure) = @_;
     my $request = $self->create_soap_envelope($message);
 
     my $soap_action = 'http://www.oasis-open.org/committees/security';
@@ -157,22 +161,29 @@ sub request {
         );
     }
 
-    return $self->handle_response($res->decoded_content);
+    return $self->handle_response($res->decoded_content, $trust_insecure);
 
 }
 
-=head2 handle_response( $response )
+=head2 handle_response( $response, $trust_insecure )
 
 Handle a response from a remote system on the SOAP binding.
 
-Accepts a string containing the complete SOAP response.
+Accepts a string ($response) containing the complete SOAP response.
+
+Optionally if $trust_insecure is true it will not check for a signature.
+Shibboleth in particular may not sign responses that it considers to be
+transfered on a secure channel.
 
 =cut
 
 sub handle_response {
-    my ($self, $response) = @_;
+    my ($self, $response, $trust_insecure) = @_;
 
     my $saml = _get_saml_from_soap($response);
+
+    return $saml if $trust_insecure;
+
     use Feature::Compat::Try;
     my $error;
     foreach my $cert (@{$self->idp_cert}) {

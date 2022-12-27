@@ -125,11 +125,23 @@ get '/logout-soap' => sub {
     my $idp_cert = $idp->cert('signing');
 
     my $sp = _sp();
+
     my $logoutreq = $sp->logout_request(
-        $idp->entityid, params->{nameid}, $idp->format, params->{session}
+        $slo_url,
+        params->{nameid},
+        $idp->format || undef,
+        params->{session},
+        params->{name_qualifier} || undef,
+        params->{sp_name_qualifier} || undef,
     )->as_xml;
 
+    my $ua = LWP::UserAgent->new;
+
+    require LWP::Protocol::https;
+    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+
     my $soap = Net::SAML2::Binding::SOAP->new(
+        ua       => $ua,
         key      => config->{key},
         cert     => config->{cert},
         url      => $slo_url,
@@ -137,7 +149,21 @@ get '/logout-soap' => sub {
         cacert   => config->{cacert},
     );
 
-    my $res = $soap->request($logoutreq);
+    # Shibboleth does not sign back-channel LogoutRequests in all cases
+    my $trust_unsigned = config->{soap_trust_unsigned_logout_response};
+    my $res = $soap->request($logoutreq, $trust_unsigned);
+
+    if ($res) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => $res
+        );
+        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
 
     redirect '/', 302;
     return "Redirected\n";
@@ -340,7 +366,7 @@ sub _sp {
         assertion_consumer_service => [
         {
             Binding => BINDING_HTTP_POST,
-            Location => config->{url} . config->{slo_url_post},
+            Location => config->{url} . config->{acs_url_post},
             isDefault => 'false',
             # optionally
             index => 1,
