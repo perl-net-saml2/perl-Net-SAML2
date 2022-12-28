@@ -21,7 +21,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
 our $VERSION = '0.2';
 
-get '/' => sub {
+sub load_idps {
     if ( ! -x './IdPs' ) {
         return "<html><pre>You must have a xt/testapp/IdPs directory</pre></html>";
     }
@@ -43,6 +43,12 @@ get '/' => sub {
         }
         push @idps, \%tempidp;
     }
+
+    return @idps;
+}
+
+get '/' => sub {
+    my @idps = load_idps();
 
     template 'index', { 'idps' => \@idps, 'sign_metadata' => config->{sign_metadata} };
 };
@@ -70,6 +76,8 @@ get '/login' => sub {
         defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
         defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
     );
+
+    config->{slo_urls} = $idp->slo_urls();
 
     my $authnreq = $sp->authn_request(
         $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
@@ -187,10 +195,13 @@ post '/consumer-post' => sub {
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
+        my $slo_urls = config->{slo_urls};
+
         template 'user', {
                             assertion => $assertion,
                             ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            slo_urls => ($slo_urls ? $slo_urls : ()),
                          };
     }
     else {
@@ -234,10 +245,13 @@ get '/consumer-artifact' => sub {
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
+        my $slo_urls = config->{slo_urls};
+
         template 'user', {
                             assertion => $assertion,
                             ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            slo_urls => ($slo_urls ? $slo_urls : ()),
                          };
     }
     else {

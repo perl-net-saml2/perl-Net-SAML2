@@ -13,11 +13,15 @@ body {
 }
 
 a {
-    color: #a5ec02;
+    color: #0066ff;
 }
 
 h1 {
     color: #a5ec02;
+}
+
+h2 {
+    color: #000000;
 }
 
 footer {
