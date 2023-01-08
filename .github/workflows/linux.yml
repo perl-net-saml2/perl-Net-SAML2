@@ -10,7 +10,6 @@ jobs:
     strategy:
       matrix:
         perl-version:
-          - '5.10-buster'
           - '5.12-buster'
           - '5.14-buster'
           - '5.16-buster'

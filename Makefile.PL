@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use 5.008001;
+use 5.012;
 
 use ExtUtils::MakeMaker;
 
@@ -13,7 +13,7 @@ my %WriteMakefileArgs = (
   },
   "DISTNAME" => "Net-SAML2",
   "LICENSE" => "perl",
-  "MIN_PERL_VERSION" => "5.008001",
+  "MIN_PERL_VERSION" => "5.012",
   "NAME" => "Net::SAML2",
   "PREREQ_PM" => {
     "Carp" => 0,
