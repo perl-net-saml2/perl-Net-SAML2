@@ -7,6 +7,7 @@ use Crypt::OpenSSL::Verify;
 use Crypt::OpenSSL::X509;
 use Carp qw(croak);
 use List::Util qw(none);
+use Try::Tiny;
 
 # ABSTRACT: A role to verify the SAML response XML
 
@@ -85,10 +86,10 @@ sub verify_xml {
 
     if ($cacert) {
         my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
-        eval { $ca->verify($cert) };
-        if ($@) {
-            croak("Could not verify CA certificate: $@");
-        }
+        try { $ca->verify($cert) }
+        catch {
+            croak("Could not verify CA certificate: $_");
+        };
     }
 
     return 1 if !$anchors;
