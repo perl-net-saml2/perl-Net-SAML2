@@ -3,7 +3,7 @@ use warnings;
 package Net::SAML2;
 our $VERSION = "0.63";
 
-require 5.008_001;
+require 5.012;
 
 # ABSTRACT: SAML2 bindings and protocol implementation
 
