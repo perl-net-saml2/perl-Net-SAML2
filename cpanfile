@@ -26,6 +26,7 @@ requires "MooseX::Types::Common::String" => "0";
 requires "MooseX::Types::DateTime" => "0";
 requires "MooseX::Types::Moose" => "0";
 requires "MooseX::Types::URI" => "0";
+requires "Try::Tiny" => "0";
 requires "Types::Serialiser" => "0";
 requires "URI" => "0";
 requires "URI::Encode" => "0";
