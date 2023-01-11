@@ -241,11 +241,7 @@ sub create_soap_envelope {
     die "failed to sign" unless $ret;
 
     my $soap = <<"SOAP";
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
-<SOAP-ENV:Body>
-$signed_message
-</SOAP-ENV:Body>
-</SOAP-ENV:Envelope>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body>$signed_message</SOAP-ENV:Body></SOAP-ENV:Envelope>
 SOAP
     return $soap;
 }
