@@ -63,6 +63,11 @@ Tell the module to include the NameQualifier and SPNameQualifier attributes in
 the NameID. Defaults to false unless the B<nameid_format> equals
 C<urn:oasis:names:tc:SAML:2.0:nameidformat:persistent>
 
+=item B<name_qualifier>
+
+When supplied sets the NameQualifier attribute. When not supplied, this
+defaults to the destination.
+
 =item B<affiliation_group_id>
 
 When supplied sets the SPNameQualifier attribute. When not supplied, this
@@ -101,6 +106,12 @@ has affiliation_group_id => (
     predicate => 'has_affiliation_group_id'
 );
 
+has name_qualifier => (
+    isa       => NonEmptySimpleStr,
+    is        => 'ro',
+    required  => 0,
+    predicate => 'has_name_qualifier'
+);
 has include_name_qualifier =>
     (isa => 'Bool', is => 'ro', required => 0, default => 0);
 
@@ -199,9 +210,9 @@ sub as_xml {
                     ) : (),
                     $self->include_name_qualifier
                     ? (
-                        $self->has_destination
-                        ? (NameQualifier => $self->destination)
-                        : (),
+                        $self->has_name_qualifier
+                        ? (NameQualifier => $self->name_qualifier)
+                        : ($self->has_destination ? (NameQualifier => $self->destination) : ()),
                         SPNameQualifier =>
                         $self->has_affiliation_group_id ? $self->affiliation_group_id : $self->issuer
                         )
