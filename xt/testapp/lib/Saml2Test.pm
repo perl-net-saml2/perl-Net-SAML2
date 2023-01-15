@@ -21,7 +21,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
 our $VERSION = '0.2';
 
-get '/' => sub {
+sub load_idps {
     if ( ! -x './IdPs' ) {
         return "<html><pre>You must have a xt/testapp/IdPs directory</pre></html>";
     }
@@ -44,7 +44,17 @@ get '/' => sub {
         push @idps, \%tempidp;
     }
 
-    template 'index', { 'idps' => \@idps, 'sign_metadata' => config->{sign_metadata} };
+    return @idps;
+}
+
+get '/' => sub {
+    my @idps = load_idps();
+
+    template 'index', {
+                        'idps' => \@idps,
+                        'sign_metadata' => config->{sign_metadata},
+                        (defined params->{logout}) ? ('logout' => params->{logout}) : (),
+                    };
 };
 
 get '/login' => sub {
@@ -71,6 +81,8 @@ get '/login' => sub {
         defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
     );
 
+    config->{slo_urls} = $idp->slo_urls();
+
     my $authnreq = $sp->authn_request(
         $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         $idp->format || '', # default format.
@@ -85,7 +97,7 @@ get '/login' => sub {
 };
 
 get '/logout-local' => sub {
-    redirect '/', 302;
+    redirect '/?logout=local', 302;
 };
 
 get '/logout-redirect' => sub {
@@ -176,7 +188,7 @@ get '/logout-soap' => sub {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
 
-    redirect '/', 302;
+    redirect '/?logout=SOAP', 302;
     return "Redirected\n";
 };
 
@@ -198,10 +210,14 @@ post '/consumer-post' => sub {
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
+        my $slo_urls = config->{slo_urls};
+
         template 'user', {
                             assertion => $assertion,
                             (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             (defined $sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            slo_urls => ($slo_urls ? $slo_urls : ()),
+                            message => 'Successful Login via POST',
                          };
     }
     else {
@@ -243,10 +259,14 @@ get '/consumer-artifact' => sub {
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
+        my $slo_urls = config->{slo_urls};
+
         template 'user', {
                             assertion => $assertion,
                             ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            slo_urls => ($slo_urls ? $slo_urls : ()),
+                            message => 'Successful Login via SOAP',
                          };
     }
     else {
@@ -274,7 +294,7 @@ get '/sls-redirect-response' => sub {
     else {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
-    redirect $relaystate || '/', 302;
+    redirect $relaystate || '/?logout=redirect', 302;
     return "Redirected\n";
 };
 
@@ -301,7 +321,7 @@ post '/sls-post-response' => sub {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
 
-    redirect '/', 302;
+    redirect "/?logout=POST", 302;
     return "Redirected\n";
 };
 
@@ -342,7 +362,7 @@ get '/sls-consumer-artifact' => sub {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
 
-    redirect '/', 302;
+    redirect "/?logout=SOAP-ARTIFACT", 302;
     return "Redirected\n";
 };
 

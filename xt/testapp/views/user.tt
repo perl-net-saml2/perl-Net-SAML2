@@ -1,10 +1,28 @@
-<h1>NameID: <% assertion.nameid %></h1>
+<h2>NameID: <% assertion.nameid %></h2>
 
+<% FOREACH type IN slo_urls.keys %>
+   <% slo_url = slo_urls.$type %>
+   <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' %>
 <p><a href="/logout-redirect?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (redirect binding)</a></p>
-
+   <% end %>
+   <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP' %>
 <p><a href="/logout-soap?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (soap binding)</a></p>
+   <% end %>
+   <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' %>
+<p>Logout (post binding) - Unsupported</p>
+   <% end %>
+   <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact' %>
+<!-- <p><a href="/logout-soap?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (soap artifact)</a></p> -->
+<p>Logout (Artifact binding) - Unsupported</p>
+   <% end %>
+
+<% END %>
 
 <p><a href="/logout-local?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (local)</a></p>
+
+<% if message %>
+    <div id="hideMe"><p><% message %></p></div>
+<% end %>
 
 <h2>Attributes</h2>
 

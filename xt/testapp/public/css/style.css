@@ -1,7 +1,36 @@
-body {
+html, body {
     font-family: Lucida,sans-serif;
     color: #eee;
     background-color: #1f1b1a;
+    height:100%;
+    width:100%;
+    margin:0;
+    padding:0;
+}
+#hideMe {
+    -moz-animation: cssAnimation 0s ease-in 5s forwards;
+    /* Firefox */
+    -webkit-animation: cssAnimation 0s ease-in 5s forwards;
+    /* Safari and Chrome */
+    -o-animation: cssAnimation 0s ease-in 5s forwards;
+    /* Opera */
+    animation: cssAnimation 0s ease-in 5s forwards;
+    -webkit-animation-fill-mode: forwards;
+    animation-fill-mode: forwards;
+}
+@keyframes cssAnimation {
+    to {
+        width:0;
+        height:0;
+        overflow:hidden;
+    }
+}
+@-webkit-keyframes cssAnimation {
+    to {
+        width:0;
+        height:0;
+        visibility:hidden;
+    }
 }
 
 #content {
@@ -13,11 +42,15 @@ body {
 }
 
 a {
-    color: #a5ec02;
+    color: #0066ff;
 }
 
 h1 {
     color: #a5ec02;
+}
+
+h2 {
+    color: #000000;
 }
 
 footer {
