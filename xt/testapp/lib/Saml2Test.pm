@@ -234,11 +234,9 @@ get '/consumer-artifact' => sub {
 
     my $response = $soap->request($request);
 
-    my $assertion_xml = $soap->extract_artifact_message($response, 'Response');
-
-    if ($assertion_xml) {
+    if ($response) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-            xml      => $assertion_xml,
+            xml      => $response,
             key_file => config->{key},
         );
 
@@ -332,11 +330,9 @@ get '/sls-consumer-artifact' => sub {
 
     my $response = $soap->request($request);
 
-    my $logout_xml = $soap->extract_artifact_message($response, 'LogoutResponse');
-
-    if ($logout_xml) {
+    if ($response) {
         my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
-            xml => $logout_xml,
+            xml => $response,
         );
         if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
             print STDERR "\nLogout Success Status - $logout->{issuer}\n";

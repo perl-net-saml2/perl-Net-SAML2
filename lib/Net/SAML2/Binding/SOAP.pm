@@ -158,7 +158,7 @@ sub request {
         );
     }
 
-    return $self->handle_response($res->decoded_content);
+    return _extract_artifact_message($self->handle_response($res->decoded_content));
 
 }
 
@@ -233,21 +233,8 @@ sub handle_request {
     return;
 }
 
-=head2 extract_artifact_message( $response, $message )
-
-Extract the message from the ArtifactResponse.
-
-  extract_artifact_message(
-          $artifact,
-          'Response' || 'LogoutResponse'
-  );
-
-=cut
-
-sub extract_artifact_message {
-    my $self        = shift;
+sub _extract_artifact_message {
     my $artifact    = shift;
-    my $message     = shift;
 
     my $dom = no_comments($artifact);
 
@@ -255,7 +242,9 @@ sub extract_artifact_message {
     $parser->registerNs('samlp', URN_PROTOCOL);
 
     my $set = $parser->findnodes(
-                        "/samlp:ArtifactResponse/samlp:$message", $dom);
+                        "/samlp:ArtifactResponse/samlp:Response" .
+                        "|" .
+                        "/samlp:ArtifactResponse/samlp:LogoutResponse", $dom);
 
     if ($set->size) {
         my $logout = $set->get_node(1)->cloneNode( 1 );
