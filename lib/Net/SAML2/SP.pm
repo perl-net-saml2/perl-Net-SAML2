@@ -64,6 +64,11 @@ Path to the signing certificate
 
 Path to the private key for the signing certificate
 
+=item B<encryption_key>
+
+Path to the public key that the IdP should use for encryption. This
+is used when generating the metadata.
+
 =item B<cacert>
 
 Path to the CA certificate for verification
@@ -156,6 +161,7 @@ has 'cert'   => (isa => 'Str', is => 'ro', required => 1);
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Str', is => 'rw', required => 0, predicate => 'has_cacert');
 
+has 'encryption_key'   => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_encryption_key');
 has 'error_url'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
 has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
@@ -172,6 +178,7 @@ has 'acs_url_artifact' => (isa => 'Str', is => 'ro', required => 0);
 
 has '_cert_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_cert_text', lazy => 1);
 
+has '_encryption_key_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_encryption_key_text', lazy => 1);
 has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 
@@ -267,6 +274,15 @@ around BUILDARGS => sub {
 
     return $self->$orig(%args);
 };
+
+sub _build_encryption_key_text {
+    my ($self) = @_;
+
+    my $cert = Crypt::OpenSSL::X509->new_from_file($self->encryption_key);
+    my $text = $cert->as_string;
+    $text =~ s/-----[^-]*-----//gm;
+    return $text;
+}
 
 sub _build_cert_text {
     my ($self) = @_;
@@ -520,7 +536,9 @@ sub generate_metadata {
                 protocolSupportEnumeration => URN_PROTOCOL,
             },
 
-            $self->_generate_key_descriptors($x),
+            $self->_generate_key_descriptors($x, 'signing'),
+
+            $self->has_encryption_key ? $self->_generate_key_descriptors($x, 'encryption') : (),
 
             $self->_generate_single_logout_service($x),
 
@@ -554,6 +572,7 @@ sub generate_metadata {
 sub _generate_key_descriptors {
     my $self = shift;
     my $x    = shift;
+    my $use  = shift;
 
     return
            if !$self->authnreq_signed
@@ -562,22 +581,21 @@ sub _generate_key_descriptors {
 
     return $x->KeyDescriptor(
         $md,
-        { use => 'signing' },
+        { use => $use },
         $x->KeyInfo(
             $ds,
             $x->X509Data(
                 $ds,
                 $x->X509Certificate(
                     $ds,
-                    $self->_cert_text,
+                    $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text,
                 )
             ),
             $x->KeyName(
                 $ds,
-                Digest::MD5::md5_hex($self->_cert_text)
+                Digest::MD5::md5_hex($use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text)
             ),
-
-        )
+        ),
     );
 }
 
