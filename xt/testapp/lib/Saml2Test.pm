@@ -60,6 +60,7 @@ get '/' => sub {
 get '/login' => sub {
 
     config->{cacert} = 'IdPs/' . params->{idp} . '/cacert.pem';
+    config->{idp_name} = params->{idp};
     config->{idp} = 'http://localhost:8880/IdPs/' . params->{idp} . '/metadata.xml';
     if ( -f 'IdPs/' . params->{idp} . '/config.yml' ) {
         my $config_file = YAML::LoadFile('IdPs/' . params->{idp} . '/config.yml');
@@ -71,7 +72,6 @@ get '/login' => sub {
         for my $key (keys %$config_file) {
             config->{$key} = $config_file->{$key};
         }
-
     }
     my $idp = _idp();
     my $sp = _sp();
@@ -196,27 +196,36 @@ post '/consumer-post' => sub {
     my $post = Net::SAML2::Binding::POST->new(
         cacert => config->{cacert},
     );
+
     my $ret = $post->handle_response(
         params->{SAMLResponse}
     );
 
     if ($ret) {
+
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             xml         => decode_base64(params->{SAMLResponse}),
             key_file    => config->{key},
             cacert      => config->{cacert},
         );
 
+        if ($assertion->{response_status} ne 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            redirect '/', 302;
+            return "Redirected\n";
+        }
+
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
         my $slo_urls = config->{slo_urls};
 
+        my $user_attributes = get_user_attributes($assertion);
+
         template 'user', {
-                            assertion => $assertion,
+                            user_attributes => $user_attributes,
                             (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             (defined $sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
-                            slo_urls => ($slo_urls ? $slo_urls : ()),
+                            (defined $slo_urls ? (slo_urls => $slo_urls) : ()),
                             message => 'Successful Login via POST',
                          };
     }
@@ -224,6 +233,46 @@ post '/consumer-post' => sub {
         return "<html><pre>Bad Assertion</pre></html>";
     }
 };
+
+sub get_attribute_map {
+
+    my $attribute_mappings;
+
+    my $file = 'IdPs/' . config->{idp_name} . '/mappings.yml';
+
+    if ( -e $file ) {
+        $attribute_mappings = YAML::LoadFile($file);
+    } else {
+
+        $attribute_mappings->{EmailAddress} = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress';
+        $attribute_mappings->{FirstName} = 'fname';
+        $attribute_mappings->{LastName} = 'lname';
+        $attribute_mappings->{Address} = 'Address';
+        $attribute_mappings->{PhoneNumber} = 'PhoneNumber';
+        $attribute_mappings->{EmployeeNumber} = 'EmployeeNumber';
+    }
+
+    return $attribute_mappings;
+}
+
+sub get_user_attributes {
+    my $assertion = shift;
+
+    my %user;
+
+    my $map = get_attribute_map();
+    $user{issuer} = $assertion->{issuer};
+    $user{session} = $assertion->{session};
+    $user{nameid} = $assertion->nameid();
+    $user{EmailAddress} = $assertion->{attributes}{$map->{EmailAddress}}[0];
+    $user{FirstName} = $assertion->{attributes}{$map->{FirstName}}[0];
+    $user{LastName} = $assertion->{attributes}{$map->{LastName}}[0];
+    $user{Address} = $assertion->{attributes}{$map->{Address}}[0];
+    $user{PhoneNumber} = $assertion->{attributes}{$map->{PhoneNumber}}[0];
+    $user{EmployeeNumber} = $assertion->{attributes}{$map->{EmployeeNumber}}[0];
+
+    return \%user;
+}
 
 get '/consumer-artifact' => sub {
     my $idp = _idp();
@@ -261,8 +310,10 @@ get '/consumer-artifact' => sub {
 
         my $slo_urls = config->{slo_urls};
 
+        my $user_attributes = get_user_attributes($assertion);
+
         template 'user', {
-                            assertion => $assertion,
+                            user_attributes => $user_attributes,
                             ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
                             slo_urls => ($slo_urls ? $slo_urls : ()),
