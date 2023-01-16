@@ -1,24 +1,24 @@
-<h2>NameID: <% assertion.nameid %></h2>
+<h2>NameID: <% user_attributes.nameid %></h2>
 
 <% FOREACH type IN slo_urls.keys.sort %>
    <% slo_url = slo_urls.$type %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' %>
-<p><a href="/logout-redirect?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (redirect binding)</a></p>
+<p><a href="/logout-redirect?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>">Logout (redirect binding)</a></p>
    <% end %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP' %>
-<p><a href="/logout-soap?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (soap binding)</a></p>
+<p><a href="/logout-soap?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>">Logout (soap binding)</a></p>
    <% end %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' %>
 <p>Logout (post binding) - Unsupported</p>
    <% end %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact' %>
-<!-- <p><a href="/logout-soap?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (soap artifact)</a></p> -->
+<!-- <p><a href="/logout-soap?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>">Logout (soap artifact)</a></p> -->
 <p>Logout (Artifact binding) - Unsupported</p>
    <% end %>
 
 <% END %>
 
-<p><a href="/logout-local?nameid=<% assertion.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% assertion.session | html %>">Logout (local)</a></p>
+<p><a href="/logout-local?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>">Logout (local)</a></p>
 
 <% if message %>
     <div id="hideMe"><p><% message %></p></div>
@@ -33,30 +33,30 @@
   </tr>
   <tr>
     <td>Issuer</td>
-    <td><% assertion.issuer %></td>
+    <td><% user_attributes.issuer %></td>
   </tr>
   <tr>
     <td>EmailAddress</td>
-    <td><% assertion.attributes.EmailAddress.0 %></td>
+    <td><% user_attributes.EmailAddress %></td>
   </tr>
   <tr>
     <td>FirstName</td>
-    <td><% assertion.attributes.FirstName.0 %><% assertion.attributes.fname.0 %></td>
+    <td><% user_attributes.FirstName %></td>
   </tr>
   <tr>
     <td>LastName</td>
-    <td><% assertion.attributes.LastName.0 %><% assertion.attributes.lname.0 %></td>
+    <td><% user_attributes.LastName %></td>
   </tr>
   <tr>
     <td>Address</td>
-    <td><% assertion.attributes.Address.0 %></td>
+    <td><% user_attributes.Address %></td>
   </tr>
   <tr>
     <td>Phone</td>
-    <td><% assertion.attributes.Phone %></td>
+    <td><% user_attributes.PhoneNumber %></td>
   </tr>
   <tr>
     <td>EmployeeNumber</td>
-    <td><% assertion.attributes.EmployeeNumber %></td>
+    <td><% user_attributes.EmployeeNumber %></td>
   </tr>
 </table>
