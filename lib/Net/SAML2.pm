@@ -102,24 +102,30 @@ Identity Providers (IdPs).  It has been tested against:
 
 =over
 
-=item GSuite (Google)
+=item Auth0 (requires Net::SAML2 >=0.39)
 
 =item Azure (Microsoft Office 365)
 
-=item OneLogin
+=item GSuite (Google)
 
 =item Jump
 
-=item Mircosoft ADFS
-
 =item Keycloak
 
-=item Auth0 (requires Net::SAML2 >=0.39)
+=item Mircosoft ADFS (not recently tested)
+
+=item Okta
+
+=item OneLogin
 
 =item PingIdentity
 
 Version 0.54 and newer support EncryptedAssertions.  No changes required to existing
 SP applications if EncryptedAssertions are not in use.
+
+=item SAMLTEST.ID (requires Net::SAML2 >=0.63)
+
+=item Shibboleth (requires Net::SAML2 >=0.63)
 
 =back
 
