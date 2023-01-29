@@ -21,7 +21,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
 our $VERSION = '0.2';
 
-get '/' => sub {
+sub load_idps {
     if ( ! -x './IdPs' ) {
         return "<html><pre>You must have a xt/testapp/IdPs directory</pre></html>";
     }
@@ -44,12 +44,23 @@ get '/' => sub {
         push @idps, \%tempidp;
     }
 
-    template 'index', { 'idps' => \@idps, 'sign_metadata' => config->{sign_metadata} };
+    return @idps;
+}
+
+get '/' => sub {
+    my @idps = load_idps();
+
+    template 'index', {
+                        'idps' => \@idps,
+                        'sign_metadata' => config->{sign_metadata},
+                        (defined params->{logout}) ? ('logout' => params->{logout}) : (),
+                    };
 };
 
 get '/login' => sub {
 
     config->{cacert} = 'IdPs/' . params->{idp} . '/cacert.pem';
+    config->{idp_name} = params->{idp};
     config->{idp} = 'http://localhost:8880/IdPs/' . params->{idp} . '/metadata.xml';
     if ( -f 'IdPs/' . params->{idp} . '/config.yml' ) {
         my $config_file = YAML::LoadFile('IdPs/' . params->{idp} . '/config.yml');
@@ -61,7 +72,6 @@ get '/login' => sub {
         for my $key (keys %$config_file) {
             config->{$key} = $config_file->{$key};
         }
-
     }
     my $idp = _idp();
     my $sp = _sp();
@@ -70,6 +80,8 @@ get '/login' => sub {
         defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
         defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
     );
+
+    config->{slo_urls} = $idp->slo_urls();
 
     my $authnreq = $sp->authn_request(
         $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
@@ -85,7 +97,7 @@ get '/login' => sub {
 };
 
 get '/logout-local' => sub {
-    redirect '/', 302;
+    redirect '/?logout=local', 302;
 };
 
 get '/logout-redirect' => sub {
@@ -144,7 +156,7 @@ get '/logout-soap' => sub {
                          );
 
     my $logoutreq = $sp->logout_request(
-        $idp->entityid, params->{nameid}, $idp->format, params->{session},
+        $slo_url, params->{nameid}, $idp->format || undef, params->{session},
         \%logout_params
     )->as_xml;
 
@@ -164,7 +176,19 @@ get '/logout-soap' => sub {
 
     my $res = $soap->request($logoutreq);
 
-    redirect '/', 302;
+    if ($res) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => $res
+        );
+        if ($logout->success) {
+            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
+
+    redirect '/?logout=SOAP', 302;
     return "Redirected\n";
 };
 
@@ -172,30 +196,82 @@ post '/consumer-post' => sub {
     my $post = Net::SAML2::Binding::POST->new(
         cacert => config->{cacert},
     );
+
     my $ret = $post->handle_response(
         params->{SAMLResponse}
     );
 
     if ($ret) {
+
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             xml         => decode_base64(params->{SAMLResponse}),
             key_file    => config->{key},
             cacert      => config->{cacert},
         );
 
+        if (! $assertion->valid(config->{issuer})) {
+            return '<html><pre>Bad Assertion</pre></html>';
+        }
+
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
+        my $slo_urls = config->{slo_urls};
+
+        my $user_attributes = get_user_attributes($assertion);
+
         template 'user', {
-                            assertion => $assertion,
+                            user_attributes => $user_attributes,
                             (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             (defined $sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            (defined $slo_urls ? (slo_urls => $slo_urls) : ()),
+                            message => 'Successful Login via POST',
                          };
     }
     else {
         return "<html><pre>Bad Assertion</pre></html>";
     }
 };
+
+sub get_attribute_map {
+
+    my $attribute_mappings;
+
+    my $file = 'IdPs/' . config->{idp_name} . '/mappings.yml';
+
+    if ( -e $file ) {
+        $attribute_mappings = YAML::LoadFile($file);
+    } else {
+
+        $attribute_mappings->{EmailAddress} = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress';
+        $attribute_mappings->{FirstName} = 'fname';
+        $attribute_mappings->{LastName} = 'lname';
+        $attribute_mappings->{Address} = 'Address';
+        $attribute_mappings->{PhoneNumber} = 'PhoneNumber';
+        $attribute_mappings->{EmployeeNumber} = 'EmployeeNumber';
+    }
+
+    return $attribute_mappings;
+}
+
+sub get_user_attributes {
+    my $assertion = shift;
+
+    my %user;
+
+    my $map = get_attribute_map();
+    $user{issuer} = $assertion->{issuer};
+    $user{session} = $assertion->{session};
+    $user{nameid} = $assertion->nameid();
+    $user{EmailAddress} = $assertion->{attributes}{$map->{EmailAddress}}[0];
+    $user{FirstName} = $assertion->{attributes}{$map->{FirstName}}[0];
+    $user{LastName} = $assertion->{attributes}{$map->{LastName}}[0];
+    $user{Address} = $assertion->{attributes}{$map->{Address}}[0];
+    $user{PhoneNumber} = $assertion->{attributes}{$map->{PhoneNumber}}[0];
+    $user{EmployeeNumber} = $assertion->{attributes}{$map->{EmployeeNumber}}[0];
+
+    return \%user;
+}
 
 get '/consumer-artifact' => sub {
     my $idp = _idp();
@@ -228,13 +304,23 @@ get '/consumer-artifact' => sub {
             xml => $response
         );
 
+        if ( ! $assertion->valid(config->{issuer})) {
+            return '<html><pre>Bad Assertion</pre></html>';
+        }
+
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
+        my $slo_urls = config->{slo_urls};
+
+        my $user_attributes = get_user_attributes($assertion);
+
         template 'user', {
-                            assertion => $assertion,
+                            user_attributes => $user_attributes,
                             ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            slo_urls => ($slo_urls ? $slo_urls : ()),
+                            message => 'Successful Login via SOAP',
                          };
     }
     else {
@@ -255,14 +341,14 @@ get '/sls-redirect-response' => sub {
         my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
             xml => $response
         );
-        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+        if ($logout->success) {
             print STDERR "\nLogout Success Status - $logout->{issuer}\n";
         }
     }
     else {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
-    redirect $relaystate || '/', 302;
+    redirect $relaystate || '/?logout=redirect', 302;
     return "Redirected\n";
 };
 
@@ -281,7 +367,7 @@ post '/sls-post-response' => sub {
         my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
             xml => decode_base64(params->{SAMLResponse})
         );
-        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+        if ($logout->success) {
             print STDERR "\nLogout Success Status - $logout->{issuer}\n";
         }
     }
@@ -289,7 +375,49 @@ post '/sls-post-response' => sub {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
 
-    redirect '/', 302;
+    redirect "/?logout=POST", 302;
+    return "Redirected\n";
+};
+
+get '/sls-consumer-artifact' => sub {
+    my $idp = _idp();
+    my $idp_cert = $idp->cert('signing');
+    my $art_url  = $idp->art_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
+
+    my $artifact = params->{SAMLart};
+
+    my $sp = _sp();
+    my $request = $sp->artifact_request($art_url, $artifact)->as_xml;
+
+    my $ua = LWP::UserAgent->new;
+
+    require LWP::Protocol::https;
+    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+
+    my $soap = Net::SAML2::Binding::SOAP->new(
+        ua       => $ua,
+        url      => $art_url,
+        key      => config->{key},
+        cert     => config->{cert},
+        idp_cert => $idp_cert,
+    );
+
+    my $response = $soap->request($request);
+
+    if ($response) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => $response,
+        );
+
+        if ($logout->success) {
+            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+        }
+    }
+    else {
+        return "<html><pre>Bad Logout Response</pre></html>";
+    }
+
+    redirect "/?logout=SOAP-ARTIFACT", 302;
     return "Redirected\n";
 };
 

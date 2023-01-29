@@ -18,6 +18,9 @@
         </ol>
     <% end %>
 
+    <% if logout %>
+            <div id="hideMe"><p>Successful logout via: <% logout %></p></div>
+    <% end %>
     <h2>Download SP Metadata</h2>
 
     <form action="/metadata.xml">

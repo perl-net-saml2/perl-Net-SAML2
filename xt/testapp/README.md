@@ -50,6 +50,7 @@ The testapp now supports a simplified automatic configuration for testing agains
    2. Download the metadata from your IdP and save it as IdPs/google/metadata.xml
    3. Download the cacert.pem from the IdP and save it as IdPs/google/cacert.pem
    4. Optionally create IdPs/google/config.yml for custom settings for the IdP (if the a custom config.yml does not exist it will refresh the settings from the default config.yml.
+   4. Optionally create IdPs/google/mappings.yml for custom IdP attribute mappings.  If a custom mappings.yml does not does not exist it will use the defaul mappings.
 
 The index page will automatically list each configured Identity Provider as a link to initiate login against that IdP.
 
@@ -66,6 +67,10 @@ IdPs/
     google/
         cacert.pem
         metadata.yml
+    shibboleth
+        cacert.pem
+        metadata.yml
+        mappings.yml (optional)
 
 ### Run lighttpd to deliver metadata.xml
 
@@ -94,15 +99,21 @@ If there is an option to upload the metadata.xml that is probably your first ste
 
 Saml2Test expects the Identity Provider to provide an assertion with the following values:
 
-   1. DN
-   2. CN
-   3. EmailAddress
-   4. FirstName
-   5. Address
-   6. Phone
-   7. EmployeeNumber
+   1. EmailAddress
+   2. FirstName
+   3. LastName
+   4. Address
+   5. PhoneNumber
+   6. EmployeeNumber
 
-Note that DN and CN (and others) may not be available.  That can be customized in views/user.tt if you want to choose other options.  However the Identity Provider must provide the assertion attributes that match the expected names in views/user.tt.
+If the Identity Provider does not provide assertion attributes that match the expected names above you can create a custom mapping in IdPs/idp_name/mappings.yml in the following format.  The setting is the name the testapp expects and the value is the attribure name that the IdP provides in the Assertion.
+
+EmailAddress: "urn:oid:0.9.2342.19200300.100.1.3"
+FirstName: "urn:oid:2.5.4.42"
+LastName: "urn:oid:2.5.4.4"
+Address: "urn:oid:2.5.4.9"
+PhoneNumber: "urn:oid:2.5.4.20"
+EmployeeNumber: "urn:oid:0.9.2342.19200300.100.1.1"
 
 ## Debugging
 
