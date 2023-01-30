@@ -142,19 +142,25 @@ sub new_from_xml {
         $attributes->{$node->getAttribute('Name')} = [map $_->string_value, @values];
     }
 
+    my $xpath_base = '//samlp:Response/saml:Assertion/saml:Conditions/';
+
     my $not_before;
-    if($xpath->findvalue('//saml:Conditions/@NotBefore')) {
-        $not_before = DateTime::Format::XSD->parse_datetime(
-            $xpath->findvalue('//saml:Conditions/@NotBefore'));
+    if (my $value = $xpath->findvalue($xpath_base . '@NotBefore')) {
+        $not_before = DateTime::Format::XSD->parse_datetime($value);
+    }
+    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotBefore')) {
+        $not_before = DateTime::Format::XSD->parse_datetime($global);
     }
     else {
         $not_before = DateTime::HiRes->now();
     }
 
     my $not_after;
-    if($xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
-        $not_after = DateTime::Format::XSD->parse_datetime(
-            $xpath->findvalue('//saml:Conditions/@NotOnOrAfter'));
+    if (my $value = $xpath->findvalue($xpath_base . '@NotOnOrAfter')) {
+        $not_after = DateTime::Format::XSD->parse_datetime($value);
+    }
+    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
+        $not_after = DateTime::Format::XSD->parse_datetime($global);
     }
     else {
         $not_after = DateTime->from_epoch(epoch => time() + 1000);

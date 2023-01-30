@@ -128,4 +128,21 @@ is($assertion->nameid_sp_provided_id,
     undef,
     "nameid_sp_provided_id undefined as expected");
 
+
+
+lives_ok(
+    sub {
+       my  $xml = path('t/data/eherkenning-assertion.xml')->slurp;
+       $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(xml => $xml);
+    },
+    "Correct parsing of dates"
+);
+
+isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
+isa_ok($assertion->not_before, "DateTime", "not before is correct");
+isa_ok($assertion->not_after, "DateTime", "... and so it not after");
+
+is($assertion->not_before, "2020-06-02T11:48:07", "... and the correct not_before");
+is($assertion->not_after, "2020-06-02T11:53:07", "... and the correct not_after");
+
 done_testing;
