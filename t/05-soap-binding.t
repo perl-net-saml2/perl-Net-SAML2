@@ -43,6 +43,7 @@ my $request
 
 isa_ok($request, "Net::SAML2::Protocol::LogoutRequest");
 my $request_xml = $request->as_xml;
+my $id = $request->{id};
 
 my $xp = get_xpath($request_xml);
 isa_ok($xp, "XML::LibXML::XPathContext");
@@ -67,6 +68,8 @@ my $soaped_request = Net::SAML2::Protocol::LogoutRequest->new_from_xml(
 );
 isa_ok($soaped_request, 'Net::SAML2::Protocol::LogoutRequest');
 
+is($soaped_request->{id}, $id,
+    "LogoutRequest ID is as expected");
 is($soaped_request->session, $request->session,
     "SOAP session equals request session");
 is($soaped_request->nameid, $request->nameid,
