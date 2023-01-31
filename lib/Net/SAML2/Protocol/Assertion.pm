@@ -41,8 +41,9 @@ has 'xpath' => (isa => 'XML::LibXML::XPathContext', is => 'ro', required => 1);
 has 'nameid_object' => (
     isa      => 'XML::LibXML::Element',
     is       => 'ro',
-    required => 1,
-    init_arg => 'nameid'
+    required => 0,
+    init_arg => 'nameid',
+    predicate => 'has_nameid',
 );
 
 =head1 METHODS
@@ -166,12 +167,20 @@ sub new_from_xml {
         $not_after = DateTime->from_epoch(epoch => time() + 1000);
     }
 
+    my $nameid;
+    if (my $node = $xpath->findnodes('//samlp:Response/saml:Assertion/saml:Subject/    saml:NameID')) {
+        $nameid = $node->get_node(1);
+    }
+    elsif (my $global = $xpath->findnodes('//saml:Subject/saml:NameID')) {
+        $nameid = $global->get_node(1);
+    }
+
     my $self = $class->new(
         issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer'),
         destination    => $xpath->findvalue('/samlp:Response/@Destination'),
         attributes     => $attributes,
         session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex'),
-        nameid         => $xpath->findnodes('//saml:Subject/saml:NameID')->get_node(1),
+        $nameid ? (nameid => $nameid) : (),
         audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
         not_before     => $not_before,
         not_after      => $not_after,
@@ -202,6 +211,7 @@ Returns the NameID
 
 sub nameid {
     my $self = shift;
+    return unless $self->has_nameid;
     return $self->nameid_object->textContent;
 }
 
@@ -213,6 +223,7 @@ Returns the NameID Format
 
 sub nameid_format {
     my $self = shift;
+    return unless $self->has_nameid;
     return $self->nameid_object->getAttribute('Format');
 }
 
@@ -224,6 +235,7 @@ Returns the NameID NameQualifier
 
 sub nameid_name_qualifier {
     my $self = shift;
+    return unless $self->has_nameid;
     return $self->nameid_object->getAttribute('NameQualifier');
 }
 
@@ -235,6 +247,7 @@ Returns the NameID SPNameQualifier
 
 sub nameid_sp_name_qualifier {
     my $self = shift;
+    return unless $self->has_nameid;
     return $self->nameid_object->getAttribute('SPNameQualifier');
 }
 
@@ -246,6 +259,7 @@ Returns the NameID SPProvidedID
 
 sub nameid_sp_provided_id {
     my $self = shift;
+    return unless $self->has_nameid;
     return $self->nameid_object->getAttribute('SPProvidedID');
 }
 
