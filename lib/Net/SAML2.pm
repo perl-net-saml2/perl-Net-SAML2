@@ -21,6 +21,7 @@ use Net::SAML2::Protocol::AuthnRequest;
 use Net::SAML2::Protocol::LogoutRequest;
 use Net::SAML2::Protocol::LogoutResponse;;
 use Net::SAML2::Protocol::Assertion;
+use Net::SAML2::Protocol::Artifact;
 use Net::SAML2::Protocol::ArtifactResolve;
 
 1;
