@@ -159,4 +159,24 @@ lives_ok(
     "Correct parsing of plain ADFS"
 );
 
+lives_ok(
+    sub {
+       my  $xml = path('t/data/failed-assertion.xml')->slurp;
+       $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(xml => $xml);
+    },
+    "Correct parsing of failed assertion"
+);
+
+ok(!$assertion->success, ".. not a success");
+is(
+    $assertion->response_status,
+    "main status",
+    "... and the status also indicates not a success"
+);
+is(
+    $assertion->response_substatus,
+    "sub status",
+    "... and the sub status yay"
+);
+
 done_testing;
