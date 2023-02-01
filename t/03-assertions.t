@@ -68,6 +68,10 @@ XML
 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(xml => $xml);
 isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
 
+is($assertion->{id},
+    "s241001b6007d1700109a3e3bc4350ae5528ba9824",
+    "Assertion id is as expected");
+
 is($assertion->in_response_to, 'N3k95Hg41WCHdwc9mqXynLPhB');
 
 is(scalar keys %{ $assertion->attributes }, 2);
@@ -127,6 +131,10 @@ is($assertion->nameid_sp_name_qualifier,
 is($assertion->nameid_sp_provided_id,
     undef,
     "nameid_sp_provided_id undefined as expected");
+
+is($assertion->id,
+    "_61f377717caad87ce2af0e7946cb97b1",
+    "Assertion id is as expected");
 
 lives_ok(
     sub {

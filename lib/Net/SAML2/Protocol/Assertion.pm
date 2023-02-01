@@ -176,6 +176,7 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
+        id             => $xpath->findvalue('//saml:Assertion/@ID'),
         issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer'),
         destination    => $xpath->findvalue('/samlp:Response/@Destination'),
         attributes     => $attributes,
