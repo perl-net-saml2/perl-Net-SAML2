@@ -1,5 +1,3 @@
-use strict;
-use warnings;
 package Net::SAML2::Protocol::Assertion;
 # VERSION
 
@@ -13,6 +11,8 @@ use Net::SAML2::XML::Util qw/ no_comments /;
 use Net::SAML2::XML::Sig;
 use XML::Enc;
 use XML::LibXML;
+use List::Util qw(first);
+use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -37,12 +37,13 @@ has 'not_before' => (isa => DateTime,          is => 'ro', required => 1);
 has 'session'         => (isa => 'Str', is => 'ro', required => 1);
 has 'in_response_to'  => (isa => 'Str', is => 'ro', required => 1);
 has 'response_status' => (isa => 'Str', is => 'ro', required => 1);
+has 'response_substatus' => (isa => 'Str', is => 'ro');
 has 'xpath' => (isa => 'XML::LibXML::XPathContext', is => 'ro', required => 1);
 has 'nameid_object' => (
-    isa      => 'XML::LibXML::Element',
-    is       => 'ro',
-    required => 0,
-    init_arg => 'nameid',
+    isa       => 'XML::LibXML::Element',
+    is        => 'ro',
+    required  => 0,
+    init_arg  => 'nameid',
     predicate => 'has_nameid',
 );
 
@@ -175,6 +176,17 @@ sub new_from_xml {
         $nameid = $global->get_node(1);
     }
 
+    my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode');
+    croak("Unable to parse status from assertion") unless ($nodeset->size);
+
+    my $status_node = $nodeset->get_node(1);
+    my $status = $status_node->getAttribute('Value');
+    my $sub_status;
+
+    if (my $s = first { $_->isa('XML::LibXML::Element') } $status_node->childNodes) {
+        $sub_status = $s->getAttribute('Value');
+    }
+
     my $self = $class->new(
         id             => $xpath->findvalue('//saml:Assertion/@ID'),
         issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer'),
@@ -187,21 +199,32 @@ sub new_from_xml {
         not_after      => $not_after,
         xpath          => $xpath,
         in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
-        response_status => $xpath->findvalue('//samlp:Response/samlp:Status/samlp:StatusCode/@Value'),
+        response_status => $status,
+        $sub_status ? (response_substatus => $sub_status) : (),
     );
 
     return $self;
 }
 
-=head2 name( )
+=head2 response_status
+
+Returns the response status
+
+=head2 response_substatus
+
+SAML errors are usually "nested" ("Responder -> RequestDenied" for instance,
+means that the responder in this transaction (the IdP) denied the login
+request). For proper error message generation, both levels are needed.
+
+=head2 name
 
 Returns the CN attribute, if provided.
 
 =cut
 
 sub name {
-    my($self) = @_;
-    return $self->attributes->{CN}->[0];
+    my $self = shift;
+    return $self->attributes->{CN}[0];
 }
 
 =head2 nameid
@@ -294,6 +317,19 @@ sub valid {
     return 0 unless DateTime::->compare($self->not_after, $now) > 0;
 
     return 1;
+}
+
+=head2 success
+
+Returns true if the response status is a success, returns false otherwise.
+In case the assertion isn't successfull, the L</response_status> and L</response_substatus> calls can be use to see why the assertion wasn't successful.
+
+=cut
+
+sub success {
+    my $self = shift;
+    return 1 if $self->response_status eq STATUS_SUCCESS;
+    return 0;
 }
 
 1;
