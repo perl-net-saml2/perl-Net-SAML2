@@ -296,12 +296,15 @@ get '/consumer-artifact' => sub {
         idp_cert    => $idp_cert,
     );
 
-    my $response = $soap->request($request);
+    my $soap_response = $soap->request($request);
 
-    if ($response) {
+    $artifact = Net::SAML2::Protocol::Artifact->new_from_xml(
+            xml => $soap_response );
+
+    if ($artifact->success) {
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             key_file => config->{key},
-            xml => $response
+            xml => $artifact->get_response(),
         );
 
         if ( ! $assertion->valid(config->{issuer})) {
@@ -324,7 +327,7 @@ get '/consumer-artifact' => sub {
                          };
     }
     else {
-        return "<html><pre>Bad Assertion</pre></html>";
+        return "<html><pre>Bad Artifact Response</pre></html>";
     }
 };
 
@@ -402,11 +405,14 @@ get '/sls-consumer-artifact' => sub {
         idp_cert => $idp_cert,
     );
 
-    my $response = $soap->request($request);
+    my $soap_response = $soap->request($request);
 
-    if ($response) {
+    $artifact = Net::SAML2::Protocol::Artifact->new_from_xml(
+            xml => $soap_response );
+
+    if ($artifact->success) {
         my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
-            xml => $response,
+            xml => $artifact->get_response(),
         );
 
         if ($logout->success) {
@@ -414,7 +420,7 @@ get '/sls-consumer-artifact' => sub {
         }
     }
     else {
-        return "<html><pre>Bad Logout Response</pre></html>";
+        return "<html><pre>Bad Artifact Response</pre></html>";
     }
 
     redirect "/?logout=SOAP-ARTIFACT", 302;
