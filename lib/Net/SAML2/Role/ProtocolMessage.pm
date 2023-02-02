@@ -12,6 +12,7 @@ use namespace::autoclean;
 use DateTime;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::Util qw(generate_id);
+use Net::SAML2::Types qw(XsdID);
 
 =head1 NAME
 
@@ -28,7 +29,7 @@ implementation.
 =cut
 
 has id => (
-    isa     => 'Str',
+    isa     => XsdID,
     is      => 'ro',
     builder => "_build_id"
 );
