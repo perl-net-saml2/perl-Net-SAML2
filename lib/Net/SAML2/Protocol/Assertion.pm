@@ -1,7 +1,8 @@
 package Net::SAML2::Protocol::Assertion;
+use Moose;
+
 # VERSION
 
-use Moose;
 use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
