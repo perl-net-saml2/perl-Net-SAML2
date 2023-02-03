@@ -75,17 +75,21 @@ DESCRIPTION
     Net::SAML2 correctly perform the SSO process against numerous SAML
     Identity Providers (IdPs). It has been tested against:
 
-    GSuite (Google)
-    Azure (Microsoft Office 365)
-    OneLogin
-    Jump
-    Mircosoft ADFS
-    Keycloak
     Auth0 (requires Net::SAML2 >=0.39)
+    Azure (Microsoft Office 365)
+    GSuite (Google)
+    Jump
+    Keycloak
+    Mircosoft ADFS (not recently tested)
+    Okta
+    OneLogin
     PingIdentity
         Version 0.54 and newer support EncryptedAssertions. No changes
         required to existing SP applications if EncryptedAssertions are not
         in use.
+
+    SAMLTEST.ID (requires Net::SAML2 >=0.63)
+    Shibboleth (requires Net::SAML2 >=0.63)
 
 MAJOR CAVEATS
     SP-side protocol only
