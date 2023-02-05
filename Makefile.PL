@@ -77,7 +77,7 @@ my %WriteMakefileArgs = (
     "URI::URL" => 0,
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.63",
+  "VERSION" => "0.64",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
