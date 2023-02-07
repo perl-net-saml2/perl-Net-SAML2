@@ -21,6 +21,25 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
 our $VERSION = '0.2';
 
+sub load_config {
+    my $idp = shift;
+
+    config->{cacert} = 'IdPs/' . $idp . '/cacert.pem';
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp . '/metadata.xml';
+    config->{idp_name} = $idp;
+    if ( -f 'IdPs/' . $idp . '/config.yml' ) {
+        my $config_file = YAML::LoadFile('IdPs/' . $idp . '/config.yml');
+        for my $key (keys %$config_file) {
+            config->{$key} = $config_file->{$key};
+        }
+    } else {
+        my $config_file = YAML::LoadFile('config.yml');
+        for my $key (keys %$config_file) {
+            config->{$key} = $config_file->{$key};
+        }
+    }
+};
+
 sub load_idps {
     if ( ! -x './IdPs' ) {
         return "<html><pre>You must have a xt/testapp/IdPs directory</pre></html>";
@@ -59,20 +78,8 @@ get '/' => sub {
 
 get '/login' => sub {
 
-    config->{cacert} = 'IdPs/' . params->{idp} . '/cacert.pem';
-    config->{idp_name} = params->{idp};
-    config->{idp} = 'http://localhost:8880/IdPs/' . params->{idp} . '/metadata.xml';
-    if ( -f 'IdPs/' . params->{idp} . '/config.yml' ) {
-        my $config_file = YAML::LoadFile('IdPs/' . params->{idp} . '/config.yml');
-        for my $key (keys %$config_file) {
-            config->{$key} = $config_file->{$key};
-        }
-    } else {
-        my $config_file = YAML::LoadFile('config.yml');
-        for my $key (keys %$config_file) {
-            config->{$key} = $config_file->{$key};
-        }
-    }
+    load_config(params->{idp});
+
     my $idp = _idp();
     my $sp = _sp();
 
