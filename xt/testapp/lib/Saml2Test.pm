@@ -72,8 +72,51 @@ get '/' => sub {
     template 'index', {
                         'idps' => \@idps,
                         'sign_metadata' => config->{sign_metadata},
-                        (defined params->{logout}) ? ('logout' => params->{logout}) : (),
+                        'set_idp' => \&set_idp,
+                        'get_sso_post_url' => \&get_sso_post_url,
+                        'get_login_post' => \&get_login_post,
                     };
+};
+
+sub set_idp {
+    my $idp = shift;
+
+    config->{cacert} = 'IdPs/' . $idp . '/cacert.pem';
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp . '/metadata.xml';
+}
+
+sub get_sso_post_url {
+    my $idp_name = shift;
+
+    load_config($idp_name);
+    my $idp = _idp();
+
+    return $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST');
+}
+
+sub get_login_post {
+    my $idp_name = shift;
+
+    load_config($idp_name);
+    my $idp = _idp();
+    my $sp  = _sp();
+
+    my %params = (
+        defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
+        defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
+    );
+
+    config->{slo_urls} = $idp->slo_urls();
+
+    my $authnreq = $sp->authn_request(
+        $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'),
+        $idp->format || '', # default format.
+        %params,
+    )->as_xml;
+
+    my $post = $sp->sp_post_binding($idp, 'SAMLRequest');
+
+    return $post->sign_xml($authnreq);
 };
 
 get '/login' => sub {
@@ -200,8 +243,19 @@ get '/logout-soap' => sub {
 };
 
 post '/consumer-post' => sub {
+    my $cacert;
+
+    my $relay_state = params->{RelayState} // '';
+
+    if ( $relay_state eq '' ) {
+        $cacert = config->{cacert}
+    } else {
+        $cacert = "IdPs/" . $relay_state . "/cacert.pem";
+        load_config($relay_state);
+    }
+
     my $post = Net::SAML2::Binding::POST->new(
-        cacert => config->{cacert},
+        cacert => $cacert,
     );
 
     my $ret = $post->handle_response(
@@ -280,8 +334,24 @@ sub get_user_attributes {
     return \%user;
 }
 
-get '/consumer-artifact' => sub {
+any '/consumer-artifact' => sub {
+    my $cacert;
+
+    my $relay_state = params->{RelayState} // '';
+
+    my $idp_name;
+    if ($relay_state ne '') {
+        $idp_name = $relay_state;
+        $cacert = 'IdPs/' . $idp_name . '/cacert.pem';
+    } else {
+        $idp_name = config->{idp_name};
+        $cacert = config->{cacert};
+    }
+
+    load_config($idp_name);
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp_name . '/metadata.xml';
     my $idp = _idp();
+
     my $idp_cert = $idp->cert('signing');
     my $art_url  = $idp->art_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
 
@@ -473,7 +543,7 @@ sub _sp {
             index => 2,
         }],
         error_url => config->{error_url},
-		
+
         org_name	 => config->{org_name},
         org_display_name => config->{org_display_name},
         org_contact	 => config->{org_contact},

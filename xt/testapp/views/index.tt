@@ -1,13 +1,20 @@
     <% if idps.size >= 1 %>
         <h2>Login with:</h2>
-    <ul>
+    <table>
         <% FOREACH provider IN idps %>
-            <li><h3><a href ="/login?idp=<% provider.idp %>"><% provider.idp %> </a>
+            <tr>
+                <td><b><a href ="/login?idp=<% provider.idp %>"><% provider.idp %></a></b></td>
+                <td><form action="<% get_sso_post_url(provider.idp) %>" method="POST">
+                        <input type="hidden" name="SAMLRequest" value="<% get_login_post(provider.idp) %>">
+                        <input type="hidden" name="RelayState" value="<% provider.idp %>">
+                        <input type="submit" value="POST">
+                    </form>
+                </td>
             <% if provider.metadata == 'missing' %>metadata missing <% end %>
             <% if provider.cacert == 'missing' %>cacert missing<% end %>
-            </h3>
+            </tr>
         <% END %>
-    </ul>
+    <table>
     <% else %>
         <h2>No Identity Providers (IdP) found!</h2>
         <h3>Configure an Idp</h3>
