@@ -100,6 +100,10 @@ sub get_sso_post_url {
     load_config($idp_name);
     my $idp = _idp();
 
+    if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
+        return "NotSupported";
+    }
+
     return $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST');
 }
 
@@ -108,6 +112,9 @@ sub get_login_post {
 
     load_config($idp_name);
     my $idp = _idp();
+    if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
+        return "NotSupported";
+    }
     my $sp  = _sp();
 
     my %params = (
@@ -137,6 +144,9 @@ sub get_logout_post {
 
     load_config($idp_name);
     my $idp = _idp();
+    if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
+        return "NotSupported";
+    }
     my $sp  = _sp();
 
     my %logout_params = (
