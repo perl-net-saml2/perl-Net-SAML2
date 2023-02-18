@@ -594,13 +594,29 @@ sub _sp {
         key    => config->{key},
         config->{encryption_key} ? (encryption_key => config->{encryption_key}) : (),
         cacert => config->{cacert} || '',
-        slo_url_soap => config->{slo_url_soap},
-        slo_url_redirect => config->{slo_url_redirect},
-        slo_url_post => config->{slo_url_post},
-        assertion_consumer_service => [
+        single_logout_service => [
+        {
+            Binding => BINDING_HTTP_REDIRECT,
+            Location => config->{url} . config->{slo_url_redirect},
+            isDefault => 'true',
+            index => 1,
+        },
         {
             Binding => BINDING_HTTP_POST,
             Location => config->{url} . config->{slo_url_post},
+            isDefault => 'false',
+            index => 2,
+        },
+        {
+            Binding => BINDING_HTTP_ARTIFACT,
+            Location => config->{url} . config->{slo_url_soap},
+            isDefault => 'false',
+            index => 3,
+        }],
+        assertion_consumer_service => [
+        {
+            Binding => BINDING_HTTP_POST,
+            Location => config->{url} . config->{acs_url_post},
             isDefault => 'false',
             # optionally
             index => 1,
