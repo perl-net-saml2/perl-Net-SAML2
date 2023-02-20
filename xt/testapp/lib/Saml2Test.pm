@@ -72,8 +72,103 @@ get '/' => sub {
     template 'index', {
                         'idps' => \@idps,
                         'sign_metadata' => config->{sign_metadata},
-                        (defined params->{logout}) ? ('logout' => params->{logout}) : (),
+                        'set_idp' => \&set_idp,
+                        'get_sso_post_url' => \&get_sso_post_url,
+                        'get_login_post' => \&get_login_post,
                     };
+};
+
+sub set_idp {
+    my $idp = shift;
+
+    config->{cacert} = 'IdPs/' . $idp . '/cacert.pem';
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp . '/metadata.xml';
+}
+
+sub get_slo_post_url {
+    my $idp_name = shift;
+
+    load_config($idp_name);
+    my $idp = _idp();
+
+    return $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST');
+}
+
+sub get_sso_post_url {
+    my $idp_name = shift;
+
+    load_config($idp_name);
+    my $idp = _idp();
+
+    if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
+        return "NotSupported";
+    }
+
+    return $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST');
+}
+
+sub get_login_post {
+    my $idp_name = shift;
+
+    load_config($idp_name);
+    my $idp = _idp();
+    if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
+        return "NotSupported";
+    }
+    my $sp  = _sp();
+
+    my %params = (
+        defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
+        defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
+    );
+
+    config->{slo_urls} = $idp->slo_urls();
+
+    my $authnreq = $sp->authn_request(
+        $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'),
+        $idp->format || '', # default format.
+        %params,
+    )->as_xml;
+
+    my $post = $sp->sp_post_binding($idp, 'SAMLRequest');
+
+    return $post->sign_xml($authnreq);
+};
+
+sub get_logout_post {
+    my $idp_name        = shift;
+    my $nameid          = shift;
+    my $session         = shift;
+    my $name_qualifier  = shift;
+    my $sp_name_qualifier = shift;
+
+    load_config($idp_name);
+    my $idp = _idp();
+    if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
+        return "NotSupported";
+    }
+    my $sp  = _sp();
+
+    my %logout_params = (
+                            $name_qualifier ?
+                            ( name_qualifier => $name_qualifier) :
+                            (),
+                            $sp_name_qualifier ?
+                            (sp_name_qualifier => $sp_name_qualifier) :
+                            (),
+                         );
+
+    my $logoutreq = $sp->logout_request(
+        $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'),
+        $nameid,
+        $idp->format || undef,
+        $session,
+        \%logout_params,
+    )->as_xml;
+
+    my $post = $sp->sp_post_binding($idp, 'SAMLRequest');
+
+    return $post->sign_xml($logoutreq);
 };
 
 get '/login' => sub {
@@ -200,8 +295,25 @@ get '/logout-soap' => sub {
 };
 
 post '/consumer-post' => sub {
+    my $cacert;
+
+    my $relay_state = params->{RelayState} // '';
+
+    my $idp_name;
+    if ($relay_state ne '') {
+        $idp_name = $relay_state;
+        $cacert = 'IdPs/' . $idp_name . '/cacert.pem';
+    } else {
+        $idp_name = config->{idp_name};
+        $cacert = config->{cacert};
+    }
+
+    load_config($idp_name);
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp_name . '/metadata.xml';
+    my $idp = _idp();
+
     my $post = Net::SAML2::Binding::POST->new(
-        cacert => config->{cacert},
+        cacert => $cacert,
     );
 
     my $ret = $post->handle_response(
@@ -223,7 +335,7 @@ post '/consumer-post' => sub {
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
-        my $slo_urls = config->{slo_urls};
+        my $slo_urls = $idp->slo_urls;
 
         my $user_attributes = get_user_attributes($assertion);
 
@@ -232,6 +344,9 @@ post '/consumer-post' => sub {
                             (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
                             (defined $sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
                             (defined $slo_urls ? (slo_urls => $slo_urls) : ()),
+                            (defined $idp_name ? (idp_name => $idp_name) : ()),
+                            'get_slo_post_url' => \&get_slo_post_url,
+                            'get_logout_post' => \&get_logout_post,
                             message => 'Successful Login via POST',
                          };
     }
@@ -280,8 +395,24 @@ sub get_user_attributes {
     return \%user;
 }
 
-get '/consumer-artifact' => sub {
+any '/consumer-artifact' => sub {
+    my $cacert;
+
+    my $relay_state = params->{RelayState} // '';
+
+    my $idp_name;
+    if ($relay_state ne '') {
+        $idp_name = $relay_state;
+        $cacert = 'IdPs/' . $idp_name . '/cacert.pem';
+    } else {
+        $idp_name = config->{idp_name};
+        $cacert = config->{cacert};
+    }
+
+    load_config($idp_name);
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp_name . '/metadata.xml';
     my $idp = _idp();
+
     my $idp_cert = $idp->cert('signing');
     my $art_url  = $idp->art_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
 
@@ -321,15 +452,18 @@ get '/consumer-artifact' => sub {
         my $name_qualifier      = $assertion->nameid_name_qualifier();
         my $sp_name_qualifier   = $assertion->nameid_sp_name_qualifier();
 
-        my $slo_urls = config->{slo_urls};
+        my $slo_urls = $idp->slo_urls;
 
         my $user_attributes = get_user_attributes($assertion);
 
         template 'user', {
                             user_attributes => $user_attributes,
-                            ($name_qualifier ? (name_qualifier => $name_qualifier) : ()),
-                            ($sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
-                            slo_urls => ($slo_urls ? $slo_urls : ()),
+                            (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
+                            (defined $sp_name_qualifier ? (sp_name_qualifier => $sp_name_qualifier) : ()),
+                            (defined $slo_urls ? (slo_urls => $slo_urls) : ()),
+                            (defined $idp_name ? (idp_name => $idp_name) : ()),
+                            'get_slo_post_url' => \&get_slo_post_url,
+                            'get_logout_post' => \&get_logout_post,
                             message => 'Successful Login via SOAP',
                          };
     }
@@ -358,7 +492,7 @@ get '/sls-redirect-response' => sub {
     else {
         return "<html><pre>Bad Logout Response</pre></html>";
     }
-    redirect $relaystate || '/?logout=redirect', 302;
+    redirect '/?logout=redirect', 302;
     return "Redirected\n";
 };
 
@@ -389,7 +523,22 @@ post '/sls-post-response' => sub {
     return "Redirected\n";
 };
 
-get '/sls-consumer-artifact' => sub {
+any '/sls-consumer-artifact' => sub {
+    my $cacert;
+
+    my $relay_state = params->{RelayState} // '';
+
+    my $idp_name;
+    if ($relay_state ne '') {
+        $idp_name = $relay_state;
+        $cacert = 'IdPs/' . $idp_name . '/cacert.pem';
+    } else {
+        $idp_name = config->{idp_name};
+        $cacert = config->{cacert};
+    }
+
+    load_config($idp_name);
+    config->{idp} = 'http://localhost:8880/IdPs/' . $idp_name . '/metadata.xml';
     my $idp = _idp();
     my $idp_cert = $idp->cert('signing');
     my $art_url  = $idp->art_url('urn:oasis:names:tc:SAML:2.0:bindings:SOAP');
@@ -455,13 +604,29 @@ sub _sp {
         key    => config->{key},
         config->{encryption_key} ? (encryption_key => config->{encryption_key}) : (),
         cacert => config->{cacert} || '',
-        slo_url_soap => config->{slo_url_soap},
-        slo_url_redirect => config->{slo_url_redirect},
-        slo_url_post => config->{slo_url_post},
-        assertion_consumer_service => [
+        single_logout_service => [
+        {
+            Binding => BINDING_HTTP_REDIRECT,
+            Location => config->{url} . config->{slo_url_redirect},
+            isDefault => 'true',
+            index => 1,
+        },
         {
             Binding => BINDING_HTTP_POST,
             Location => config->{url} . config->{slo_url_post},
+            isDefault => 'false',
+            index => 2,
+        },
+        {
+            Binding => BINDING_HTTP_ARTIFACT,
+            Location => config->{url} . config->{slo_url_soap},
+            isDefault => 'false',
+            index => 3,
+        }],
+        assertion_consumer_service => [
+        {
+            Binding => BINDING_HTTP_POST,
+            Location => config->{url} . config->{acs_url_post},
             isDefault => 'false',
             # optionally
             index => 1,
@@ -473,7 +638,7 @@ sub _sp {
             index => 2,
         }],
         error_url => config->{error_url},
-		
+
         org_name	 => config->{org_name},
         org_display_name => config->{org_display_name},
         org_contact	 => config->{org_contact},
