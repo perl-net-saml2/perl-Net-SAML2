@@ -3,13 +3,13 @@
 <% FOREACH type IN slo_urls.keys.sort %>
    <% slo_url = slo_urls.$type %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect' %>
-<p><a href="/logout-redirect?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>&idp_name=<% idp_name | html %>">Logout (redirect binding)</a></p>
+<p><a id="logout-redirect" href="/logout-redirect?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>&idp_name=<% idp_name | html %>">Logout (redirect binding)</a></p>
    <% end %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP' %>
-<p><a href="/logout-soap?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>&idp_name=<% idp_name | html %>">Logout (soap binding)</a></p>
+<p><a id="logout-soap" href="/logout-soap?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>&idp_name=<% idp_name | html %>">Logout (soap binding)</a></p>
    <% end %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' %>
-        <form action="<% get_slo_post_url(idp_name) %>" method="POST">
+        <form id="logout-post2" action="<% get_slo_post_url(idp_name) %>" method="POST">
             <input type="hidden" name="SAMLRequest"
                 value="<%
                             get_logout_post(idp_name,
@@ -20,17 +20,17 @@
                             )
                         %>">
             <input type="hidden" name="RelayState" value="<% idp_name %>">
-            <input type="submit" value="Logout via POST">
+            <input id="logout-post" type="submit" value="Logout via POST">
         </form>
    <% end %>
    <% if type == 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact' %>
-<!-- <p><a href="/logout-soap?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>&idp_name=<% idp_name | html %>">Logout (soap artifact)</a></p> -->
+<!-- <p><a id="logout-artifact' href="/logout-soap?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>&idp_name=<% idp_name | html %>">Logout (soap artifact)</a></p> -->
 <p>Logout (Artifact binding) - Unsupported</p>
    <% end %>
 
 <% END %>
 
-<p><a href="/logout-local?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>">Logout (local)</a></p>
+<p><a id="logout-local" href="/logout-local?nameid=<% user_attributes.nameid | html %>&name_qualifier=<% name_qualifier | html %>&sp_name_qualifier=<% sp_name_qualifier | html %>&session=<% user_attributes.session | html %>">Logout (local)</a></p>
 
 <% if message %>
     <div id="hideMe"><p><% message %></p></div>
@@ -45,7 +45,7 @@
   </tr>
   <tr>
     <td>Issuer</td>
-    <td><% user_attributes.issuer %></td>
+    <td id='issuer'><% user_attributes.issuer %></td>
   </tr>
   <tr>
     <td>EmailAddress</td>

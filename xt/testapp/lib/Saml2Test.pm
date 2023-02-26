@@ -19,7 +19,7 @@ use MIME::Base64 qw/ decode_base64 /;
 use File::Slurper qw/ read_dir /;
 use URN::OASIS::SAML2 qw(:bindings :urn);
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 
 sub load_config {
     my $idp = shift;
