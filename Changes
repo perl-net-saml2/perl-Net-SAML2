@@ -2,6 +2,18 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.67 -- Sun Mar 19 10:03:23 ADT 2023
+
+  [ Significant Changes since 0.64 ]
+
+  This version supports sending request the the IdP as HTTP-POST requests.
+  SimpleSAMLphp is added as a tested/supported IdP
+  Numerous improvements to the testapp (see git repo) to improve testing
+  testapp can now be fully tested against any configured IdPs using Selenium
+
+  - 6c9cd5e Increment version for official release
+  - a0d4001 v0.66
+
 0.66 -- Sat Mar 18 20:49:26 ADT 2023
 
   - 930f4af Increment version for another TRIAL release
