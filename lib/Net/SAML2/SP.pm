@@ -630,22 +630,15 @@ sub _generate_key_descriptors {
         && !$self->want_assertions_signed
         && !$self->sign_metadata;
 
+    my $key = $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text;
+
     return $x->KeyDescriptor(
         $md,
         { use => $use },
         $x->KeyInfo(
             $ds,
-            $x->X509Data(
-                $ds,
-                $x->X509Certificate(
-                    $ds,
-                    $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text,
-                )
-            ),
-            $x->KeyName(
-                $ds,
-                Digest::MD5::md5_hex($use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text)
-            ),
+            $x->X509Data($ds, $x->X509Certificate($ds, $key)),
+            $x->KeyName($ds, Digest::MD5::md5_hex($key)),
         ),
     );
 }

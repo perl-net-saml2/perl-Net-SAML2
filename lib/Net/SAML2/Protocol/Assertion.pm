@@ -14,6 +14,7 @@ use XML::Enc;
 use XML::LibXML;
 use List::Util qw(first);
 use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
+use Carp qw(croak);
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -177,8 +178,9 @@ sub new_from_xml {
         $nameid = $global->get_node(1);
     }
 
-    my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode');
-    croak("Unable to parse status from assertion") unless ($nodeset->size);
+    my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode|/samlp:ArtifactResponse/samlp:Status/samlp:StatusCode');
+
+    croak("Unable to parse status from assertion") unless $nodeset->size;
 
     my $status_node = $nodeset->get_node(1);
     my $status = $status_node->getAttribute('Value');
