@@ -2,6 +2,8 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.68 -- Mon Apr 03 19:17:59 ADT 2023
+
   [ Significant Changes since 0.67 ]
 
   - Couple of small by fixes Wesley Schwengle (waterkip)
