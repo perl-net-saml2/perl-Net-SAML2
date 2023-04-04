@@ -2,6 +2,15 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+  [ Significant Changes since 0.67 ]
+
+  - Simply 0.67 issued as a production release
+  - Couple of small by fixes Wesley Schwengle (waterkip)
+
+  - 4953468 Increment version for production release
+  - b44d100 v0.68
+  - c296c49 Update Changes for release
+
 0.68 -- Mon Apr 03 19:17:59 ADT 2023
 
   [ Significant Changes since 0.67 ]
