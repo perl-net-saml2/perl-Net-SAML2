@@ -48,7 +48,6 @@ sub net_saml2_sp {
         org_url          => 'http://www.example.com',
 
         url              => 'http://localhost:3000',
-        slo_url_redirect => '/sls-redirect-response',
         acs_url_post     => '/consumer-post',
         acs_url_artifact => '/consumer-artifact',
         error_url        => '/error',
