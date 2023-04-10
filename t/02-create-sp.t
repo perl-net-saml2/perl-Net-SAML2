@@ -304,30 +304,39 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
     }
 
-    throws_ok(
-        sub {
-            my $sp = net_saml2_sp(
-                single_logout_service => [
-                ],
-                assertion_consumer_service => [
-                ],
-            );
-        },
-        qr/You don't have any Single Logout Services configured/,
-        "Needs at least one SLO",
-    );
+    {
+        my $sp = net_saml2_sp(
+            single_logout_service => [],
+        );
+
+        my $xpath = get_xpath(
+            $sp->metadata,
+            md => URN_METADATA,
+            ds => URN_SIGNATURE,
+        );
+
+        my $nodes = $xpath->findnodes('//md:SingleLogoutService');
+        is($nodes->size, 0, "No single logout service generated");
+
+        $sp = net_saml2_sp();
+
+        $xpath = get_xpath(
+            $sp->metadata,
+            md => URN_METADATA,
+            ds => URN_SIGNATURE,
+        );
+
+        $nodes = $xpath->findnodes('//md:SingleLogoutService');
+        is($nodes->size, 0, "No single logout service generated without arguments");
+
+
+    }
 
     throws_ok(
         sub {
             my $sp = net_saml2_sp(
-                single_logout_service => [
-                    {
-                        Binding => 'foo',
-                        Location => 'bar',
-                    }
-                ],
-                assertion_consumer_service => [
-                ],
+                single_logout_service => [],
+                assertion_consumer_service => [],
             );
         },
         qr/You don't have any Assertion Consumer Services configured/,

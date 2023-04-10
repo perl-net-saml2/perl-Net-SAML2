@@ -226,10 +226,6 @@ around BUILDARGS => sub {
         $args{single_logout_service} = \@slo;
     }
 
-    if (!@{$args{single_logout_service}}) {
-      croak("You don't have any Single Logout Services configured!");
-    }
-
     if (!$args{assertion_consumer_service}) {
         #warn "Deprecation warning, please upgrade your code to use ..";
         my @acs;
