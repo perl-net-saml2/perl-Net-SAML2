@@ -12,8 +12,11 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
         slo_url_soap           => '/slo-soap',
     );
 
+    my $xml = $sp->metadata;
+    like($xml, qr/^\<\?xml version="1.0" encoding="UTF-8".*\?\>/, "Have XML version declaration");
+
     my $xpath = get_xpath(
-        $sp->metadata,
+        $xml,
         md => URN_METADATA,
         ds => URN_SIGNATURE,
     );
@@ -72,8 +75,11 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
 {
     my $sp    = net_saml2_sp(sign_metadata => 0);
+    my $xml = $sp->metadata;
+    like($xml, qr/^\<\?xml version="1.0" encoding="UTF-8".*\?\>/, "Have XML version declaration");
+
     my $xpath = get_xpath(
-        $sp->metadata,
+        $xml,
         md => URN_METADATA,
         ds => URN_SIGNATURE,
     );
