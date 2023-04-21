@@ -561,14 +561,14 @@ my $ds = ['ds' => URN_SIGNATURE];
 sub generate_metadata {
     my $self = shift;
 
-    my $x = XML::Generator->new(':pretty', conformance => 'loose');
+    my $x = XML::Generator->new(conformance => 'loose', xml => { version => "1.0", encoding => 'UTF-8' });
 
     my $error_uri = $self->error_url;
     if (!$error_uri->scheme) {
         $error_uri = $self->url . $self->error_url;
     }
 
-    return $x->EntityDescriptor(
+    return $x->xml( $x->EntityDescriptor(
         $md,
         {
             entityID => $self->id,
@@ -613,7 +613,7 @@ sub generate_metadata {
             $x->Company($md, $self->org_display_name,),
             $x->EmailAddress($md, $self->org_contact,),
         )
-    );
+    ));
 }
 
 sub _generate_key_descriptors {
