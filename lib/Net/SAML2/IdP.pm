@@ -25,6 +25,17 @@ Net::SAML2::IdP - SAML Identity Provider object
         );
   my $sso_url = $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');
 
+Note that LWP::UserAgent is used which means that environment variables
+may affect the use of https see:
+
+=over
+
+=item * L<PERL_LWP_SSL_CA_FILE and HTTPS_CA_FILE|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_file-=%3E-$path>
+
+=item * L<PERL_LWP_SSL_CA_PATH and HTTPS_CA_DIR|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_path-=%3E-$path>
+
+=back
+
 =head1 METHODS
 
 =cut
