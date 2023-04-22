@@ -83,7 +83,7 @@ DESCRIPTION
     GSuite (Google)
     Jump
     Keycloak
-    Mircosoft ADFS (not recently tested)
+    Mircosoft ADFS
     Okta
     OneLogin
     PingIdentity (requires Net::SAML2 >=0.54)

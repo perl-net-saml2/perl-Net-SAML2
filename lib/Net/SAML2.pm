@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package Net::SAML2;
-our $VERSION = "0.69";
+our $VERSION = "0.70";
 
 require 5.012;
 
@@ -116,7 +116,7 @@ SP applications if EncryptedAssertions are not in use.
 
 =item Keycloak
 
-=item Mircosoft ADFS (not recently tested)
+=item Mircosoft ADFS
 
 =item Okta
 
