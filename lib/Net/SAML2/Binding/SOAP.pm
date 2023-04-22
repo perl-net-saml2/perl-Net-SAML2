@@ -23,6 +23,17 @@ with 'Net::SAML2::Role::VerifyXML';
 
   my $response = $soap->request($req);
 
+Note that LWP::UserAgent maybe used which means that environment variables
+may affect the use of https see:
+
+=over
+
+=item * L<PERL_LWP_SSL_CA_FILE and HTTPS_CA_FILE|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_file-=%3E-$path>
+
+=item * L<PERL_LWP_SSL_CA_PATH and HTTPS_CA_DIR|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_path-=%3E-$path>
+
+=back
+
 =head1 METHODS
 
 =cut
