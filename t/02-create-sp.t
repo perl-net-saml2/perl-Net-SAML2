@@ -13,7 +13,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     );
 
     my $xml = $sp->metadata;
-    like($xml, qr/^\<\?xml version="1.0" encoding="UTF-8".*\?\>/, "Have XML version declaration");
+    like($xml, qr/^\<\?xml version="1.0" encoding="UTF-8"\?\>/, "Have XML version declaration");
 
     my $xpath = get_xpath(
         $xml,
@@ -76,7 +76,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 {
     my $sp    = net_saml2_sp(sign_metadata => 0);
     my $xml = $sp->metadata;
-    like($xml, qr/^\<\?xml version="1.0" encoding="UTF-8".*\?\>/, "Have XML version declaration");
+    like($xml, qr/^\<\?xml version="1.0" encoding="UTF-8"\?\>/, "Have XML version declaration");
 
     my $xpath = get_xpath(
         $xml,
