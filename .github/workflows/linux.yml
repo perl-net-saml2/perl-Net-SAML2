@@ -31,13 +31,6 @@ jobs:
         run: |
           apt-get install libxml2 make gcc wget;
           cpanm App::cpm
-          mkdir -p $HOME/.perl-cpm ;
-          cd $HOME/.perl-cpm;
-          wget -q https://src.fedoraproject.org/repo/pkgs/perl-Math-Pari/pari-2.3.4.tar.gz/35c896266e4257793387ba22d5d76078/pari-2.3.4.tar.gz \
-            -O pari-2.3.4.tar.gz ;
-          echo '35c896266e4257793387ba22d5d76078  pari-2.3.4.tar.gz' | md5sum -c - ;
-          tar zxf pari-2.3.4.tar.gz;
-          cd - ;
           # Sub::Name has test that fail every so many times on t/lexical.t
           # we ignore these test failures for now...
           cpm install -g --show-build-log-on-failure Sub::Name;
