@@ -30,7 +30,8 @@ jobs:
       - name: Install Net::SAML2 Depends
         run: |
           apt-get install libxml2 make gcc wget;
-          cpanm App::cpm
+          cpanm Module::Pluggable
+          cpanm App::cpm;
           # Sub::Name has test that fail every so many times on t/lexical.t
           # we ignore these test failures for now...
           cpm install -g --show-build-log-on-failure Sub::Name;
