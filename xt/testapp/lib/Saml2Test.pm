@@ -608,20 +608,14 @@ sub _sp {
         {
             Binding => BINDING_HTTP_REDIRECT,
             Location => config->{url} . config->{slo_url_redirect},
-            isDefault => 'true',
-            index => 1,
         },
         {
             Binding => BINDING_HTTP_POST,
             Location => config->{url} . config->{slo_url_post},
-            isDefault => 'false',
-            index => 2,
         },
         {
             Binding => BINDING_HTTP_ARTIFACT,
             Location => config->{url} . config->{slo_url_soap},
-            isDefault => 'false',
-            index => 3,
         }],
         assertion_consumer_service => [
         {
