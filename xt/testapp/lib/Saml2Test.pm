@@ -118,6 +118,8 @@ sub get_login_post {
     my $sp  = _sp();
 
     my %params = (
+        defined (config->{acs_url_in_request}) and (config->{acs_url_in_request} eq 1) ?
+            (assertion_url => config->{url} . config->{acs_url_post}) : (),
         defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
         defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
     );
@@ -179,6 +181,8 @@ get '/login' => sub {
     my $sp = _sp();
 
     my %params = (
+        defined (config->{acs_url_in_request}) and (config->{acs_url_in_request} eq 1) ?
+            (assertion_url => config->{url} . config->{acs_url_post}) : (),
         defined (config->{force_authn}) ? (force_authn => config->{force_authn}) : (),
         defined (config->{is_passive}) ? (is_passive  => config->{is_passive}) : (),
     );
