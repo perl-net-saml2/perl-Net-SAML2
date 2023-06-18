@@ -89,60 +89,54 @@ EncryptedAssertion is properly validated.
 sub new_from_xml {
     my($class, %args) = @_;
 
-    my $dom = no_comments($args{xml});
     my $key_file = $args{key_file};
-    my $cacert = $args{cacert};
+    my $cacert   = delete $args{cacert};
 
-    my $xpath = XML::LibXML::XPathContext->new($dom);
+    my $xpath = XML::LibXML::XPathContext->new();
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
     $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-    $xpath->registerNs('xenc', 'http://www.w3.org/2001/04/xmlenc#');
+    $xpath->registerNs('dsig',  'http://www.w3.org/2000/09/xmldsig#');
+    $xpath->registerNs('xenc',  'http://www.w3.org/2001/04/xmlenc#');
 
-    my $attributes = {};
+    my $xml = no_comments($args{xml});
+    $xpath->setContextNode($xml);
 
-    if ($xpath->findnodes('//saml:EncryptedAssertion')) {
-        if ( ! defined $key_file) {
-            die "Encrypted Assertions require key_file";
-        }
-        my $decrypted;
-        my $enc = XML::Enc->new(
-                        { key => $key_file , no_xml_declaration => 1 }, );
-        $decrypted  = $enc->decrypt($dom->toString());
-        $dom        = XML::LibXML->load_xml(string => $decrypted);
-        $xpath      = XML::LibXML::XPathContext->new($dom);
-        $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-        $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-        $xpath->registerNs('dsig', 'http://www.w3.org/2000/09/xmldsig#');
-        $xpath->registerNs('xenc', 'http://www.w3.org/2001/04/xmlenc#');
+    my $dom = $xml;
 
-        my $xml_opts->{ no_xml_declaration } = 1;
+    if ($xpath->exists('//saml:EncryptedAssertion')) {
+
+        croak "Encrypted Assertions require key_file" if !defined $key_file;
 
         my $assert = $xpath->findnodes('//saml:Assertion')->[0];
         my @signedinfo = $xpath->findnodes('dsig:Signature', $assert);
 
         if (defined $assert && (scalar @signedinfo ne 0)) {
+            my $xml_opts->{ no_xml_declaration } = 1;
             my $x   = Net::SAML2::XML::Sig->new($xml_opts);
             my $ret = $x->verify($assert->serialize);
             die "Decrypted Assertion signature check failed" unless $ret;
 
-            if ($cacert) {
-                my $cert = $x->signer_cert
-                    or die "Certificate not provided and not in SAML Response, cannot validate";
+            return unless $cacert;
+            my $cert = $x->signer_cert
+                or die "Certificate not provided and not in SAML Response, cannot validate";
 
-                my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0, });
-                if (! $ca->verify($cert)) {
-                    die "Decrypted Assertion - Unable to verify signer cert with cacert: $cert->subject";
-                }
-            }
+            my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
+            die "Unable to verify signer cert with cacert: " . $cert->subject
+                unless $ca->verify($cert);
         }
     }
 
-    for my $node (
-        $xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute'))
+    my $dec = $class->_decrypt(
+        $xml,
+        key_file => $key_file,
+        key_name => $args{key_name}
+    );
+    $xpath->setContextNode($dec);
+
+    my $attributes = {};
+    for my $node ($xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue/..'))
     {
-        # We can't select by saml:AttributeValue
-        # because of https://rt.cpan.org/Public/Bug/Display.html?id=8784
-        my @values = $node->findnodes("*[local-name()='AttributeValue']");
+        my @values = $xpath->findnodes("saml:AttributeValue", $node);
         $attributes->{$node->getAttribute('Name')} = [map $_->string_value, @values];
     }
 
@@ -171,7 +165,7 @@ sub new_from_xml {
     }
 
     my $nameid;
-    if (my $node = $xpath->findnodes('//samlp:Response/saml:Assertion/saml:Subject/    saml:NameID')) {
+    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
         $nameid = $node->get_node(1);
     }
     elsif (my $global = $xpath->findnodes('//saml:Subject/saml:NameID')) {
@@ -208,6 +202,7 @@ sub new_from_xml {
 
     return $self;
 }
+
 
 =head2 response_status
 
@@ -333,6 +328,22 @@ sub success {
     my $self = shift;
     return 1 if $self->response_status eq STATUS_SUCCESS;
     return 0;
+}
+
+sub _decrypt {
+    my $self    = shift;
+    my $xml     = shift;
+    my %options = @_;
+
+    return $xml unless $options{key_file};
+
+    my $enc = XML::Enc->new(
+        {
+            no_xml_declaration => 1,
+            key                => $options{key_file},
+        }
+    );
+    return XML::LibXML->load_xml(string => $enc->decrypt($xml, %options));
 }
 
 1;
