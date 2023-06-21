@@ -71,6 +71,18 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
 
     get_single_node_ok($xpath, '//ds:Signature');
+
+    is(
+        'e73560b0e23602121aedc55bcb1ca637',
+        $sp->key_name('signing'),
+        "Got a key name for the signing key"
+    );
+    is(
+        undef,
+        $sp->key_name('encryption'),
+        "... and there is no encryption key name"
+    );
+
 }
 
 {
@@ -228,6 +240,17 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     is($kd->getAttribute('use'),
         "encryption", "Key descriptor is there for encryption");
 
+    is(
+        'e73560b0e23602121aedc55bcb1ca637',
+        $sp->key_name('signing'),
+        "Got a key name for the signing key"
+    );
+    is(
+        'e73560b0e23602121aedc55bcb1ca637',
+        $sp->key_name('encryption'),
+        "... and we also have a encryption key name"
+    );
+
 }
 
 {
@@ -334,7 +357,6 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
         $nodes = $xpath->findnodes('//md:SingleLogoutService');
         is($nodes->size, 0, "No single logout service generated without arguments");
-
 
     }
 
