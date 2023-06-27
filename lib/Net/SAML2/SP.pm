@@ -157,7 +157,7 @@ Consumer Services.
 
 has 'url'    => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'id'     => (isa => 'Str', is => 'ro', required => 1);
-has 'cert'   => (isa => 'Str', is => 'ro', required => 1);
+has 'cert'   => (isa => 'Str', is => 'ro', required => 1, predicate => 'has_cert');
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Str', is => 'rw', required => 0, predicate => 'has_cacert');
 
@@ -274,6 +274,7 @@ around BUILDARGS => sub {
 sub _build_encryption_key_text {
     my ($self) = @_;
 
+    return '' unless $self->has_encryption_key;
     my $cert = Crypt::OpenSSL::X509->new_from_file($self->encryption_key);
     my $text = $cert->as_string;
     $text =~ s/-----[^-]*-----//gm;
@@ -283,6 +284,7 @@ sub _build_encryption_key_text {
 sub _build_cert_text {
     my ($self) = @_;
 
+    return '' unless $self->has_cert;
     my $cert = Crypt::OpenSSL::X509->new_from_file($self->cert);
     my $text = $cert->as_string;
     $text =~ s/-----[^-]*-----//gm;
@@ -634,9 +636,23 @@ sub _generate_key_descriptors {
         $x->KeyInfo(
             $ds,
             $x->X509Data($ds, $x->X509Certificate($ds, $key)),
-            $x->KeyName($ds, Digest::MD5::md5_hex($key)),
+            $x->KeyName($ds, $self->key_name($use)),
         ),
     );
+}
+
+=head2 key_name($type)
+
+Get the key name for either the C<signing> or C<encryption> key
+
+=cut
+
+sub key_name {
+    my $self = shift;
+    my $use  = shift;
+    my $key = $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text;
+    return unless $key;
+    return Digest::MD5::md5_hex($key);
 }
 
 sub _generate_single_logout_service {
