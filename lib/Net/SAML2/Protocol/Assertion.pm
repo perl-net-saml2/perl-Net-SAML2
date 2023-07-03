@@ -48,6 +48,13 @@ has 'nameid_object' => (
     init_arg  => 'nameid',
     predicate => 'has_nameid',
 );
+has 'authnstatement_object' => (
+    isa       => 'XML::LibXML::Element',
+    is        => 'ro',
+    required  => 0,
+    init_arg  => 'authnstatement',
+    predicate => 'has_authnstatement',
+);
 
 =head1 METHODS
 
@@ -172,6 +179,11 @@ sub new_from_xml {
         $nameid = $global->get_node(1);
     }
 
+    my $authnstatement;
+    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement')) {
+        $authnstatement = $node->get_node(1);
+    }
+
     my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode|/samlp:ArtifactResponse/samlp:Status/samlp:StatusCode');
 
     croak("Unable to parse status from assertion") unless $nodeset->size;
@@ -198,6 +210,7 @@ sub new_from_xml {
         in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
         response_status => $status,
         $sub_status ? (response_substatus => $sub_status) : (),
+        $authnstatement ? (authnstatement => $authnstatement) : (),
     );
 
     return $self;
@@ -283,6 +296,131 @@ sub nameid_sp_provided_id {
     my $self = shift;
     return unless $self->has_nameid;
     return $self->nameid_object->getAttribute('SPProvidedID');
+}
+
+=head2 authnstatement
+
+Returns the AuthnStatement
+
+=cut
+
+sub authnstatement {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+    return $self->authnstatement_object->textContent;
+}
+
+=head2 authnstatement_authninstant
+
+Returns the AuthnStatement AuthnInstant
+
+=cut
+
+sub authnstatement_authninstant {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+    return $self->authnstatement_object->getAttribute('AuthnInstant');
+}
+
+=head2 authnstatement_sessionindex
+
+Returns the AuthnStatement SessionIndex
+
+=cut
+
+sub authnstatement_sessionindex {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+    return $self->authnstatement_object->getAttribute('SessionIndex');
+}
+
+=head2 authnstatement_subjectlocality
+
+Returns the AuthnStatement SubjectLocality
+
+=cut
+
+sub authnstatement_subjectlocality {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+
+    my $xpc = XML::LibXML::XPathContext->new;
+    $xpc->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
+    my $subjectlocality;
+    my $xpath_base = '//saml:AuthnStatement/saml:SubjectLocality';
+    if (my $nodes = $xpc->find($xpath_base, $self->authnstatement_object)) {
+        my $node = $nodes->get_node(1);
+        $subjectlocality = $node;
+    }
+    return $subjectlocality;
+}
+
+=head2 subjectlocality_address
+
+Returns the SubjectLocality Address
+
+=cut
+
+sub subjectlocality_address {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+    my $subjectlocality = $self->authnstatement_subjectlocality;
+    return unless $subjectlocality;
+    return $subjectlocality->getAttribute('Address');
+}
+
+=head2 subjectlocality_dnsname
+
+Returns the SubjectLocality DNSName
+
+=cut
+
+sub subjectlocality_dnsname {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+    my $subjectlocality = $self->authnstatement_subjectlocality;
+    return unless $subjectlocality;
+    return $subjectlocality->getAttribute('DNSName');
+}
+
+=head2 authnstatement_authncontext
+
+Returns the AuthnContext for the AuthnStatement
+
+=cut
+
+sub authnstatement_authncontext {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+
+    my $xpc = XML::LibXML::XPathContext->new;
+    $xpc->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
+    my $authncontext;
+    my $xpath_base = '//saml:AuthnStatement/saml:AuthnContext';
+    if (my $nodes = $xpc->find($xpath_base, $self->authnstatement_object)) {
+        my $node = $nodes->get_node(1);
+        $authncontext = $node;
+    }
+    return $authncontext;
+}
+
+=head2 contextclass_authncontextclassref
+
+Returns the ContextClass AuthnContextClassRef
+
+=cut
+
+sub contextclass_authncontextclassref {
+    my $self = shift;
+    return unless $self->has_authnstatement;
+    my $authncontextclassref = $self->authnstatement_authncontext;
+    return unless $authncontextclassref;
+    my $xpc = XML::LibXML::XPathContext->new;
+    $xpc->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
+    if (my $value = $xpc->findvalue('//saml:AuthnContextClassRef', $self->authnstatement_object)) {
+        $authncontextclassref = $value;
+    }
+    return $authncontextclassref;
 }
 
 =head2 valid( $audience, $in_response_to )
