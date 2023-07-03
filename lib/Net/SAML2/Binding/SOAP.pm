@@ -116,6 +116,12 @@ has 'anchors' => (
     predicate => 'has_anchors'
 );
 
+has verify => (
+    is        => 'ro',
+    isa       => 'HashRef',
+    predicate => 'has_verify',
+);
+
 # BUILDARGS
 
 # Earlier versions expected the idp_cert to be a string.  However, metadata
@@ -192,7 +198,11 @@ sub handle_response {
                 no_xml_declaration => 1,
                 cert_text          => $cert,
                 cacert             => $self->cacert,
-                anchors            => $self->anchors
+                anchors            => $self->anchors,
+                $self->has_verify ? (
+                    ns => { 'artifact' => $self->verify->{ns} },
+                    id_attr => '/artifact:' . $self->verify->{attr_id},
+                ) : (),
             );
             return 1;
         }
