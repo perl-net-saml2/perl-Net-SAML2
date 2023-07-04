@@ -93,6 +93,50 @@ EncryptedAssertion is properly validated.
 
 =cut
 
+sub _verify_encrypted_assertion {
+    my $self     = shift;
+    my $xml      = shift;
+    my $cacert   = shift;
+    my $key_file = shift;
+    my $key_name = shift;
+
+    my $xpath = XML::LibXML::XPathContext->new($xml);
+    $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
+    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
+    $xpath->registerNs('dsig',  'http://www.w3.org/2000/09/xmldsig#');
+    $xpath->registerNs('xenc',  'http://www.w3.org/2001/04/xmlenc#');
+
+    return $xml unless $xpath->exists('//saml:EncryptedAssertion');
+
+    croak "Encrypted Assertions require key_file" if !defined $key_file;
+
+    $xml = $self->_decrypt(
+        $xml,
+        key_file => $key_file,
+        key_name => $key_name,
+    );
+    $xpath->setContextNode($xml);
+
+    my $assert_nodes = $xpath->findnodes('//saml:Assertion');
+    return $xml unless $assert_nodes->size;
+    my $assert = $assert_nodes->get_node(1);
+
+    return $xml unless $xpath->exists('dsig:Signature', $assert);
+    my $xml_opts->{ no_xml_declaration } = 1;
+    my $x   = Net::SAML2::XML::Sig->new($xml_opts);
+    my $ret = $x->verify($assert->toString());
+    die "Decrypted Assertion signature check failed" unless $ret;
+
+    return $xml unless $cacert;
+    my $cert = $x->signer_cert;
+    die "Certificate not provided in SAML Response, cannot validate" unless $cert;
+
+    my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
+    die "Unable to verify signer cert with cacert: " . $cert->subject
+        unless $ca->verify($cert);
+    return $xml;
+}
+
 sub new_from_xml {
     my($class, %args) = @_;
 
@@ -108,30 +152,12 @@ sub new_from_xml {
     my $xml = no_comments($args{xml});
     $xpath->setContextNode($xml);
 
-    my $dom = $xml;
-
-    if ($xpath->exists('//saml:EncryptedAssertion')) {
-
-        croak "Encrypted Assertions require key_file" if !defined $key_file;
-
-        my $assert = $xpath->findnodes('//saml:Assertion')->[0];
-        my @signedinfo = $xpath->findnodes('dsig:Signature', $assert);
-
-        if (defined $assert && (scalar @signedinfo ne 0)) {
-            my $xml_opts->{ no_xml_declaration } = 1;
-            my $x   = Net::SAML2::XML::Sig->new($xml_opts);
-            my $ret = $x->verify($assert->serialize);
-            die "Decrypted Assertion signature check failed" unless $ret;
-
-            return unless $cacert;
-            my $cert = $x->signer_cert
-                or die "Certificate not provided and not in SAML Response, cannot validate";
-
-            my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
-            die "Unable to verify signer cert with cacert: " . $cert->subject
-                unless $ca->verify($cert);
-        }
-    }
+    $xml = $class->_verify_encrypted_assertion(
+        $xml,
+        $cacert,
+        $key_file,
+        $args{key_name},
+    );
 
     my $dec = $class->_decrypt(
         $xml,
