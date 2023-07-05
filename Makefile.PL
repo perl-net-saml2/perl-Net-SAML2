@@ -54,7 +54,6 @@ my %WriteMakefileArgs = (
     "XML::LibXML" => 0,
     "XML::LibXML::XPathContext" => 0,
     "XML::Sig" => "0.64",
-    "XML::Writer" => "0.625",
     "base" => 0,
     "namespace::autoclean" => 0,
     "strict" => 0,
@@ -77,7 +76,7 @@ my %WriteMakefileArgs = (
     "URI::URL" => 0,
     "XML::LibXML::XPathContext" => 0
   },
-  "VERSION" => "0.71",
+  "VERSION" => "0.72",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -136,7 +135,6 @@ my %FallbackPrereqs = (
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,
   "XML::Sig" => "0.64",
-  "XML::Writer" => "0.625",
   "base" => 0,
   "namespace::autoclean" => 0,
   "strict" => 0,

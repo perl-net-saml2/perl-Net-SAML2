@@ -38,7 +38,6 @@ requires "XML::Generator" => "1.13";
 requires "XML::LibXML" => "0";
 requires "XML::LibXML::XPathContext" => "0";
 requires "XML::Sig" => "0.64";
-requires "XML::Writer" => "0.625";
 requires "base" => "0";
 requires "namespace::autoclean" => "0";
 requires "perl" => "5.012";

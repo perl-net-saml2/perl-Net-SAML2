@@ -183,5 +183,19 @@ $override->override('Net::SAML2::Protocol::AuthnRequest::_build_id' =>
     );
 }
 
+{
+
+    my ($ar, $xp) = net_saml2_authnreq(
+        identity_providers => [qw(one two three)]
+    );
+
+    my $nodes = $xp->findnodes(
+        '/samlp:AuthnRequest/samlp:Scoping/samlp:IDPList/samlp:IDPEntry');
+    is($nodes->size, 3, "Found three IDP entries");
+
+    cmp_deeply([$nodes->map(sub { return $_->getAttribute('ProviderID') })],
+        [qw(one two three)], "... and the correct provider IDs found");
+
+}
 
 done_testing;
