@@ -132,7 +132,6 @@ has 'provider_name' => (
     predicate => 'has_provider_name',
 );
 
-# RequestedAuthnContext:
 has 'AuthnContextClassRef' => (
     isa => 'ArrayRef[Str]',
     is => 'rw',
@@ -154,14 +153,12 @@ has 'RequestedAuthnContext_Comparison' => (
 has 'force_authn' => (
     isa     => 'Bool',
     is      => 'ro',
-    required => 0,
     predicate => 'has_force_authn',
 );
 
 has 'is_passive' => (
     isa     => 'Bool',
     is      => 'ro',
-    required => 0,
     predicate => 'has_is_passive',
 );
 
@@ -226,20 +223,16 @@ sub as_xml {
     my @opts = qw(
         assertion_url assertion_index protocol_binding
         attribute_index provider_name destination
-        issuer_namequalifier issuer_format force_authn
-        is_passive
+        force_authn is_passive
     );
 
     foreach my $opt (@opts) {
         my $predicate = 'has_' . $opt;
-        next unless $self->$predicate;
+        next if !$self->can($predicate) || !$self->$predicate;
 
         my $val = $self->$opt;
         if ($opt eq 'protocol_binding') {
             $req_atts{ $att_map{$opt} } = $protocol_bindings{$val};
-        }
-        elsif (any { $opt eq $_ } qw(issuer_namequalifier issuer_format)) {
-            $issuer_attrs{ $att_map{$opt} } = $val;
         }
         elsif (any { $opt eq $_ } qw(force_authn is_passive)) {
             $req_atts{ $att_map{$opt} } = ( $val ? 'true' : 'false' );
@@ -247,6 +240,14 @@ sub as_xml {
         else {
             $req_atts{ $att_map{$opt} } = $val;
         }
+    }
+
+    foreach my $opt (qw(issuer_namequalifier issuer_format)) {
+        my $predicate = 'has_' . $opt;
+        next if !$self->can($predicate) || !$self->$predicate;
+
+        my $val = $self->$opt;
+        $issuer_attrs{ $att_map{$opt} } = $val;
     }
 
     $x->startTag([$samlp, 'AuthnRequest'], %req_atts);
