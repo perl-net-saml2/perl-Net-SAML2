@@ -5,7 +5,7 @@ use Moose;
 
 use MooseX::Types::URI qw/ Uri /;
 
-# ABSTRACT: Net::SAML2::IdP - SAML Identity Provider object
+# ABSTRACT: SAML Identity Provider object
 
 =head1 NAME
 

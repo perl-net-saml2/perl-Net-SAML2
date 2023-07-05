@@ -18,7 +18,7 @@ use Carp qw(croak);
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
-# ABSTRACT: Net::SAML2::Protocol::Assertion - SAML2 assertion object
+# ABSTRACT: SAML2 assertion object
 
 =head1 NAME
 

@@ -20,7 +20,7 @@ use Net::SAML2::Util ();
 use URN::OASIS::SAML2 qw(:bindings :urn);
 use XML::Generator;
 
-# ABSTRACT: Net::SAML2::SP - SAML Service Provider object
+# ABSTRACT: SAML Service Provider object
 
 =head1 SYNOPSIS
 

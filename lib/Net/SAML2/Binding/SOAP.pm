@@ -10,7 +10,7 @@ use Try::Tiny;
 
 with 'Net::SAML2::Role::VerifyXML';
 
-# ABSTRACT: Net::SAML2::Binding::SOAP - SOAP binding for SAML
+# ABSTRACT: SOAP binding for SAML
 
 =head1 SYNOPSIS
 

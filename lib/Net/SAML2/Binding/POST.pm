@@ -6,7 +6,7 @@ package Net::SAML2::Binding::POST;
 use Moose;
 use Carp qw(croak);
 
-# ABSTRACT: Net::SAML2::Binding::POST - HTTP POST binding for SAML
+# ABSTRACT: HTTP POST binding for SAML
 
 =head1 NAME
 
