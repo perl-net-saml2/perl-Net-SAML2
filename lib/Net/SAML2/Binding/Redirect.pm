@@ -17,7 +17,7 @@ use URI::Escape qw(uri_unescape);
 use URI::QueryParam;
 use URI;
 
-# ABSTRACT: Net::SAML2::Binding::Redirect - HTTP Redirect binding for SAML
+# ABSTRACT: HTTP Redirect binding for SAML
 
 =head1 SYNOPSIS
 

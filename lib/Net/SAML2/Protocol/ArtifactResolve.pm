@@ -7,7 +7,7 @@ use URN::OASIS::SAML2 qw(:urn);
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
-# ABSTRACT: Net::SAML2::Protocol::ArtifactResolve - ArtifactResolve protocol class
+# ABSTRACT: ArtifactResolve protocol class
 
 =head1 NAME
 

@@ -16,7 +16,7 @@ use base qw/Exporter/;
 # Export list - to allow fine tuning of export table
 @EXPORT_OK = qw( no_comments );
 
-# ABSTRACT: Net::SAML2::XML::Util - XML Util class
+# ABSTRACT: XML Util class
 
 =head1 NAME
 

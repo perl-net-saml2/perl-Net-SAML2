@@ -11,7 +11,7 @@ use XML::LibXML;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
-# ABSTRACT: Net::SAML2::Protocol::Artifact - SAML2 artifact object
+# ABSTRACT: SAML2 artifact object
 
 =head1 NAME
 
