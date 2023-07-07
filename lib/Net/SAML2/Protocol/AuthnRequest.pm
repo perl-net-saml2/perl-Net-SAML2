@@ -192,7 +192,7 @@ Returns the AuthnRequest as XML.
 =cut
 
 my $samlp = ['samlp' => URN_PROTOCOL];
-my $saml  = ['samlp' => URN_ASSERTION];
+my $saml  = ['saml' => URN_ASSERTION];
 
 sub as_xml {
     my ($self) = @_;
