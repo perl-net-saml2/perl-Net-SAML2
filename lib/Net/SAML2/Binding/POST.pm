@@ -17,7 +17,7 @@ Net::SAML2::Binding::POST - HTTP POST binding for SAML2
   my $post = Net::SAML2::Binding::POST->new(
     cacert => '/path/to/ca-cert.pem'
   );
-  my $ret = $post->handle_response(
+  my $xml = $post->handle_response(
     $saml_response
   );
 
@@ -57,8 +57,10 @@ has 'key'  => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_key');
 
 =head2 handle_response( $response )
 
-Decodes and verifies the response provided, which should be the raw
-Base64-encoded response, from the SAMLResponse CGI parameter.
+    my $xml = $self->handle_response($response);
+
+Decodes and verifies the Base64-encoded SAMLResponse CGI parameter.
+Returns the decoded response as XML.
 
 =cut
 
