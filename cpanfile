@@ -38,12 +38,8 @@ requires "XML::Generator" => "1.13";
 requires "XML::LibXML" => "0";
 requires "XML::LibXML::XPathContext" => "0";
 requires "XML::Sig" => "0.64";
-requires "base" => "0";
 requires "namespace::autoclean" => "0";
 requires "perl" => "5.012";
-requires "strict" => "0";
-requires "vars" => "0";
-requires "warnings" => "0";
 
 on 'test' => sub {
   requires "Import::Into" => "0";

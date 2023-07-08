@@ -54,11 +54,7 @@ my %WriteMakefileArgs = (
     "XML::LibXML" => 0,
     "XML::LibXML::XPathContext" => 0,
     "XML::Sig" => "0.64",
-    "base" => 0,
-    "namespace::autoclean" => 0,
-    "strict" => 0,
-    "vars" => 0,
-    "warnings" => 0
+    "namespace::autoclean" => 0
   },
   "TEST_REQUIRES" => {
     "Import::Into" => 0,
@@ -135,11 +131,7 @@ my %FallbackPrereqs = (
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,
   "XML::Sig" => "0.64",
-  "base" => 0,
-  "namespace::autoclean" => 0,
-  "strict" => 0,
-  "vars" => 0,
-  "warnings" => 0
+  "namespace::autoclean" => 0
 );
 
 
