@@ -2,6 +2,17 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.72 -- Fri Jul 07 22:33:42 ADT 2023
+
+  [ Significant Changes since 0.69 ]
+
+  - All changes from 0.71 plus:
+  - e04cc05 Fix typo for AuthnRequest Assertion namespace
+  - ebef6bc Increment version for a release
+  - 2d815e0 Add scoping to Net::SAML2::Protocol::AuthnRequest
+  - af3b271 Update test for Net::SAML2::Protocol::AuthnRequest
+  - ed64638 Fix NAME segment of POD for modules.
+
 0.71 -- Tue Jul 04 23:14:07 ADT 2023
 
   [ Significant Changes since 0.69 ]
