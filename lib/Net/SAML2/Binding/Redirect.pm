@@ -238,6 +238,8 @@ sub sign {
 
 =head2 verify( $query_string )
 
+    my ($request, $relaystate) = $self->verify($query_string)
+
 Decode a Redirect binding URL.
 
 Verifies the signature on the response.
@@ -253,12 +255,12 @@ Croaks on errors.
 =cut
 
 sub verify {
-    my ($self, $url) = @_;
+    my $self = shift;
+    my $query_string = shift;
 
-    # This now becomes the query string
-    $url =~ s#^.*\?##;
+    $query_string =~ s#^.*\?##;
 
-    my %params = map { split(/=/, $_, 2) } split(/&/, $url);
+    my %params = map { split(/=/, $_, 2) } split(/&/, $query_string);
 
     my $sigalg = uri_unescape($params{SigAlg});
 
