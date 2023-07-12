@@ -53,6 +53,7 @@ jobs:
         if: ${{ matrix.coverage  }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_PERL_SERVICE_NAME: github-actions
         run: |
           cpm install -g Devel::Cover::Report::Coveralls
           cover -test -report Coveralls
