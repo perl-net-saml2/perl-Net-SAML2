@@ -264,10 +264,6 @@ around BUILDARGS => sub {
         }
     }
 
-    foreach (@{$args{assertion_consumer_service}}) {
-        $_->{isDefault} = 'false' if !exists $_->{isDefault};
-    }
-
     return $self->$orig(%args);
 };
 
@@ -703,8 +699,14 @@ Return the assertion service which is the default
 
 sub get_default_assertion_service {
     my $self = shift;
-    return first { $_->{isDefault} eq 1 || $_->{isDefault} eq 'true' }
-        @{ $self->assertion_consumer_service };
+    my $default = first { $_->{isDefault} eq 1 || $_->{isDefault} eq 'true' }
+        grep { defined $_->{isDefault} } @{ $self->assertion_consumer_service };
+    return $default if $default;
+
+    $default = first { ! defined $_->{isDefault} } @{ $self->assertion_consumer_service };
+    return $default if $default;
+
+    return $self->assertion_consumer_service->[0];
 }
 
 __PACKAGE__->meta->make_immutable;
