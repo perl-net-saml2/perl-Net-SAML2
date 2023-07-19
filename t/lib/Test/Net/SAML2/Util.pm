@@ -6,10 +6,9 @@ use strict;
 
 use Crypt::OpenSSL::X509;
 use Sub::Override;
+use Test::Deep;
 use Test::Exception;
 use Test::More;
-use Test::Deep;
-use URI::URL;
 use XML::LibXML::XPathContext;
 use XML::LibXML;
 

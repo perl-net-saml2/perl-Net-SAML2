@@ -3,10 +3,15 @@ use Moose;
 
 # VERSION
 
-use MooseX::Types::URI qw/ Uri /;
-use Net::SAML2::XML::Util qw/ no_comments /;
 use Carp qw(croak);
+use HTTP::Request::Common;
+use LWP::UserAgent;
+use MooseX::Types::URI qw/ Uri /;
 use Try::Tiny;
+use XML::LibXML::XPathContext;
+
+use Net::SAML2::XML::Sig;
+use Net::SAML2::XML::Util qw/ no_comments /;
 
 with 'Net::SAML2::Role::VerifyXML';
 
@@ -37,11 +42,6 @@ may affect the use of https see:
 =head1 METHODS
 
 =cut
-
-use Net::SAML2::XML::Sig;
-use XML::LibXML;
-use LWP::UserAgent;
-use HTTP::Request::Common;
 
 =head2 new( ... )
 
