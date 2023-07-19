@@ -3,7 +3,6 @@ use Moose;
 
 # VERSION
 
-use MooseX::Types::URI qw/ Uri /;
 
 # ABSTRACT: SAML Identity Provider object
 
@@ -44,8 +43,10 @@ use Crypt::OpenSSL::Verify;
 use Crypt::OpenSSL::X509;
 use HTTP::Request::Common;
 use LWP::UserAgent;
-use XML::LibXML;
+use MooseX::Types::URI qw/ Uri /;
 use Try::Tiny;
+use XML::LibXML::XPathContext;
+
 use Net::SAML2::XML::Util qw/ no_comments /;
 
 =head2 new( )

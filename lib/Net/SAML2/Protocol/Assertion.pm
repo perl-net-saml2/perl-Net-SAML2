@@ -11,7 +11,7 @@ use DateTime::Format::XSD;
 use Net::SAML2::XML::Util qw/ no_comments /;
 use Net::SAML2::XML::Sig;
 use XML::Enc;
-use XML::LibXML;
+use XML::LibXML::XPathContext;
 use List::Util qw(first);
 use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
 use Carp qw(croak);

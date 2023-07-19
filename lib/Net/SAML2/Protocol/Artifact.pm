@@ -7,7 +7,7 @@ use Moose;
 use MooseX::Types::DateTime qw/ DateTime /;
 use DateTime::Format::XSD;
 use Net::SAML2::XML::Util qw/ no_comments /;
-use XML::LibXML;
+use XML::LibXML::XPathContext;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 

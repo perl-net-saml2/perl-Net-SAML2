@@ -68,11 +68,9 @@ my %WriteMakefileArgs = (
     "Test::More" => 0,
     "Test::NoTabs" => 0,
     "Test::Pod" => "1.14",
-    "Test::Pod::Coverage" => "1.04",
-    "URI::URL" => 0,
-    "XML::LibXML::XPathContext" => 0
+    "Test::Pod::Coverage" => "1.04"
   },
-  "VERSION" => "0.73",
+  "VERSION" => "0.74",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -124,7 +122,6 @@ my %FallbackPrereqs = (
   "URI::Encode" => 0,
   "URI::Escape" => 0,
   "URI::QueryParam" => 0,
-  "URI::URL" => 0,
   "URN::OASIS::SAML2" => "0.003",
   "XML::Enc" => "0.13",
   "XML::Generator" => "1.13",
