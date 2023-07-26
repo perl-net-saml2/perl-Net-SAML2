@@ -130,6 +130,12 @@ SP applications if EncryptedAssertions are not in use.
 
 =item SimpleSAMLphp
 
+=item DigiD (requires Net::SAML2 >= 0.63)
+
+=item eHerkenning (requires Net::SAML2 >= 0.73)
+
+=item eIDAS (requires Net::SAML2 >= 0.73)
+
 =back
 
 =head1 MAJOR CAVEATS
