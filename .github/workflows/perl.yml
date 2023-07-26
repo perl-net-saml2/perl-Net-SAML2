@@ -1,0 +1,22 @@
+---
+name: perl
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  testing:
+    strategy:
+      matrix:
+        perl-version:
+          - '5.34'
+          - '5.36'
+        include:
+          - perl-version: '5.38'
+            release-test: true
+            coverage: true
+    uses: ./.github/workflows/shared-workflow.yml
+    with:
+      perl-version: ${{ matrix.perl-version }}
+      coverage: ${{ matrix.coverage }}

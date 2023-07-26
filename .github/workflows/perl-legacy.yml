@@ -1,0 +1,25 @@
+---
+name: perl-legacy
+
+on:
+  workflow_run:
+    workflows: ["perl"]
+    branches:
+      - '**' # All branches by default only the default branch is used
+
+    types:
+      - completed
+
+jobs:
+  perl:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    uses: ./.github/workflows/shared-workflow.yml
+    with:
+      perl-version: ${{ matrix.perl-version }}
+    strategy:
+      matrix:
+        perl-version:
+          - '5.26'
+          - '5.28'
+          - '5.30'
+          - '5.32'
