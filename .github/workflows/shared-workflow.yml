@@ -1,35 +1,22 @@
 ---
-name: linux
+name: shared-workflow
 
 on:
-  - push
-  - pull_request
+  workflow_call:
+    inputs:
+      perl-version:
+        required: true
+        type: string
+      coverage:
+        required: false
+        type: string
+
 
 jobs:
-  perl:
+  testing:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        perl-version:
-          - '5.12-buster'
-          - '5.14-buster'
-          - '5.16-buster'
-          - '5.18-buster'
-          - '5.20-buster'
-          - '5.22-buster'
-          - '5.24-buster'
-          - '5.26'
-          - '5.28'
-          - '5.30'
-          - '5.32'
-          - '5.34'
-          - '5.36'
-        include:
-          - perl-version: '5.38'
-            release-test: true
-            coverage: true
     container:
-      image: perl:${{ matrix.perl-version }}
+      image: perl:${{ inputs.perl-version }}
     steps:
       - uses: actions/checkout@v1
       - name: Install Net::SAML2 Depends
@@ -46,11 +33,11 @@ jobs:
           perl Makefile.PL;
           make
       - name: Run tests
-        if: ${{ !matrix.coverage  }}
+        if: ${{ !inputs.coverage  }}
         run: |
           prove -lr -l -b -I inc t
       - name: Run tests including coverage
-        if: ${{ matrix.coverage  }}
+        if: ${{ inputs.coverage  }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_PERL_SERVICE_NAME: github-actions
