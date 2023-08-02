@@ -281,7 +281,9 @@ sub verify {
     rawinflate \$deflated => \$request;
 
     # unpack the relaystate
-    my $relaystate = uri_unescape($params{'RelayState'});
+    my $relaystate = uri_unescape($params{RelayState})
+      if defined $params{RelayState};
+
     return ($request, $relaystate);
 }
 
