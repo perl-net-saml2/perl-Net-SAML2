@@ -58,6 +58,7 @@ my %WriteMakefileArgs = (
   },
   "TEST_REQUIRES" => {
     "Import::Into" => 0,
+    "MooseX::Test::Role" => 0,
     "Path::Tiny" => 0,
     "Sub::Override" => 0,
     "Test::Deep" => 0,
@@ -100,6 +101,7 @@ my %FallbackPrereqs = (
   "MIME::Base64" => 0,
   "Moose" => 0,
   "Moose::Role" => 0,
+  "MooseX::Test::Role" => 0,
   "MooseX::Types" => 0,
   "MooseX::Types::Common::String" => 0,
   "MooseX::Types::DateTime" => 0,

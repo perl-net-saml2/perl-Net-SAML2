@@ -77,9 +77,7 @@ sub verify_xml {
 
     croak("XML signature check failed") unless $x->verify($xml);
 
-    if (!$anchors && !$cacert) {
-        return 1;
-    }
+    return if !$anchors && !$cacert;
 
     my $cert = $x->signer_cert
         or die "Certificate not provided in SAML Response, cannot validate\n";
@@ -92,7 +90,7 @@ sub verify_xml {
         };
     }
 
-    return 1 if !$anchors;
+    return if !$anchors;
 
     if (ref $anchors ne 'HASH') {
         croak("Unable to verify anchor trust");
@@ -112,7 +110,7 @@ sub verify_xml {
     if (none { $_ eq $got } @$want) {
         croak("Could not verify trust anchors of certificate!");
     }
-    return 1;
+    return;
 
 }
 

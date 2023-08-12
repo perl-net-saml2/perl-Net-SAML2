@@ -90,6 +90,9 @@ DESCRIPTION
     SAMLTEST.ID (requires Net::SAML2 >=0.63)
     Shibboleth (requires Net::SAML2 >=0.63)
     SimpleSAMLphp
+    DigiD (requires Net::SAML2 >= 0.63)
+    eHerkenning (requires Net::SAML2 >= 0.73)
+    eIDAS (requires Net::SAML2 >= 0.73)
 
 MAJOR CAVEATS
     SP-side protocol only
