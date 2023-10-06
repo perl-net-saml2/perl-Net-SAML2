@@ -49,7 +49,6 @@ path to the CA certificate for verification
 
 =cut
 
-has 'cert_text' => (isa => 'Str', is => 'ro');
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro');
 
 has 'cert' => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_cert');
@@ -73,9 +72,6 @@ sub handle_response {
     $self->verify_xml(
         $xml,
         no_xml_declaration => 1,
-        $self->cert_text ? (
-            cert_text => $self->cert_text
-        ) : (),
         $self->cacert ? (
             cacert => $self->cacert
         ) : (),
