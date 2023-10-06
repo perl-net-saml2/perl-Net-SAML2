@@ -26,7 +26,7 @@ use URI;
     url     => $sso_url,							# Service Provider Single Sign Out URL
     param   => 'SAMLRequest' OR 'SAMLResponse',		# Type of request
     cert    => $idp->cert('signing')				# Identity Provider (IdP) certificate
-    sig_hash => 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'  # Signature to sign request
+    sig_hash => 'sha256', 'sha224', 'sha384', 'sha512' or 'sha1'  # Signature to sign request
   );
 
   my $url = $redirect->sign($authnreq);
@@ -76,13 +76,13 @@ Defaults to C<SAMLRequest>.
 
 =item B<sig_hash>
 
-RSA hash to use to sign request
+RSA signature hash used to sign request
 
 Supported:
 
-sha1, sha224, sha256, sha384, sha512
+sha256, sha224, sha384, sha512 and sha1
 
-Defaults to C<sha1>.
+Defaults to C<sha1>.  This will change to C<sha256> in a future release.
 
 =item B<debug>
 
@@ -109,7 +109,7 @@ has 'sig_hash' => (
     isa      => signingAlgorithm,
     is       => 'ro',
     required => 0,
-    default  => 'sha1'
+    default  => 'sha1' #FIXME: Change default to sha256
 );
 
 has debug => (
