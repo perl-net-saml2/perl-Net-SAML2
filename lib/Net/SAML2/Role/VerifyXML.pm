@@ -71,7 +71,6 @@ sub verify_xml {
 
     my $x = Net::SAML2::XML::Sig->new({
         x509      => 1,
-        exclusive => 1,
         %args,
     });
 
