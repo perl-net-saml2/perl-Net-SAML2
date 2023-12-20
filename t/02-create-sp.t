@@ -441,4 +441,32 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     );
 }
 
+TODO: {
+  local $TODO = "Not build yet";
+        my $consuming_index = Net::SAML2::AttributeConsumingService->new(
+          service_name => 'Net::SAML2 testsuite',
+          index => 1,
+          requested_attributes => [
+            Net::SAML2::RequestedAttribute->new(
+              namespace => 'bar',
+              friendly_name => 'foo',
+              name => 'urn:foo:bar',
+              name_format => 'xx',
+              required => 1,
+            ),
+          ],
+        );
+
+        my $sp = net_saml2_sp(
+          attribute_consuming_service => $consuming_index,
+        );
+
+        my $xpath = get_xpath(
+            $sp->metadata,
+            md => URN_METADATA,
+            ds => URN_SIGNATURE,
+        );
+
+}
+
 done_testing;
