@@ -11,5 +11,8 @@ package Net::SAML2::XML::Sig; use base qw(XML::Sig);
 #VERSION
 #
 # ABSTRACT: Net::SAML2 subclass of XML::Sig
+#
+=pod
+=cut
 
 1;
