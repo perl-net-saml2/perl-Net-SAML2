@@ -10,6 +10,7 @@ require 5.012;
 # entities
 use Net::SAML2::IdP;
 use Net::SAML2::SP;
+use Net::SAML2::RequestedAttribute;
 
 # bindings
 use Net::SAML2::Binding::Redirect;
