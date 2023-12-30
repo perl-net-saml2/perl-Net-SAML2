@@ -176,6 +176,9 @@ has 'slo_url_redirect' => (isa => 'Str', is => 'ro', required => 0);
 has 'acs_url_post'     => (isa => 'Str', is => 'ro', required => 0);
 has 'acs_url_artifact' => (isa => 'Str', is => 'ro', required => 0);
 
+has 'attribute_consuming_service' =>
+  (isa => 'Net::SAML2::AttributeConsumingService', is => 'ro', predicate => 'has_attribute_consuming_service');
+
 has '_cert_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_cert_text', lazy => 1);
 
 has '_encryption_key_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_encryption_key_text', lazy => 1);
@@ -588,6 +591,7 @@ sub generate_metadata {
             $self->_generate_single_logout_service($x),
 
             $self->_generate_assertion_consumer_service($x),
+            $self->has_attribute_consuming_service ? $self->attribute_consuming_service->to_xml : (),
 
         ),
         $x->Organization(
