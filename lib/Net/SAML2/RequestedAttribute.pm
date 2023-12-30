@@ -2,6 +2,7 @@ package Net::SAML2::RequestedAttribute;
 use Moose;
 use XML::Generator;
 use URN::OASIS::SAML2 qw(URN_METADATA NS_METADATA);
+# VERSION
 
 # ABSTRACT: RequestedAttribute class
 

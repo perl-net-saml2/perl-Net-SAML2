@@ -2,6 +2,7 @@ package Net::SAML2::AttributeConsumingService;
 use Moose;
 use XML::Generator;
 use URN::OASIS::SAML2 qw(URN_METADATA NS_METADATA);
+# VERSION
 
 # ABSTRACT: An attribute consuming service object
 
