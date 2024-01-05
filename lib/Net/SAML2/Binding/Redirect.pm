@@ -82,7 +82,7 @@ Supported:
 
 sha256, sha224, sha384, sha512 and sha1
 
-Defaults to C<sha1>.  This will change to C<sha256> in a future release.
+Defaults to C<sha256>.
 
 =item B<debug>
 
@@ -109,7 +109,7 @@ has 'sig_hash' => (
     isa      => signingAlgorithm,
     is       => 'ro',
     required => 0,
-    default  => 'sha1' #FIXME: Change default to sha256
+    default  => 'sha256'
 );
 
 has debug => (
