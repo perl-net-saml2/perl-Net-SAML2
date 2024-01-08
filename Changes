@@ -2,6 +2,11 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.76 -- Mon Jan 08 18:31:06 AST 2024
+
+    - 688dc32 Forgot to increment the version for last release
+    - 65ba171 v0.75
+
 0.75 -- Mon Jan 01 22:54:10 AST 2024
 
     [ Significant Changes since 0.74 ]
