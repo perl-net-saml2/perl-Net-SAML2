@@ -179,6 +179,9 @@ around BUILDARGS => sub {
 
     my %params = @_;
     if ($params{nameid_format} && !defined $params{nameidpolicy_format}) {
+        warn "You are using nameid_format, this field has changed to "
+          . "nameidpolicy_format. This field will be used for other purposes "
+          . "in an upcoming release. Please change your code ASAP.";
         $params{nameidpolicy_format} = $params{nameid_format};
     }
 
