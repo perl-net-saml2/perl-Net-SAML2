@@ -322,10 +322,10 @@ sub authn_request {
     my (%params)        = @_;
 
     return Net::SAML2::Protocol::AuthnRequest->new(
-        issueinstant  => DateTime->now,
-        issuer        => $self->id,
-        destination   => $destination,
-        nameid_format => $nameid_format || '',
+        issueinstant        => DateTime->now,
+        issuer              => $self->id,
+        destination         => $destination,
+        nameidpolicy_format => $nameid_format || '',
         %params,
     );
 
