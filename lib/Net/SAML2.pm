@@ -118,6 +118,8 @@ SP applications if EncryptedAssertions are not in use.
 
 =item Keycloak
 
+=item MockSAML (https://mocksaml.com/)
+
 =item Mircosoft ADFS
 
 =item Okta

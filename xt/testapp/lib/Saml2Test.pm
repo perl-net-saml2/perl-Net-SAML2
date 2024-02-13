@@ -196,7 +196,7 @@ get '/login' => sub {
     )->as_xml;
 
     my $redirect = $sp->sso_redirect_binding($idp, 'SAMLRequest');
-    my $url = $redirect->sign($authnreq);
+    my $url = $redirect->sign($authnreq, config->{idp_name});
     redirect $url, 302;
 
     return "Redirected\n";
@@ -304,7 +304,7 @@ post '/consumer-post' => sub {
     my $relay_state = params->{RelayState} // '';
 
     my $idp_name;
-    if ($relay_state ne '') {
+    if ($relay_state ne '' and defined $relay_state) {
         $idp_name = $relay_state;
         $cacert = 'IdPs/' . $idp_name . '/cacert.pem';
     } else {
