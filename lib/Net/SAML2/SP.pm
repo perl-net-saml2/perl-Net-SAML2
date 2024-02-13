@@ -688,11 +688,31 @@ sub metadata {
             sig_hash    => 'sha256',
             digest_hash => 'sha256',
             x509        => 1,
-            ns          => { md => 'urn:oasis:names:tc:SAML:2.0:metadata' },
+            ns          => { md => URN_METADATA },
             id_attr     => '/md:EntityDescriptor[@ID]',
         }
     );
-    return $signer->sign($metadata);
+    my $md = $signer->sign($metadata);
+
+    my $xp = XML::LibXML::XPathContext->new(
+        XML::LibXML->load_xml(string =>$md)
+    );
+    $xp->registerNs('md', URN_METADATA);
+    $xp->registerNs('dsig', URN_SIGNATURE);
+
+    my $nodes = $xp->findnodes('/md:EntityDescriptor[@ID]');
+    my $rootnode = $nodes->get_node(1);
+
+    my $child = $rootnode->firstChild;
+    return $md if $child->nodeName() eq 'dsig:Signature';
+
+    $nodes = $xp->findnodes('//dsig:Signature');
+    my $signode = $nodes->get_node(1);
+
+    $signode->unbindNode;
+    $rootnode->insertBefore($signode, $child);
+
+    return '<?xml version="1.0" encoding="UTF-8"?>' . $rootnode->toString;
 }
 
 =head2 get_default_assertion_service

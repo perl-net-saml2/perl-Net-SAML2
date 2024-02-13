@@ -70,7 +70,10 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     }
 
 
-    get_single_node_ok($xpath, '//ds:Signature');
+    my $root_node = get_single_node_ok($xpath, '/md:EntityDescriptor');
+    my $signature_node = $root_node->firstChild;
+    is($signature_node->nodeName(),
+        'dsig:Signature', "First node is the signature");
 
     is(
         'e73560b0e23602121aedc55bcb1ca637',
