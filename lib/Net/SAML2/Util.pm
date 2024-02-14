@@ -11,10 +11,15 @@ use Exporter qw(import);
 
 our @EXPORT_OK = qw(
     generate_id
+    deprecation_warning
 );
 
 sub generate_id {
     return 'NETSAML2_' . unpack 'H*', random_pseudo_bytes(32);
+}
+
+sub deprecation_warning {
+    warn "NET::SAML2 deprecation warning: " . shift . "\n";
 }
 
 
