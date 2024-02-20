@@ -602,7 +602,7 @@ get '/metadata.xml' => sub {
 
 sub _sp {
     my $sp = Net::SAML2::SP->new(
-        id     => config->{issuer},
+        issuer => config->{issuer},
         url    => config->{url},
         cert   => config->{cert},
         key    => config->{key},
