@@ -162,8 +162,14 @@ Consumer Services.
 
 has 'url'    => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 
-has 'id'        => (isa => XsdID, is => 'ro', builder => '_build_id');
-has 'issuer'    => (isa => 'Str', is => 'ro', required => 1);
+has '_id' => (
+    isa      => XsdID,
+    is       => 'ro',
+    builder  => '_build_id',
+    init_arg => 'id'
+);
+
+has 'issuer' => (isa => 'Str', is => 'ro', required => 1);
 
 has 'cert'   => (isa => 'Str', is => 'ro', required => 1, predicate => 'has_cert');
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
@@ -297,6 +303,14 @@ sub _build_id {
     }
     return Net::SAML2::Util::generate_id();
 }
+
+sub id {
+    my $self = shift;
+    Net::SAML2::Util::deprecation_warning
+      "id() has been renamed to issuer()";
+    return $self->issuer;
+}
+
 
 sub _build_encryption_key_text {
     my ($self) = @_;
@@ -590,7 +604,7 @@ sub generate_metadata {
         $md,
         {
             entityID => $self->issuer,
-            ID       => $self->id,
+            ID       => $self->_id,
         },
         $x->SPSSODescriptor(
             $md,
