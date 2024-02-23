@@ -499,7 +499,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     is($id, $sp->issuer, "id is still the issuer");
     cmp_deeply(
         \@warns,
-        ["NET::SAML2 deprecation warning: id() has been renamed to issuer()\n"],
+        ["Net::SAML2 deprecation warning: id() has been renamed to issuer()\n"],
         "We have our deprecation warning"
     );
 }
