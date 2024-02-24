@@ -490,4 +490,18 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     is($child[1]->getAttribute('isRequired'), '1', ".. and requiredness");
 }
 
+{
+    my $sp = net_saml2_sp();
+
+    my @warns;
+    local $SIG{__WARN__} = sub { push(@warns, shift); };
+    my $id = $sp->id;
+    is($id, $sp->issuer, "id is still the issuer");
+    cmp_deeply(
+        \@warns,
+        ["Net::SAML2 deprecation warning: id() has been renamed to issuer()\n"],
+        "We have our deprecation warning"
+    );
+}
+
 done_testing;

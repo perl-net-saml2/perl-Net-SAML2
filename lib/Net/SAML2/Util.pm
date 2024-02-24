@@ -19,7 +19,7 @@ sub generate_id {
 }
 
 sub deprecation_warning {
-    warn "NET::SAML2 deprecation warning: " . shift . "\n";
+    warn "Net::SAML2 deprecation warning: " . shift . "\n";
 }
 
 
