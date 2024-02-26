@@ -40,3 +40,7 @@ __END__
 =head2 sub generate_id {}
 
 Generate a NETSAML2 Request Id
+
+=head2 sub deprecation_warning {}
+
+Show a warning that a Deprecated feature is being used
