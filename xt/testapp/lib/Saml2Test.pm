@@ -269,7 +269,10 @@ get '/logout-soap' => sub {
     my $ua = LWP::UserAgent->new;
 
     require LWP::Protocol::https;
-    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+    $ua->ssl_opts( (
+                        SSL_verify_mode => config->{ssl_verify_hostname},
+                        verify_hostname => config->{ssl_verify_hostname},
+                    ));
 
     my $soap = Net::SAML2::Binding::SOAP->new(
         ua          => $ua,
@@ -428,7 +431,10 @@ any '/consumer-artifact' => sub {
     my $ua = LWP::UserAgent->new;
 
     require LWP::Protocol::https;
-    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+    $ua->ssl_opts( (
+                        SSL_verify_mode => config->{ssl_verify_hostname},
+                        verify_hostname => config->{ssl_verify_hostname},
+                    ));
 
     my $soap = Net::SAML2::Binding::SOAP->new(
         ua          => $ua,
@@ -555,7 +561,10 @@ any '/sls-consumer-artifact' => sub {
     my $ua = LWP::UserAgent->new;
 
     require LWP::Protocol::https;
-    $ua->ssl_opts( (verify_hostname => config->{ssl_verify_hostname}));
+    $ua->ssl_opts( (
+                        SSL_verify_mode => config->{ssl_verify_hostname},
+                        verify_hostname => config->{ssl_verify_hostname},
+                    ));
 
     my $soap = Net::SAML2::Binding::SOAP->new(
         ua       => $ua,
