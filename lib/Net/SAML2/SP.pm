@@ -609,8 +609,8 @@ sub generate_metadata {
         $x->SPSSODescriptor(
             $md,
             {
-                AuthnRequestsSigned        => $self->authnreq_signed,
-                WantAssertionsSigned       => $self->want_assertions_signed,
+                AuthnRequestsSigned        => $self->authnreq_signed ? 'true' : 'false',
+                WantAssertionsSigned       => $self->want_assertions_signed ? 'true' : 'false',
                 errorURL                   => $error_uri,
                 protocolSupportEnumeration => URN_PROTOCOL,
             },
