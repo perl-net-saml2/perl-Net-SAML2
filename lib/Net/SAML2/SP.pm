@@ -615,9 +615,11 @@ sub generate_metadata {
                 protocolSupportEnumeration => URN_PROTOCOL,
             },
 
-            $self->_generate_key_descriptors($x, 'signing'),
+            $self->has_encryption_key
+                ? ($self->_generate_key_descriptors($x, 'encryption'),
+                   $self->_generate_key_descriptors($x, 'signing'))
+                : $self->_generate_key_descriptors($x, 'both'),
 
-            $self->has_encryption_key ? $self->_generate_key_descriptors($x, 'encryption') : (),
 
             $self->_generate_single_logout_service($x),
 
@@ -659,11 +661,11 @@ sub _generate_key_descriptors {
         && !$self->want_assertions_signed
         && !$self->sign_metadata;
 
-    my $key = $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text;
+    my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
 
     return $x->KeyDescriptor(
         $md,
-        { use => $use },
+        $use ne 'both' ? { use => $use } : {},
         $x->KeyInfo(
             $ds,
             $x->X509Data($ds, $x->X509Certificate($ds, $key)),
@@ -681,7 +683,7 @@ Get the key name for either the C<signing> or C<encryption> key
 sub key_name {
     my $self = shift;
     my $use  = shift;
-    my $key = $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text;
+    my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
     return unless $key;
     return Digest::MD5::md5_hex($key);
 }
