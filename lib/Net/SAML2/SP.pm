@@ -292,15 +292,6 @@ around BUILDARGS => sub {
 
 sub _build_id {
     my $self = shift;
-
-    # This allows current clients to override the builder without changing
-    # their code
-    if (my $f = $self->can('generate_sp_desciptor_id')) {
-        Net::SAML2::Util::deprecation_warning
-          "generate_sp_desciptor_id has been deprecated, please override " .
-          "_build_id yourself or supply the ID to the constructor";
-          return $f->();
-    }
     return Net::SAML2::Util::generate_id();
 }
 
