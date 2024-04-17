@@ -24,10 +24,10 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     my $node
         = get_single_node_ok($xpath,
         '//md:EntityDescriptor/md:SPSSODescriptor');
-    ok(!$node->getAttribute('WantAssertionsSigned'),
+    is($node->getAttribute('WantAssertionsSigned'), 'false',
         'Wants assertions to be signed');
-    ok(
-        !$node->getAttribute('AuthnRequestsSigned'),
+    is(
+        $node->getAttribute('AuthnRequestsSigned'), 'false',
         '.. and also authn requests to be signed'
     );
 
@@ -165,9 +165,9 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
         # Test SPSSODescriptor
         my $node = get_single_node_ok($xpath, '/node()/md:SPSSODescriptor');
         is($node->getAttribute('AuthnRequestsSigned'),
-            '1', '.. and authn request needs signing');
+            'true', '.. and authn request needs signing');
         is($node->getAttribute('WantAssertionsSigned'),
-            '1', '.. as does assertions');
+            'true', '.. as does assertions');
         is($node->getAttribute('errorURL'),
             'http://localhost:3000/error', 'Got the correct error URI');
         is(
