@@ -1,11 +1,10 @@
-use strict;
-use warnings;
 package Net::SAML2::Protocol::LogoutResponse;
 # VERSION
 
 use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
+use Net::SAML2::Util qw/ deprecation_warning /;
 use XML::LibXML::XPathContext;
 
 with 'Net::SAML2::Role::ProtocolMessage';
@@ -18,12 +17,17 @@ Net::SAML2::Protocol::LogoutResponse - the SAML2 LogoutResponse object
 
 =head1 SYNOPSIS
 
-  my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
-    issuer      => $issuer,
-    destination => $destination,
-    status      => $status,
-    response_to => $response_to,
-  );
+    my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
+        issuer      => $issuer,
+        destination => $destination,
+        status      => $status,
+        response_to => $response_to,
+    );
+
+=head1 DESCRIPTION
+
+This object deals with the LogoutResponse messages from SAML. It implements the
+role L<Net::SAML2::Role::ProtocolMessage>.
 
 =head1 METHODS
 
@@ -37,7 +41,7 @@ Arguments:
 
 =item B<issuer>
 
-SP's identity URI
+SP's identity URI (required)
 
 =item B<destination>
 
@@ -45,19 +49,55 @@ IdP's identity URI
 
 =item B<status>
 
-response status
+Response status (required)
 
-=item B<response_to>
+=item B<sub_status>
 
-request ID we're responding to
+The sub status
+
+=item B<in_response_to>
+
+Request ID we're responding to (required);
 
 =back
 
 =cut
 
-has 'status'      => (isa => 'Str', is => 'ro', required => 1);
-has 'substatus'   => (isa => 'Str', is => 'ro', required => 0);
-has 'response_to' => (isa => 'Str', is => 'ro', required => 1);
+has 'status'          => (isa      => 'Str', is => 'ro', required => 1);
+has 'sub_status'      => (isa      => 'Str', is => 'ro', required => 0);
+has '+in_response_to' => (required => 1);
+
+# Remove response_to/substatus after 6 months from now (april 18th 2024)
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
+    my %args = @_;
+
+    if (my $irt = delete $args{response_to}) {
+        $args{in_response_to} = $irt;
+        deprecation_warning(
+            "Please use in_response_to instead of response_to");
+    }
+
+    if (my $s = delete $args{substatus}) {
+        $args{sub_status} = $s;
+        deprecation_warning(
+            "Please use in_response_to instead of response_to");
+    }
+    return $self->$orig(%args);
+};
+
+sub response_to {
+    my $self = shift;
+    deprecation_warning("Please use in_response_to instead of response_to");
+    return $self->in_response_to;
+}
+
+sub substatus {
+    my $self = shift;
+    deprecation_warning("Please use sub_status instead of substatus");
+    return $self->sub_status;
+}
 
 =head2 new_from_xml( ... )
 
@@ -86,12 +126,12 @@ sub new_from_xml {
 
     my $self = $class->new(
         id          => $xpath->findvalue('/samlp:LogoutResponse/@ID'),
-        response_to => $xpath->findvalue('/samlp:LogoutResponse/@InResponseTo'),
+        in_response_to => $xpath->findvalue('/samlp:LogoutResponse/@InResponseTo'),
         destination => $xpath->findvalue('/samlp:LogoutResponse/@Destination'),
         session     => $xpath->findvalue('/samlp:LogoutResponse/samlp:SessionIndex'),
         issuer      => $xpath->findvalue('/samlp:LogoutResponse/saml:Issuer'),
         status      => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value'),
-        substatus   => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value'),
+        sub_status  => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value'),
     );
 
     return $self;
@@ -117,7 +157,7 @@ sub as_xml {
               Version => '2.0',
               IssueInstant => $self->issue_instant,
               Destination => $self->destination,
-              InResponseTo => $self->response_to },
+              InResponseTo => $self->in_response_to },
             $x->Issuer(
                 $saml,
                 $self->issuer,
@@ -133,16 +173,10 @@ sub as_xml {
     );
 }
 
-=head2 success( )
-
-Returns true if the Response's status is Success.
-
-=cut
-
-sub success {
-    my ($self) = @_;
-    return 1 if $self->status eq $self->status_uri('success');
-    return 0;
-}
-
 __PACKAGE__->meta->make_immutable;
+
+__END__
+
+=head1 SEE ALSO
+
+=head2 L<Net::SAML2::Roles::ProtocolMessage>
