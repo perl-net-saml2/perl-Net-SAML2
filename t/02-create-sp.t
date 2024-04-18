@@ -180,8 +180,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 
         my $kd = get_single_node_ok($xpath, "$p/md:KeyDescriptor");
 
-        is($kd->getAttribute('use'),
-            "signing", "Key descriptor is there for signing only");
+        ok(!$kd->getAttribute('use'), "No key descriptor");
 
         ok(
             !$kd->getAttribute('encryption'),

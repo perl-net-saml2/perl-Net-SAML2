@@ -292,15 +292,6 @@ around BUILDARGS => sub {
 
 sub _build_id {
     my $self = shift;
-
-    # This allows current clients to override the builder without changing
-    # their code
-    if (my $f = $self->can('generate_sp_desciptor_id')) {
-        Net::SAML2::Util::deprecation_warning
-          "generate_sp_desciptor_id has been deprecated, please override " .
-          "_build_id yourself or supply the ID to the constructor";
-          return $f->();
-    }
     return Net::SAML2::Util::generate_id();
 }
 
@@ -615,9 +606,11 @@ sub generate_metadata {
                 protocolSupportEnumeration => URN_PROTOCOL,
             },
 
-            $self->_generate_key_descriptors($x, 'signing'),
+            $self->has_encryption_key
+                ? ($self->_generate_key_descriptors($x, 'encryption'),
+                   $self->_generate_key_descriptors($x, 'signing'))
+                : $self->_generate_key_descriptors($x, 'both'),
 
-            $self->has_encryption_key ? $self->_generate_key_descriptors($x, 'encryption') : (),
 
             $self->_generate_single_logout_service($x),
 
@@ -659,11 +652,11 @@ sub _generate_key_descriptors {
         && !$self->want_assertions_signed
         && !$self->sign_metadata;
 
-    my $key = $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text;
+    my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
 
     return $x->KeyDescriptor(
         $md,
-        { use => $use },
+        $use ne 'both' ? { use => $use } : {},
         $x->KeyInfo(
             $ds,
             $x->X509Data($ds, $x->X509Certificate($ds, $key)),
@@ -681,7 +674,7 @@ Get the key name for either the C<signing> or C<encryption> key
 sub key_name {
     my $self = shift;
     my $use  = shift;
-    my $key = $use eq 'signing' ? $self->_cert_text : $self->_encryption_key_text;
+    my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
     return unless $key;
     return Digest::MD5::md5_hex($key);
 }
