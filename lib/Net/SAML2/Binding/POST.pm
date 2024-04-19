@@ -8,10 +8,6 @@ use Carp qw(croak);
 
 # ABSTRACT: HTTP POST binding for SAML
 
-=head1 NAME
-
-Net::SAML2::Binding::POST - HTTP POST binding for SAML2
-
 =head1 SYNOPSIS
 
   my $post = Net::SAML2::Binding::POST->new(

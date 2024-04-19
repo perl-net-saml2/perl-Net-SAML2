@@ -3,12 +3,7 @@ use Moose;
 
 # VERSION
 
-
 # ABSTRACT: SAML Identity Provider object
-
-=head1 NAME
-
-Net::SAML2::IdP - SAML Identity Provider object
 
 =head1 SYNOPSIS
 

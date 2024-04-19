@@ -9,10 +9,6 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: ArtifactResolve protocol class
 
-=head1 NAME
-
-Net::SAML2::Protocol::ArtifactResolve - ArtifactResolve protocol class.
-
 =head1 SYNOPSIS
 
     my $resolver = Net::SAML2::Protocol::ArtifactResolve->new(

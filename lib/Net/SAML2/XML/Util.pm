@@ -18,10 +18,6 @@ use base qw/Exporter/;
 
 # ABSTRACT: XML Util class
 
-=head1 NAME
-
-Net::SAML2::XML::Util - XML Util class.
-
 =head1 SYNOPSIS
 
   my $xml = no_comments($xml);

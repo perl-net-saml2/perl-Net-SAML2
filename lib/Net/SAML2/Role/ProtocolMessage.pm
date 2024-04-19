@@ -14,11 +14,6 @@ use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::Util qw(generate_id);
 use Net::SAML2::Types qw(XsdID);
 
-=head1 NAME
-
-Net::SAML2::Role::ProtocolMessage - the SAML2 ProtocolMessage Role object
-
-
 =head1 DESCRIPTION
 
 Provides default ID and timestamp arguments for Protocol classes.
