@@ -39,13 +39,16 @@ test_xml_attribute_ok($xpath, '/samlp:LogoutRequest/@IssueInstant', 'foo');
 my $name_id = get_single_node_ok($xpath, '/samlp:LogoutRequest/saml:NameID');
 is($name_id->getAttribute('Format'), $args{nameid_format});
 
-foreach (qw(NameQualifier SPNameQualifier SPProvidedID)) {
-    is(
-        $name_id->getAttribute($_),
-        undef,
-        "We don't have $_ as an attribute in the nameid"
-    );
+foreach (qw(NameQualifier SPNameQualifier)) {
+    isnt($name_id->getAttribute($_),
+        undef, "We don't have $_ as an attribute in the nameid");
 }
+
+is(
+    $name_id->getAttribute('SPProvidedID'),
+    undef,
+    "We don't have SPProvidedID as an attribute in the nameid"
+);
 
 {
     my $lor = Net::SAML2::Protocol::LogoutRequest->new(%args,

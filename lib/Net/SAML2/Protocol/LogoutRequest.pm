@@ -7,7 +7,7 @@ use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 use XML::Generator;
-use URN::OASIS::SAML2 qw(:urn);
+use URN::OASIS::SAML2 qw(:urn NAMEID_PERSISTENT);
 use XML::LibXML::XPathContext;
 
 with 'Net::SAML2::Role::ProtocolMessage';
@@ -123,7 +123,7 @@ around BUILDARGS => sub {
     my $self = shift;
     my %args = @_;
 
-    if ($args{nameid_format} && $args{nameid_format} eq 'urn:oasis:names:tc:SAML:2.0:nameidformat:persistent') {
+    if ($args{nameid_format} && $args{nameid_format} eq NAMEID_PERSISTENT()) {
         $args{include_name_qualifier} = 1;
     }
 
