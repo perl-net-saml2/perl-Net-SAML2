@@ -1,7 +1,7 @@
 package Net::SAML2::Role::ProtocolMessage;
-# VERSION
-
 use Moose::Role;
+
+# VERSION
 
 # ABSTRACT: Common behaviour for Protocol messages
 
