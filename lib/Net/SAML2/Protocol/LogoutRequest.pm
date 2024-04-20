@@ -16,12 +16,12 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 =head1 SYNOPSIS
 
-  my $logout_req = Net::SAML2::Protocol::LogoutRequest->new(
-    issuer      => $issuer,
-    destination => $destination,
-    nameid      => $nameid,
-    session     => $session,
-  );
+    my $logout_req = Net::SAML2::Protocol::LogoutRequest->new(
+        issuer      => $issuer,
+        destination => $destination,
+        nameid      => $nameid,
+        session     => $session,
+    );
 
 =head1 METHODS
 

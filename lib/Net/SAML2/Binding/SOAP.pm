@@ -12,6 +12,7 @@ use XML::LibXML::XPathContext;
 
 use Net::SAML2::XML::Sig;
 use Net::SAML2::XML::Util qw/ no_comments /;
+use Net::SAML2::Util qw/ deprecation_warning /;
 
 with 'Net::SAML2::Role::VerifyXML';
 
@@ -19,14 +20,14 @@ with 'Net::SAML2::Role::VerifyXML';
 
 =head1 SYNOPSIS
 
-  my $soap = Net::SAML2::Binding::SOAP->new(
-    url => $idp_url,
-    key => $key,
-    cert => $cert,
-    idp_cert => $idp_cert,
-  );
+    my $soap = Net::SAML2::Binding::SOAP->new(
+        url      => $idp_url,
+        key      => $key,
+        cert     => $cert,
+        idp_cert => $idp_cert,
+    );
 
-  my $response = $soap->request($req);
+    my $response = $soap->request($req);
 
 Note that LWP::UserAgent maybe used which means that environment variables
 may affect the use of https see:
@@ -129,6 +130,8 @@ has verify => (
 # expected to be an arrayref to the certificates.  To avoid breaking existing
 # applications this changes the the cert to an arrayref if it is not
 # already an array ref.
+#
+# Please remove the build args logic after 6 months from april 18th 2024
 
 around BUILDARGS => sub {
     my $orig = shift;
@@ -136,7 +139,8 @@ around BUILDARGS => sub {
 
     my %params = @_;
     if ($params{idp_cert} && ref($params{idp_cert}) ne 'ARRAY') {
-            $params{idp_cert} = [$params{idp_cert}];
+        $params{idp_cert} = [$params{idp_cert}];
+        deprecation_warning("Please use an array ref for idp_cert");
     }
 
     return $self->$orig(%params);

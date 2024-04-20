@@ -1,5 +1,3 @@
-use strict;
-use warnings;
 package Net::SAML2::Protocol::Artifact;
 # VERSION
 
@@ -39,7 +37,7 @@ Net::SAML2::Protocol::Artifact - SAML2 artifact object
 =cut
 
 has 'issue_instant'   => (isa => DateTime,  is => 'ro', required => 1);
-has 'in_response_to'  => (isa => 'Str',     is => 'ro', required => 1);
+has '+in_response_to'  => (required => 1);
 has 'issuer'          => (isa => 'Str',     is => 'ro', required => 1);
 has 'status'          => (isa => 'Str',     is => 'ro', required => 1);
 has 'logoutresponse_object'  => (
@@ -100,12 +98,11 @@ sub new_from_xml {
     }
 
     my $issue_instant;
-
     if (my $value = $xpath->findvalue('/samlp:ArtifactResponse/@IssueInstant')) {
         $issue_instant = DateTime::Format::XSD->parse_datetime($value);
     }
 
-    my $self = $class->new(
+    return $class->new(
         id             => $xpath->findvalue('/samlp:ArtifactResponse/@ID'),
         in_response_to => $xpath->findvalue('/samlp:ArtifactResponse/@InResponseTo'),
         issue_instant  => $issue_instant,
@@ -114,8 +111,6 @@ sub new_from_xml {
         $response       ? (response        => $response)        : (),
         $logoutresponse ? (logout_response => $logoutresponse)  : (),
     );
-
-    return $self;
 }
 
 =head2 response
@@ -138,18 +133,6 @@ Returns the logoutresponse
 sub logout_response {
     my $self = shift;
     return $self->logoutresponse_object->toString;
-}
-
-=head2 success( )
-
-Returns true if the Response's status is Success.
-
-=cut
-
-sub success {
-    my ($self) = @_;
-    return 1 if $self->status eq $self->status_uri('success');
-    return 0;
 }
 
 =head2 get_response ( )
