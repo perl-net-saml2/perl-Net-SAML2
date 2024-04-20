@@ -20,10 +20,6 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 assertion object
 
-=head1 NAME
-
-Net::SAML2::Protocol::Assertion - SAML2 assertion object
-
 =head1 SYNOPSIS
 
   my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(

@@ -11,10 +11,6 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 LogoutResponse Protocol object
 
-=head1 NAME
-
-Net::SAML2::Protocol::LogoutResponse - the SAML2 LogoutResponse object
-
 =head1 SYNOPSIS
 
     my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(

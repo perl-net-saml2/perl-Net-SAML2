@@ -11,10 +11,6 @@ with 'Net::SAML2::Role::ProtocolMessage';
 
 # ABSTRACT: SAML2 artifact object
 
-=head1 NAME
-
-Net::SAML2::Protocol::Artifact - SAML2 artifact object
-
 =head1 SYNOPSIS
 
   my $artifact = Net::SAML2::Protocol::Artifact->new_from_xml(

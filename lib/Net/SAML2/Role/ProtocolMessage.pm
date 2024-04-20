@@ -15,11 +15,6 @@ use Net::SAML2::Util qw(generate_id);
 use Net::SAML2::Types qw(XsdID);
 use URN::OASIS::SAML2 qw(:status);
 
-=head1 NAME
-
-Net::SAML2::Role::ProtocolMessage - the SAML2 ProtocolMessage Role object
-
-
 =head1 DESCRIPTION
 
 Provides default ID and timestamp arguments for Protocol classes.
