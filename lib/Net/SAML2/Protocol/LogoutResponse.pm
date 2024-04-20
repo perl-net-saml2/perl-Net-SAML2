@@ -1,7 +1,7 @@
 package Net::SAML2::Protocol::LogoutResponse;
+use Moose;
 # VERSION
 
-use Moose;
 use MooseX::Types::URI qw/ Uri /;
 use Net::SAML2::XML::Util qw/ no_comments /;
 use Net::SAML2::Util qw/ deprecation_warning /;
@@ -83,11 +83,23 @@ around BUILDARGS => sub {
     return $self->$orig(%args);
 };
 
+=head2 response_to()
+
+Deprecated use B<in_response_to>
+
+=cut
+
 sub response_to {
     my $self = shift;
     deprecation_warning("Please use in_response_to instead of response_to");
     return $self->in_response_to;
 }
+
+=head2 substatus()
+
+Deprecated use B<sub_status>
+
+=cut
 
 sub substatus {
     my $self = shift;

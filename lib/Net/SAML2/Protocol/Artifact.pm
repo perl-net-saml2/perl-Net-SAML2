@@ -1,7 +1,7 @@
 package Net::SAML2::Protocol::Artifact;
+use Moose;
 # VERSION
 
-use Moose;
 use MooseX::Types::DateTime qw/ DateTime /;
 use DateTime::Format::XSD;
 use Net::SAML2::XML::Util qw/ no_comments /;
