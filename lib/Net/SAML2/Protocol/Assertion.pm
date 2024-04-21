@@ -212,10 +212,10 @@ sub new_from_xml {
 
     my $status_node = $nodeset->get_node(1);
     my $status = $status_node->getAttribute('Value');
-    my $sub_status;
+    my $substatus;
 
     if (my $s = first { $_->isa('XML::LibXML::Element') } $status_node->childNodes) {
-        $sub_status = $s->getAttribute('Value');
+        $substatus = $s->getAttribute('Value');
     }
 
     my $self = $class->new(
@@ -231,7 +231,7 @@ sub new_from_xml {
         xpath          => $xpath,
         in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
         response_status => $status,
-        $sub_status ? (response_substatus => $sub_status) : (),
+        $substatus ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
     );
 

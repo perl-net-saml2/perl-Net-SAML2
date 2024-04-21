@@ -18,7 +18,7 @@ sub get_object {
   ok(!$response->has_assertions, "We don't have an assertion");
   ok(!$response->success, "Unsuccessful response");
   is($response->status, STATUS_RESPONDER(), "... because its a status:Responder");
-  is($response->sub_status, STATUS_AUTH_FAILED(), "... and substatus is also correct");
+  is($response->substatus, STATUS_AUTH_FAILED(), "... and substatus is also correct");
 }
 
 
