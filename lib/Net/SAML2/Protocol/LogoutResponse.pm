@@ -47,7 +47,7 @@ IdP's identity URI
 
 Response status (required)
 
-=item B<sub_status>
+=item B<substatus>
 
 The sub status
 
@@ -60,7 +60,7 @@ Request ID we're responding to (required);
 =cut
 
 has 'status'          => (isa      => 'Str', is => 'ro', required => 1);
-has 'sub_status'      => (isa      => 'Str', is => 'ro', required => 0);
+has 'substatus'      => (isa      => 'Str', is => 'ro', required => 0);
 has '+in_response_to' => (required => 1);
 
 # Remove response_to/substatus after 6 months from now (april 18th 2024)
@@ -75,11 +75,6 @@ around BUILDARGS => sub {
             "Please use in_response_to instead of response_to");
     }
 
-    if (my $s = delete $args{substatus}) {
-        $args{sub_status} = $s;
-        deprecation_warning(
-            "Please use in_response_to instead of response_to");
-    }
     return $self->$orig(%args);
 };
 
@@ -93,18 +88,6 @@ sub response_to {
     my $self = shift;
     deprecation_warning("Please use in_response_to instead of response_to");
     return $self->in_response_to;
-}
-
-=head2 substatus()
-
-Deprecated use B<sub_status>
-
-=cut
-
-sub substatus {
-    my $self = shift;
-    deprecation_warning("Please use sub_status instead of substatus");
-    return $self->sub_status;
 }
 
 =head2 new_from_xml( ... )
@@ -139,7 +122,7 @@ sub new_from_xml {
         session     => $xpath->findvalue('/samlp:LogoutResponse/samlp:SessionIndex'),
         issuer      => $xpath->findvalue('/samlp:LogoutResponse/saml:Issuer'),
         status      => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value'),
-        sub_status  => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value'),
+        substatus  => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value'),
     );
 
     return $self;

@@ -38,9 +38,9 @@ the status is successful you can grab an assertion and continue your flow.
         warn "Got a response but isn't successful";
 
         my $status = $response->status;
-        my $sub_status = $response->sub_status;
+        my $substatus = $response->substatus;
 
-        warn "We got a $status back with the following sub status $sub_status";
+        warn "We got a $status back with the following sub status $substatus";
     }
     else {
         $response->to_assertion(
@@ -57,7 +57,7 @@ the status is successful you can grab an assertion and continue your flow.
 
 Returns the status of the response
 
-=head2 sub_status
+=head2 substatus
 
 Returns the sub status of the response
 
@@ -80,11 +80,11 @@ has status => (
     required => 1,
 );
 
-has sub_status => (
+has substatus => (
     is        => 'ro',
     isa       => 'Str',
     required  => 0,
-    predicate => 'has_sub_status',
+    predicate => 'has_substatus',
 );
 
 has assertions => (
@@ -134,7 +134,7 @@ sub new_from_xml {
     return $self->new(
         dom    => $xml,
         status => $status,
-        $substatus ? ( sub_status => $substatus) : (),
+        $substatus ? ( substatus => $substatus) : (),
         issuer => $xpath->findvalue('saml:Issuer', $response),
         id     => $response->getAttribute('ID'),
         in_response_to => $response->getAttribute('InResponseTo'),
