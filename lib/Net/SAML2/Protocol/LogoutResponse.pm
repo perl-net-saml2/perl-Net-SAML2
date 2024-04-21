@@ -14,10 +14,10 @@ with 'Net::SAML2::Role::ProtocolMessage';
 =head1 SYNOPSIS
 
     my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
-        issuer      => $issuer,
-        destination => $destination,
-        status      => $status,
-        response_to => $response_to,
+        issuer          => $issuer,
+        destination     => $destination,
+        status          => $status,
+        in_response_to  => $in_response_to,
     );
 
 =head1 DESCRIPTION

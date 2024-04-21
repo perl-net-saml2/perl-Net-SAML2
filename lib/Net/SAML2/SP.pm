@@ -409,7 +409,7 @@ sub logout_request {
     return $logout_req;
 }
 
-=head2 logout_response( $destination, $status, $response_to )
+=head2 logout_response( $destination, $status, $in_response_to )
 
 Returns a LogoutResponse object created by this SP, intended for the
 given destination, which should be the identity URI of the IdP.
@@ -420,14 +420,14 @@ LogoutRequest.
 =cut
 
 sub logout_response {
-    my ($self, $destination, $status, $response_to) = @_;
+    my ($self, $destination, $status, $in_response_to) = @_;
 
     my $status_uri = Net::SAML2::Protocol::LogoutResponse->status_uri($status);
     my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
-        issuer      => $self->issuer,
-        destination => $destination,
-        status      => $status_uri,
-        response_to => $response_to,
+        issuer          => $self->issuer,
+        destination     => $destination,
+        status          => $status_uri,
+        in_response_to  => $in_response_to,
     );
 
     return $logout_req;
