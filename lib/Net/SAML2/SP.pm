@@ -74,6 +74,11 @@ Path to the private key for the signing certificate
 Path to the public key that the IdP should use for encryption. This
 is used when generating the metadata.
 
+=item B<signing_only>
+
+Indicate that the key for signing is exclusively used for signing and not
+encryption and signing.
+
 =item B<cacert>
 
 Path to the CA certificate for verification
@@ -174,6 +179,8 @@ has 'issuer' => (isa => 'Str', is => 'ro', required => 1);
 has 'cert'   => (isa => 'Str', is => 'ro', required => 1, predicate => 'has_cert');
 has 'key'    => (isa => 'Str', is => 'ro', required => 1);
 has 'cacert' => (isa => 'Str', is => 'rw', required => 0, predicate => 'has_cacert');
+
+has 'signing_only' => (isa => 'Bool', is => 'ro', required => 0);
 
 has 'encryption_key'   => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_encryption_key');
 has 'error_url'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
@@ -653,6 +660,8 @@ sub _generate_key_descriptors {
         && !$self->sign_metadata;
 
     my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
+
+    $use = 'signing' if $self->signing_only && $use eq 'both';
 
     return $x->KeyDescriptor(
         $md,
