@@ -219,6 +219,20 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     }
 
 }
+
+{
+    my $sp = net_saml2_sp(signing_only => 1);
+    my $xpath = get_xpath(
+        $sp->metadata,
+        md => URN_METADATA,
+        ds => URN_SIGNATURE,
+    );
+
+
+    my $kd = get_single_node_ok($xpath, "//md:KeyDescriptor");
+    is($kd->getAttribute('use'), 'signing', "Key descriptor says sign");
+}
+
 {
     my $sp = net_saml2_sp( ( encryption_key => 't/sign-nopw-cert.pem' ) );
 
