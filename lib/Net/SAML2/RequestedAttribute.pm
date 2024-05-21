@@ -59,7 +59,7 @@ sub _build_attributes {
   my $self = shift;
 
   my %attrs = (
-    $self->required ? (isRequired => 1) : (),
+    $self->required ? (isRequired => 'true') : (),
     Name => $self->name,
     $self->_has_friendly ? (FriendlyName => $self->friendly_name) : (),
   );

@@ -64,7 +64,7 @@ sub to_xml {
         $self->namespace,
         {
             index     => $self->index,
-            isDefault => $self->default,
+            isDefault => $self->default ? 'true' : 'false',
         },
         $xml->ServiceName($self->namespace, undef, $self->service_name),
         $self->_has_service_description ? $xml->ServiceDescription($self->namespace, undef, $self->service_description) : (),
