@@ -480,6 +480,8 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
         'Net::SAML2 testsuite',
         ".. with the correct value"
     );
+    is($child[0]->getAttribute("xml:lang"),
+        "en", ".. and xml:lang is set");
 
     is($child[1]->nodeName, "md:RequestedAttribute",
         "Requested attribute found");

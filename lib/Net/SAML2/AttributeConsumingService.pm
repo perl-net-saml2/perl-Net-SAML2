@@ -66,8 +66,8 @@ sub to_xml {
             index     => $self->index,
             isDefault => $self->default,
         },
-        $xml->ServiceName($self->namespace, undef, $self->service_name),
-        $self->_has_service_description ? $xml->ServiceDescription($self->namespace, undef, $self->service_description) : (),
+        $xml->ServiceName($self->namespace, { 'xml:lang' => 'en' }, $self->service_name),
+        $self->_has_service_description ? $xml->ServiceDescription($self->namespace, { 'xml:lang' => 'en' }, $self->service_description) : (),
         map { $_->to_xml } @{ $self->attributes },
     );
 }
