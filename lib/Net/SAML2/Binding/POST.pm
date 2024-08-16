@@ -41,13 +41,27 @@ Arguments:
 
 path to the CA certificate for verification
 
+=item B<cert>
+
+path to a certificate that is added to the signed XML.  It needs to be the
+certificate that includes the public key related to the B<key>
+
+=item B<cert_text>
+
+text form of the certificate in FORMAT_ASN1 or FORMAT_PEM that is used to
+verify the signed XML.
+
+=item B<key>
+
+path to a key used to sign the XML.
+
 =back
 
 =cut
 
 has 'cacert' => (isa => 'Maybe[Str]', is => 'ro');
-
 has 'cert' => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_cert');
+has 'cert_text' => (isa => 'Str', is => 'ro');
 has 'key'  => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_key');
 
 =head2 handle_response( $response )
@@ -68,6 +82,9 @@ sub handle_response {
     $self->verify_xml(
         $xml,
         no_xml_declaration => 1,
+        $self->cert_text ? (
+            cert_text => $self->cert_text
+        ) : (),
         $self->cacert ? (
             cacert => $self->cacert
         ) : (),
