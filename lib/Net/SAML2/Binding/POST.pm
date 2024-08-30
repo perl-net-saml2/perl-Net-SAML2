@@ -55,21 +55,15 @@ verify the signed XML.
 
 path to a key used to sign the XML.
 
-=back
-
 =item B<cert>
 
 path to a certificate that is added to the signed XML.  It needs to be the
 certificate that includes the public key related to the B<key>
 
-=back
-
 =item B<cert_text>
 
 text form of the certificate in FORMAT_ASN1 or FORMAT_PEM that is used to
 verify the signed XML.
-
-=back
 
 =item B<key>
 
