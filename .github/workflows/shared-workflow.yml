@@ -22,7 +22,9 @@ jobs:
       - name: Install Net::SAML2 Depends
         run: |
           apt-get install libxml2 make gcc wget;
-          cpanm Module::Pluggable
+          # Module::Pluggable is currently failing t/29unreadable.t
+          # https://rt.cpan.org/Public/Bug/Display.html?id=156367
+          cpanm --notest Module::Pluggable
           cpanm App::cpm;
           # Sub::Name has test that fail every so many times on t/lexical.t
           # we ignore these test failures for now...
