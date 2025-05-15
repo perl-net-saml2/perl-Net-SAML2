@@ -702,7 +702,7 @@ sub metadata {
     my $self = shift;
 
     my $metadata = $self->generate_metadata();
-    return $metadata unless $self->sign_metadata;
+    return $metadata->stringify unless $self->sign_metadata;
 
     use Net::SAML2::XML::Sig;
     my $signer = Net::SAML2::XML::Sig->new(
