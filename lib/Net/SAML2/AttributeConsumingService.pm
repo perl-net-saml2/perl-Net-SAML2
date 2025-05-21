@@ -2,6 +2,8 @@ package Net::SAML2::AttributeConsumingService;
 use Moose;
 use XML::Generator;
 use URN::OASIS::SAML2 qw(URN_METADATA NS_METADATA);
+with 'Net::SAML2::Role::XMLLang';
+
 # VERSION
 
 # ABSTRACT: An attribute consuming service object
@@ -66,8 +68,8 @@ sub to_xml {
             index     => $self->index,
             isDefault => $self->default ? 'true' : 'false',
         },
-        $xml->ServiceName($self->namespace, { 'xml:lang' => 'en' }, $self->service_name),
-        $self->_has_service_description ? $xml->ServiceDescription($self->namespace, { 'xml:lang' => 'en' }, $self->service_description) : (),
+        $xml->ServiceName($self->namespace, $self->lang, $self->service_name),
+        $self->_has_service_description ? $xml->ServiceDescription($self->namespace, $self->lang, $self->service_description) : (),
         map { $_->to_xml } @{ $self->attributes },
     );
 }
