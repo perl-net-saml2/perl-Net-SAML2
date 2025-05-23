@@ -100,11 +100,11 @@ __END__
 
 Support for the Web Browser SSO profile of SAML2.
 
-Net::SAML2 correctly perform the SSO process against numerous SAML
-Identity Providers (IdPs).  It has been tested against:
+Version 0.54 and newer support EncryptedAssertions. No changes required to
+existing SP applications if EncryptedAssertions are not in use.
 
-Version 0.54 and newer support EncryptedAssertions.  No changes required to existing
-SP applications if EncryptedAssertions are not in use.
+Net::SAML2 correctly perform the SSO process against numerous SAML
+Identity Providers (IdPs). It has been tested against:
 
 =over
 
