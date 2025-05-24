@@ -530,6 +530,18 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
     is($child[1]->getAttribute('Name'),       'urn:foo:bar', ".. and name");
     is($child[1]->getAttribute('isRequired'), 'true', ".. and requiredness");
 }
+{
+    my $sp = net_saml2_sp(lang => 'nl');
+    my $xpath = get_xpath(
+        $sp->metadata,
+        md => URN_METADATA,
+        ds => URN_SIGNATURE,
+    );
+
+    my $org  = get_single_node_ok($xpath,  '//md:OrganizationName');
+    is($org->getAttribute("xml:lang"),
+        "nl", ".. and xml:lang is set");
+}
 
 {
     my $sp = net_saml2_sp();

@@ -21,6 +21,8 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
 use XML::Generator;
 use Net::SAML2::Types qw(XsdID);
 
+with 'Net::SAML2::Role::XMLLang';
+
 # ABSTRACT: SAML Service Provider object
 
 =head1 SYNOPSIS
@@ -82,6 +84,10 @@ encryption and signing.
 =item B<cacert>
 
 Path to the CA certificate for verification
+
+=item B<lang>
+
+Set the language for the C<md:localizedNameType>, defaults to C<en>.
 
 =item B<org_name>
 
@@ -628,15 +634,15 @@ sub generate_metadata {
         $x->Organization(
             $md,
             $x->OrganizationName(
-                $md, { 'xml:lang' => 'en' }, $self->org_name,
+                $md, $self->lang, $self->org_name,
             ),
             $x->OrganizationDisplayName(
-                $md, { 'xml:lang' => 'en' },
+                $md, $self->lang,
                 $self->org_display_name,
             ),
             $x->OrganizationURL(
                 $md,
-                { 'xml:lang' => 'en' },
+                $self->lang,
                 defined($self->org_url) ? $self->org_url : $self->url
             )
         ),
