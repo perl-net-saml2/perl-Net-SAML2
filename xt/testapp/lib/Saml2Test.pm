@@ -111,6 +111,7 @@ sub get_login_post {
     my $idp_name = shift;
 
     load_config($idp_name);
+
     my $idp = _idp();
     if ( ! defined $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST') ) {
         return "NotSupported";
@@ -177,6 +178,7 @@ get '/login' => sub {
 
     load_config(params->{idp});
 
+    print STDERR "Testing login via redirect: " , config->{idp_name} ,"\n";
     my $idp = _idp();
     my $sp = _sp();
 
@@ -290,7 +292,7 @@ get '/logout-soap' => sub {
             xml => $res
         );
         if ($logout->success) {
-            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+            print STDERR "        Logout Success Status - $logout->{issuer}\n";
         }
     }
     else {
@@ -346,6 +348,7 @@ post '/consumer-post' => sub {
 
         my $user_attributes = get_user_attributes($assertion);
 
+        print STDERR "    Successful login assertion received via POST\n";
         template 'user', {
                             user_attributes => $user_attributes,
                             (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
@@ -466,6 +469,7 @@ any '/consumer-artifact' => sub {
 
         my $user_attributes = get_user_attributes($assertion);
 
+        print STDERR "    Successful login assertion received via SOAP\n";
         template 'user', {
                             user_attributes => $user_attributes,
                             (defined $name_qualifier ? (name_qualifier => $name_qualifier) : ()),
@@ -496,7 +500,7 @@ get '/sls-redirect-response' => sub {
             xml => $response
         );
         if ($logout->success) {
-            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+            print STDERR "        Logout Success Status - $logout->{issuer} via Redirect\n";
         }
     }
     else {
@@ -522,7 +526,7 @@ post '/sls-post-response' => sub {
             xml => decode_base64(params->{SAMLResponse})
         );
         if ($logout->success) {
-            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+            print STDERR "        Logout Success Status - $logout->{issuer} via POST\n";
         }
     }
     else {
@@ -585,7 +589,7 @@ any '/sls-consumer-artifact' => sub {
         );
 
         if ($logout->success) {
-            print STDERR "\nLogout Success Status - $logout->{issuer}\n";
+            print STDERR "        Logout Success Status - $logout->{issuer} - via SOAP\n";
         }
     }
     else {
