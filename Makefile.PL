@@ -17,11 +17,10 @@ my %WriteMakefileArgs = (
   "NAME" => "Net::SAML2",
   "PREREQ_PM" => {
     "Carp" => 0,
-    "Crypt::OpenSSL::Bignum" => 0,
-    "Crypt::OpenSSL::RSA" => 0,
     "Crypt::OpenSSL::Random" => 0,
     "Crypt::OpenSSL::Verify" => 0,
     "Crypt::OpenSSL::X509" => 0,
+    "Crypt::PK::RSA" => 0,
     "DateTime" => 0,
     "DateTime::Format::XSD" => 0,
     "DateTime::HiRes" => 0,
@@ -53,7 +52,7 @@ my %WriteMakefileArgs = (
     "XML::Generator" => "1.13",
     "XML::LibXML" => 0,
     "XML::LibXML::XPathContext" => 0,
-    "XML::Sig" => "0.66",
+    "XML::Sig" => "0.67",
     "namespace::autoclean" => 0
   },
   "TEST_REQUIRES" => {
@@ -71,7 +70,7 @@ my %WriteMakefileArgs = (
     "Test::Pod" => "1.14",
     "Test::Pod::Coverage" => "1.04"
   },
-  "VERSION" => "0.82",
+  "VERSION" => "0.83",
   "test" => {
     "TESTS" => "t/*.t t/author/*.t"
   }
@@ -80,11 +79,10 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "Carp" => 0,
-  "Crypt::OpenSSL::Bignum" => 0,
-  "Crypt::OpenSSL::RSA" => 0,
   "Crypt::OpenSSL::Random" => 0,
   "Crypt::OpenSSL::Verify" => 0,
   "Crypt::OpenSSL::X509" => 0,
+  "Crypt::PK::RSA" => 0,
   "DateTime" => 0,
   "DateTime::Format::XSD" => 0,
   "DateTime::HiRes" => 0,
@@ -129,7 +127,7 @@ my %FallbackPrereqs = (
   "XML::Generator" => "1.13",
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,
-  "XML::Sig" => "0.66",
+  "XML::Sig" => "0.67",
   "namespace::autoclean" => 0
 );
 
