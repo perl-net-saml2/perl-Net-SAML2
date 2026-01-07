@@ -77,7 +77,7 @@ lives_ok(
 );
 
 
-is($xml, $response_xml, "We have the response XML as XML");
+is($response_xml, $xml, "We have the response XML as XML");
 
 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(xml => $response_xml);
 isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
