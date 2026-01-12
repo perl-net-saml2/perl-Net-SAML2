@@ -99,10 +99,8 @@ MAJOR CAVEATS
     SP-side protocol only
     Requires XML metadata from the IdP
 
-AUTHORS
-    *   Chris Andrews <chrisa@cpan.org>
-
-    *   Timothy Legge <timlegge@gmail.com>
+AUTHOR
+    Timothy Legge <timlegge@gmail.com>
 
 COPYRIGHT AND LICENSE
     This software is copyright (c) 2025 by Venda Ltd, see the CONTRIBUTORS
