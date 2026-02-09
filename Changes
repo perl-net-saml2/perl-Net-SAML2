@@ -2,6 +2,26 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.85 -- Mon Feb 09 19:43:26 AST 2026
+
+    [Significant Changes]
+    - Apparently 0.84 and 0.83 had not incremented the version (thanks Anand Dyavanapalli)
+    - Otherwise the same as 0.84
+
+    [Compatibility Deprecation Warning]
+    As of Release 0.79 the following have been changed and the old version may be
+    removed in an upcoming release.
+
+    - Net::SAML2::Protocol::Artifact
+        - response_to changed to in_response_to
+    - Net::SAML2::Protocol::LogoutResponse
+        - response_to changed to in_response_to
+
+    [Detailed Change Log]
+    - e75ba78 Increment repo version
+    - 147ffae fix: align Net::SAML2 runtime version with 0.84 release
+    - 1a7673a v0.84
+
 0.84 -- Sun Jan 11 21:53:44 AST 2026
 
     [Significant Changes]
