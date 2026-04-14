@@ -287,7 +287,11 @@ sub create_soap_envelope {
         exclusive => 1,
         no_xml_declaration => 1,
     });
-    my $signed_message = $sig->sign($message);
+    my $signed_message = try {
+        $sig->sign($message);
+    } catch {
+        croak ("Net::SAML2::Binding::SOAP::create_soap_envelope() sign failed");
+    };
 
     # OpenSSO ArtifactResolve hack
     #

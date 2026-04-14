@@ -4,6 +4,8 @@ package Net::SAML2::XML::Util;
 # VERSION
 
 use XML::LibXML;
+use Carp qw(croak);
+use Try::Tiny;
 
 # use 'our' on v5.6.0
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS $DEBUG);
@@ -39,12 +41,16 @@ sub no_comments {
     my $xml = shift;
 
     # Remove comments from XML to mitigate XML comment auth bypass
-    my $dom = XML::LibXML->load_xml(
-        string          => $xml,
-        no_network      => 1,
-        load_ext_dtd    => 0,
-        expand_entities => 0
-    );
+    my $dom = try {
+        XML::LibXML->load_xml(
+            string          => $xml,
+            no_network      => 1,
+            load_ext_dtd    => 0,
+            expand_entities => 0
+        );
+    } catch {
+        croak ("Net::SAML2::XML::Util::no_comments() load_xml failed");
+    };
 
     for my $comment_node ($dom->findnodes('//comment()')) {
         $comment_node->parentNode->removeChild($comment_node);

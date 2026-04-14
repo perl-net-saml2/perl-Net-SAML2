@@ -20,6 +20,7 @@ use Net::SAML2::Util ();
 use URN::OASIS::SAML2 qw(:bindings :urn);
 use XML::Generator;
 use Net::SAML2::Types qw(XsdID);
+use Try::Tiny;
 
 with 'Net::SAML2::Role::XMLLang';
 
@@ -731,11 +732,19 @@ sub metadata {
             id_attr     => '/md:EntityDescriptor[@ID]',
         }
     );
-    my $md = $signer->sign($metadata);
+    my $md = try {
+        $signer->sign($metadata);
+    } catch {
+        croak ("Net::SAML2::SP::metadata() sign failed");
+    };
 
-    my $xp = XML::LibXML::XPathContext->new(
-        XML::LibXML->load_xml(string =>$md)
-    );
+    my $xp = try {
+        XML::LibXML::XPathContext->new(
+            XML::LibXML->load_xml(string =>$md)
+        );
+    } catch {
+        croak ("Net::SAML2::SP::metadata() load_xml failed");
+    };
     $xp->registerNs('md', URN_METADATA);
     $xp->registerNs('dsig', URN_SIGNATURE);
 

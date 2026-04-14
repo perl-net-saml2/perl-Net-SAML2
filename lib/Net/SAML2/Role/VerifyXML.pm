@@ -74,7 +74,12 @@ sub verify_xml {
         %args,
     });
 
-    croak("XML signature check failed") unless $x->verify($xml);
+    my $verify = try {
+        $x->verify($xml)
+    } catch {
+        croak("Net::SAML2::Role::VerifyXML::verify_xml() failed");
+    };
+    croak("XML signature check failed") unless $verify;
 
     return if !$anchors && !$cacert;
 
