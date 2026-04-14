@@ -5,6 +5,7 @@ package Net::SAML2::Binding::POST;
 
 use Moose;
 use Carp qw(croak);
+use Try::Tiny;
 
 # ABSTRACT: HTTP POST binding for SAML
 
@@ -92,18 +93,21 @@ sub handle_response {
 
     # unpack and check the signature
     my $xml = decode_base64($response);
+    try {
+        $self->verify_xml(
+            $xml,
+            no_xml_declaration => 1,
+            $self->cert_text ? (
+                cert_text => $self->cert_text
+            ) : (),
+            $self->cacert ? (
+                cacert => $self->cacert
+            ) : (),
+        );
+    } catch {
+        croak ("Net::SAML2::Binding::POST::handle_response() verify_xml failed");
+    };
 
-    $self->verify_xml(
-        $xml,
-        no_xml_declaration => 1,
-        $self->cert_text ? (
-            cert_text => $self->cert_text
-        ) : (),
-        $self->cacert ? (
-            cacert => $self->cacert
-        ) : (),
-
-    );
     return $xml;
 }
 
@@ -126,7 +130,11 @@ sub sign_xml {
                     }
                 );
 
-    my $signed_message = $signer->sign($request);
+    my $signed_message = try {
+        $signer->sign($request);
+    } catch {
+        croak ("Net::SAML2::Binding::POST::sign_xml() sign failed");
+    };
 
     # saml-schema-protocol-2.0.xsd Schema hack
     #

@@ -15,6 +15,7 @@ use XML::LibXML::XPathContext;
 use List::Util qw(first);
 use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
 use Carp qw(croak);
+use Try::Tiny;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -120,7 +121,11 @@ sub _verify_encrypted_assertion {
     return $xml unless $xpath->exists('dsig:Signature', $assert);
     my $xml_opts->{ no_xml_declaration } = 1;
     my $x   = Net::SAML2::XML::Sig->new($xml_opts);
-    my $ret = $x->verify($assert->toString());
+    my $ret = try {
+        $x->verify($assert->toString());
+    } catch {
+        croak ("Net::SAML2::Protocol::Assertion::_verify_encrypted_assertion() verify failed");
+    };
     die "Decrypted Assertion signature check failed" unless $ret;
 
     return $xml unless $cacert;
@@ -503,7 +508,12 @@ sub _decrypt {
             key                => $options{key_file},
         }
     );
-    return XML::LibXML->load_xml(string => $enc->decrypt($xml, %options));
+
+    return try {
+        XML::LibXML->load_xml(string => $enc->decrypt($xml, %options));
+    } catch {
+        croak ("Net::SAML2::Protocol::Assertion::_decrypt() load_xml failed");
+    };
 }
 
 1;
