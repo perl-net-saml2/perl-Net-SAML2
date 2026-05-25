@@ -465,6 +465,7 @@ any '/consumer-artifact' => sub {
 
         my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
             key_file    => config->{key},
+            cacert      => config->{cacert},
             xml         => $artifact->get_response(),
             issuer      => $idp->{entity_id},
             destination => $expected_destination->{Location},

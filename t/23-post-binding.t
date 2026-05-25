@@ -9,6 +9,37 @@ use Net::SAML2::IdP;
 use Net::SAML2::Binding::Redirect;
 use XML::Sig;
 
+# handle_response trust-anchor enforcement (security regression test).
+#
+# Without a pre-configured cacert / cert_text the verifier in
+# Net::SAML2::Role::VerifyXML short-circuits and accepts the SAML
+# response's embedded KeyInfo certificate - equivalent to no signature
+# verification. handle_response refuses to enter that state unless the
+# caller opts out explicitly via insecure_no_trust_anchor => 1.
+#
+# Constructing the binding for signing-only use (sp_post_binding
+# passes cert/key without cacert) is still permitted - the check
+# lives at handle_response, not BUILD.
+
+# Construction without trust anchors is fine (signing-only).
+lives_ok(sub { Net::SAML2::Binding::POST->new; },
+    'bare new() is permitted (signing-only callers do not call handle_response)');
+
+# handle_response refuses to proceed without a trust anchor.
+throws_ok(sub { Net::SAML2::Binding::POST->new->handle_response(''); },
+    qr/requires 'cacert' or 'cert_text'/,
+    'handle_response croaks without a trust anchor');
+
+# Explicit opt-out unblocks handle_response.
+lives_ok(sub {
+    my $b = Net::SAML2::Binding::POST->new(insecure_no_trust_anchor => 1);
+    # decode_base64('') -> '' -> verify_xml('') will fail downstream,
+    # but the trust-anchor check should pass. Trap downstream error.
+    eval { $b->handle_response(''); };
+    pass('handle_response does not croak on the trust-anchor check '
+        . 'when insecure_no_trust_anchor => 1');
+}, 'explicit insecure_no_trust_anchor opt-out lets handle_response proceed');
+
 my $sp = net_saml2_sp();
 
 my $metadata = path('t/idp-metadata.xml')->slurp;

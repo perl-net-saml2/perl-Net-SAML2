@@ -124,6 +124,7 @@ sub _verify_encrypted_assertion {
     my $cacert   = shift;
     my $key_file = shift;
     my $key_name = shift;
+    my $insecure_no_trust_anchor = shift;
 
     my $xpath = XML::LibXML::XPathContext->new($xml);
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
@@ -152,6 +153,15 @@ sub _verify_encrypted_assertion {
     my $ret = $x->verify($assert->toString());
     die "Decrypted Assertion signature check failed" unless $ret;
 
+    unless ($cacert || $insecure_no_trust_anchor) {
+        croak(
+            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
+          . "to verify encrypted assertion signatures. Without it the "
+          . "verifier accepts any KeyInfo-embedded certificate. To "
+          . "explicitly disable this check (test/dev only), pass "
+          . "insecure_no_trust_anchor => 1 to new_from_xml()."
+        );
+    }
     return $xml unless $cacert;
     my $cert = $x->signer_cert;
     die "Certificate not provided in SAML Response, cannot validate" unless $cert;
@@ -169,6 +179,18 @@ sub new_from_xml {
     my $cacert   = delete $args{cacert};
     my $issuer   = delete $args{issuer};
     my $destination   = delete $args{destination};
+    my $insecure_no_trust_anchor = delete $args{insecure_no_trust_anchor};
+
+    # Fail early
+    unless ($cacert || $insecure_no_trust_anchor) {
+        croak(
+            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
+          . "to verify encrypted assertion signatures. Without it the "
+          . "verifier accepts any KeyInfo-embedded certificate. To "
+          . "explicitly disable this check (test/dev only), pass "
+          . "insecure_no_trust_anchor => 1 to new_from_xml()."
+        );
+    }
 
     my $xpath = XML::LibXML::XPathContext->new();
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
@@ -192,6 +214,7 @@ sub new_from_xml {
         $cacert,
         $key_file,
         $args{key_name},
+        $insecure_no_trust_anchor,
     );
 
     my $dec = $class->_decrypt(
