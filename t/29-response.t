@@ -10,8 +10,8 @@ sub get_object {
   my $xml = path(shift)->slurp;
   my $destination = shift;
   my $response = Net::SAML2::Object::Response->new_from_xml(xml => $xml,
-                    cacert  => 't/net-saml2-cacert.pem',
-                    require_signed_response => 1,
+                    require_signed_response => 0,
+                    insecure_trust_embedded_cert  => 1,
                     defined $destination ? (destination => $destination) : (),
                 );
   isa_ok($response, 'Net::SAML2::Object::Response');
@@ -37,7 +37,7 @@ sub get_object {
   ok($response->success, "It was successful");
   is($response->assertions->size, 3, "Got the correct amount or assertions");
 
-  my $assertion = $response->to_assertion(cacert  => 't/net-saml2-cacert.pem');
+  my $assertion = $response->to_assertion( insecure_trust_embedded_cert  => 1 );
   isa_ok($assertion, "Net::SAML2::Protocol::Assertion");
 }
 
@@ -53,16 +53,17 @@ sub get_object {
 
 # require_signed_response handling (B2/B3)
 {
-  # The default (argument omitted) is currently 0 - unsigned and
-  # Assertion-only-signed Responses are accepted.
+  # Construct directly (not via get_object, which passes the argument
+  # explicitly) and OMIT require_signed_response so the default is what is
+  # exercised here.  insecure mode keeps the KeyName cacert gate out of it.
   my $response = Net::SAML2::Object::Response->new_from_xml(
-      xml    => path('t/data/eherkenning-assertion.xml')->slurp,
-      cacert => 't/net-saml2-cacert.pem',
+      xml                          => path('t/data/eherkenning-assertion.xml')->slurp,
+      insecure_trust_embedded_cert => 1,
   );
   isa_ok($response, 'Net::SAML2::Object::Response',
-      'default require_signed_response accepts a Response-level-signed response');
+      'omitting require_signed_response constructs a Response');
   is($response->require_signed_response, 0,
-      'require_signed_response attribute defaults to 0');
+      'require_signed_response attribute defaults to 0 when omitted');
 
   # An Assertion-only-signed response (no Response-level Signature) is
   # accepted by default ...

@@ -153,7 +153,7 @@ XML_FILE
 
 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml     => $xml,
-                    cacert  => 't/net-saml2-cacert.pem',
+                    cacert  => 't/data/openssl-verify-cacert.pem',
                 );
 isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
 

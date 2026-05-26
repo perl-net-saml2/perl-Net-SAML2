@@ -73,16 +73,16 @@ XML
 # Without require_signed_assertion: the unsigned encrypted assertion
 # is silently accepted (backward-compatible default behaviour).
 {
-    my $a = eval {
-        Net::SAML2::Protocol::Assertion->new_from_xml(
-            xml                      => $response,
-            key_file                 => $sp_key,
-            cacert                   => $sp_crt,
-            insecure_trust_embedded_cert => 1,
-        );
-    };
-    ok($a, 'unsigned encrypted assertion is accepted without require_signed_assertion (backward compat)')
-        or diag $@;
+    lives_ok ( sub {
+            Net::SAML2::Protocol::Assertion->new_from_xml(
+                xml                      => $response,
+                key_file                 => $sp_key,
+                cacert                   => $sp_crt,
+                insecure_trust_embedded_cert => 1,
+            );
+        },
+        'unsigned encrypted assertion is accepted without require_signed_assertion (backward compat)'
+    )
 }
 
 # With require_signed_assertion => 1: the unsigned encrypted assertion
