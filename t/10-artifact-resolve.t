@@ -17,13 +17,11 @@ my $ar = Net::SAML2::Protocol::ArtifactResolve->new(
 isa_ok($ar, 'Net::SAML2::Protocol::ArtifactResolve');
 
 my $override = Sub::Override->override(
-    'Net::SAML2::Protocol::ArtifactResolve::issue_instant' => sub {
-        return 'myissueinstant';
-    }
+    'Net::SAML2::Protocol::issue_instant' => sub { return 'myissueinstant' }
 );
 
 $override->override(
-    'Net::SAML2::Protocol::ArtifactResolve::id' => sub { return 'myid' }
+    'Net::SAML2::Protocol::id' => sub { return 'myid' }
 );
 
 my $xml = $ar->as_xml;

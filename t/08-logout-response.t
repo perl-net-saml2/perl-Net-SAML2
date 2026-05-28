@@ -15,11 +15,10 @@ my $lor = Net::SAML2::Protocol::LogoutResponse->new(
 isa_ok($lor, 'Net::SAML2::Protocol::LogoutResponse');
 
 my $override = Sub::Override->override(
-    'Net::SAML2::Protocol::LogoutResponse::issue_instant' =>
-        sub { return 'foo' });
+    'Net::SAML2::Protocol::issue_instant' => sub { return 'foo' });
 
 $override->override(
-    'Net::SAML2::Protocol::LogoutResponse::id' => sub { return 'myid' });
+    'Net::SAML2::Protocol::id' => sub { return 'myid' });
 
 my $xpath = get_xpath(
     $lor->as_xml,

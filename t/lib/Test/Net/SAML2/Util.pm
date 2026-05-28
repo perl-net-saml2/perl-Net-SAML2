@@ -96,7 +96,6 @@ sub net_saml2_binding_redirect_request {
         key => '',
         cert => $idp->certs->{signing},
         param => 'SAMLRequest',
-        # The ssl_url destination for redirect
         url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
     );
 
@@ -300,14 +299,3 @@ sub test_node_attributes_ok {
 }
 
 1;
-
-__END__
-
-=head1 DESCRIPTION
-
-=head1 SYNOPSIS
-
-    use Test::Net::SAML2::XML;
-
-    my $xpath = get_xpath($xml);
-    # go from here

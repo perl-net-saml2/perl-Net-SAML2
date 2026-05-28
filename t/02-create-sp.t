@@ -21,9 +21,7 @@ use URN::OASIS::SAML2 qw(:bindings :urn);
         ds => URN_SIGNATURE,
     );
 
-    my $node
-        = get_single_node_ok($xpath,
-        '//md:EntityDescriptor/md:SPSSODescriptor');
+    my $node = get_single_node_ok($xpath, '//md:EntityDescriptor/md:SPSSODescriptor');
     is($node->getAttribute('WantAssertionsSigned'), 'false',
         'Wants assertions to be signed');
     is(

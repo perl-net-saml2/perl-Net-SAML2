@@ -19,9 +19,7 @@ my $lor = Net::SAML2::Protocol::LogoutRequest->new(%args);
 isa_ok($lor, 'Net::SAML2::Protocol::LogoutRequest');
 
 my $override = Sub::Override->override(
-    'Net::SAML2::Protocol::LogoutRequest::issue_instant' =>
-        sub { return 'foo' });
-
+    'Net::SAML2::Protocol::issue_instant' => sub { return 'foo' });
 
 my $xml = $lor->as_xml;
 

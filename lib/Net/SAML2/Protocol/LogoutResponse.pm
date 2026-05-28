@@ -1,106 +1,66 @@
 package Net::SAML2::Protocol::LogoutResponse;
 use Moose;
+
+extends 'Net::SAML2::Protocol';
+
 # VERSION
 
-use MooseX::Types::URI qw/ Uri /;
-use Net::SAML2::XML::Util qw/ no_comments /;
-use Net::SAML2::Util qw/ deprecation_warning /;
-use XML::LibXML::XPathContext;
-
-with 'Net::SAML2::Role::ProtocolMessage';
+use MooseX::Types::URI qw/Uri/;
+use Net::SAML2::Util   qw/xml_without_comments new_xpc/;
+use URN::OASIS::SAML2  qw/URN_ASSERTION URN_PROTOCOL/;
 
 # ABSTRACT: SAML2 LogoutResponse Protocol object
 
 =head1 SYNOPSIS
 
-    my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
-        issuer          => $issuer,
-        destination     => $destination,
-        status          => $status,
-        in_response_to  => $in_response_to,
-    );
+  my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
+    issuer          => $issuer,
+    destination     => $destination,
+    status          => $status,
+    in_response_to  => $in_response_to,
+  );
 
 =head1 DESCRIPTION
 
-This object deals with the LogoutResponse messages from SAML. It implements the
-role L<Net::SAML2::Role::ProtocolMessage>.
+This object deals with the LogoutResponse messages from SAML.
 
 =head1 METHODS
 
-=head2 new( ... )
+=head2 my $response = $class->new(%options)
 
-Constructor. Returns an instance of the LogoutResponse object.
+Returns an instance of the LogoutResponse object.
 
-Arguments:
+Supported ar the C<%options> implemented by the base-class
+in L<Net::SAML2::Protocol> constructor C<new()>.  In this extension,
+C<status> and C<in_response_to> are required.
+
+Additional C<%options>:
 
 =over
 
-=item B<issuer>
+=item B<substatus> => $code
 
-SP's identity URI (required)
-
-=item B<destination>
-
-IdP's identity URI
-
-=item B<status>
-
-Response status (required)
-
-=item B<substatus>
-
-The sub status
-
-=item B<in_response_to>
-
-Request ID we're responding to (required);
+The sub-status code.
 
 =back
 
 =cut
 
-has 'status'          => (isa      => 'Str', is => 'ro', required => 1);
-has 'substatus'      => (isa      => 'Str', is => 'ro', required => 0);
+has '+status' => (required => 1);
 has '+in_response_to' => (required => 1);
+has substatus => (isa => 'Str', is => 'ro');
 
-# Remove response_to/substatus after 6 months from now (april 18th 2024)
-around BUILDARGS => sub {
-    my $orig = shift;
-    my $self = shift;
-    my %args = @_;
-
-    if (my $irt = delete $args{response_to}) {
-        $args{in_response_to} = $irt;
-        deprecation_warning(
-            "Please use in_response_to instead of response_to");
-    }
-
-    return $self->$orig(%args);
-};
-
-=head2 response_to()
-
-Deprecated use B<in_response_to>
-
-=cut
-
-sub response_to {
-    my $self = shift;
-    deprecation_warning("Please use in_response_to instead of response_to");
-    return $self->in_response_to;
-}
-
-=head2 new_from_xml( ... )
+=head2 my $response = $class->new_from_xml(xml => $string, %options)
 
 Create a LogoutResponse object from the given XML.
 
-Arguments:
+The C<%options>:
 
 =over
 
-=item B<xml>
+=item xml => $string (required)
 
-XML data
+XML data to be processed.
 
 =back
 
@@ -108,29 +68,24 @@ XML data
 
 sub new_from_xml {
     my ($class, %args) = @_;
+    my $xpc  = new_xpc xml_without_comments $args{xml};
+    my $resp = $xpc->findnodes('/samlp:LogoutResponse')->shift;
+    my $code = $xpc->findnodes('samlp:Status/samlp:StatusCode', $resp)->shift;
 
-    my $dom = no_comments($args{xml});
-
-    my $xpath = XML::LibXML::XPathContext->new($dom);
-    $xpath->registerNs('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
-    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-
-    my $self = $class->new(
-        id          => $xpath->findvalue('/samlp:LogoutResponse/@ID'),
-        in_response_to => $xpath->findvalue('/samlp:LogoutResponse/@InResponseTo'),
-        destination => $xpath->findvalue('/samlp:LogoutResponse/@Destination'),
-        session     => $xpath->findvalue('/samlp:LogoutResponse/samlp:SessionIndex'),
-        issuer      => $xpath->findvalue('/samlp:LogoutResponse/saml:Issuer'),
-        status      => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/@Value'),
-        substatus  => $xpath->findvalue('/samlp:LogoutResponse/samlp:Status/samlp:StatusCode/samlp:StatusCode/@Value'),
+    return $class->new(
+        id             => $xpc->findvalue('@ID', $resp),
+        in_response_to => $xpc->findvalue('@InResponseTo', $resp),
+        destination    => $xpc->findvalue('@Destination', $resp),
+        session        => $xpc->findvalue('samlp:SessionIndex', $resp),
+        issuer         => $xpc->findvalue('saml:Issuer', $resp),
+        status         => $xpc->findvalue('@Value', $code),
+        substatus      => $xpc->findvalue('samlp:StatusCode/@Value', $code),
     );
-
-    return $self;
 }
 
-=head2 as_xml( )
+=head2 my $string = $response->as_xml()
 
-Returns the LogoutResponse as XML.
+Returns the LogoutResponse as XML string.
 
 =cut
 
@@ -138,36 +93,20 @@ sub as_xml {
     my ($self) = @_;
 
     my $x = XML::Generator->new(':pretty');
-    my $saml  = ['saml' => 'urn:oasis:names:tc:SAML:2.0:assertion'];
-    my $samlp = ['samlp' => 'urn:oasis:names:tc:SAML:2.0:protocol'];
+    my $saml  = [ saml  => URN_ASSERTION ];
+    my $samlp = [ samlp => URN_PROTOCOL  ];
 
-    $x->xml(
-        $x->LogoutResponse(
-            $samlp,
-            { ID => $self->id,
-              Version => '2.0',
-              IssueInstant => $self->issue_instant,
-              Destination => $self->destination,
-              InResponseTo => $self->in_response_to },
-            $x->Issuer(
-                $saml,
-                $self->issuer,
-            ),
-            $x->Status(
-                $samlp,
-                $x->StatusCode(
-                    $samlp,
-                    { Value => $self->status },
-                )
-            )
+    return $x->xml(
+        $x->LogoutResponse($samlp, {
+               ID           => $self->id,
+               Version      => '2.0',
+               IssueInstant => $self->issue_instant,
+               Destination  => $self->destination,
+               InResponseTo => $self->in_response_to },
+            $x->Issuer($saml, $self->issuer),
+            $x->Status($samlp, $x->StatusCode($samlp, { Value => $self->status })),
         )
     );
 }
 
 __PACKAGE__->meta->make_immutable;
-
-__END__
-
-=head1 SEE ALSO
-
-=head2 L<Net::SAML2::Roles::ProtocolMessage>

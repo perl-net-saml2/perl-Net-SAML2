@@ -1,565 +1,510 @@
-use strict;
-use warnings;
 package Net::SAML2::SP;
-# VERSION
-
 use Moose;
 
-use Carp qw(croak);
-use Crypt::OpenSSL::X509;
-use Digest::MD5 ();
-use List::Util qw(first none);
-use MooseX::Types::URI qw/ Uri /;
-use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
-use Net::SAML2::Binding::POST;
-use Net::SAML2::Binding::Redirect;
-use Net::SAML2::Binding::SOAP;
-use Net::SAML2::Protocol::AuthnRequest;
-use Net::SAML2::Protocol::LogoutRequest;
-use Net::SAML2::Util ();
-use URN::OASIS::SAML2 qw(:bindings :urn);
-use XML::Generator;
-use Net::SAML2::Types qw(XsdID);
+# VERSION
 
-with 'Net::SAML2::Role::XMLLang';
+use Carp                 qw/croak/;
+use Digest::MD5          qw/md5_hex/;
+use List::Util           qw/first none/;
+use MooseX::Types::URI   qw/Uri/;
+use MooseX::Types::Common::String qw/NonEmptySimpleStr/;
+use Crypt::OpenSSL::X509 ();
+use XML::Generator       ();
+
+use Net::SAML2::Binding::POST      ();
+use Net::SAML2::Binding::Redirect  ();
+use Net::SAML2::Binding::SOAP      ();
+use Net::SAML2::Protocol::AuthnRequest  ();
+use Net::SAML2::Protocol::LogoutRequest ();
+use Net::SAML2::XML::Sig ();
+use Net::SAML2::Util     qw/deprecation_warning generate_id new_xpc xml_bool/;
+use Net::SAML2::Types    qw/XsdID/;
+use URN::OASIS::SAML2    qw/:bindings :urn/;
 
 # ABSTRACT: SAML Service Provider object
 
 =head1 SYNOPSIS
 
-my $sp = Net::SAML2::SP->new(
+  my $sp = Net::SAML2::SP->new(
     issuer => 'http://localhost:3000',
-    url    => 'http://localhost:3000',
     cert   => 'sign-nopw-cert.pem',
     key    => 'sign-nopw-key.pem',
-);
+    ...
+  );
+
+=head1 DESCRIPTION
+
+The 'Service Provider' manages the the information about the application
+you want to contact.
 
 =head1 METHODS
 
-=cut
+=head2 my $sp = $class->new(%options)
 
+Constructor. Create an Service Provider representing object.
 
-=head2 new( ... )
-
-Constructor. Create an SP object.
-
-Arguments:
+As C<%options>:
 
 =over
 
-=item B<id>
+=item B<error_url> => $uri (required)
 
-The ID attribute used in the EntityDescription tag
+The error URI. Can be relative to the base URI or a regular URI.
 
-=item B<url>
+=item B<issuer> => $uri (required)
 
-Base for all SP service URLs
+[0.78] SP's identity URI.  Before, this attributed was called "id".
 
-=item B<error_url>
+=item B<cert> => $filename
 
-The error URI. Can be relative to the base URI or a regular URI
+Path to the signing certificate.
 
-=item B<issuer>
+=item B<key> => $filename (required)
 
-SP's identity URI.
+Path to the private key for the signing certificate.
 
-=item B<cert>
-
-Path to the signing certificate
-
-=item B<key>
-
-Path to the private key for the signing certificate
-
-=item B<encryption_key>
+=item B<encryption_key> => $filename
 
 Path to the public key that the IdP should use for encryption. This
 is used when generating the metadata.
 
-=item B<signing_only>
+=item B<signing_only> => $bool
 
 Indicate that the key for signing is exclusively used for signing and not
 encryption and signing.
 
-=item B<cacert>
+=item B<cacert> => $filename
 
-Path to the CA certificate for verification
+Path to the CA certificate for verification.
 
-=item B<lang>
+=item B<lang> => $iso_lang_code
 
 Set the language for the C<md:localizedNameType>, defaults to C<en>.
 
-=item B<org_name>
+=item B<org_name> => $string (required)
 
-SP organisation name
+SP organisation name.
 
-=item B<org_display_name>
+=item B<org_display_name> => $string
 
-SP organisation display name
+SP organisation display name. [2.0] Defaults to C<org_name>.
 
-=item B<org_contact>
+=item B<org_contact> => $email (required)
 
-SP contact email address
+SP contact email address.
 
-=item B<org_url>
+=item B<org_url> => $url
 
-SP organization url.  This is optional and url will be used as in
-previous versions if this is not provided.
+SP organization url. The url will be used as in previous versions if
+this is not provided.
 
-=item B<authnreq_signed>
+=item B<authnreq_signed> => $bool
 
 Specifies in the metadata whether the SP signs the AuthnRequest
-Optional (0 or 1) defaults to 1 (TRUE) if not specified.
+Defaults to 1 (TRUE) if not specified.
 
-=item B<want_assertions_signed>
+=item B<want_assertions_signed> => $bool
 
-Specifies in the metadata whether the SP wants the Assertion from
-the IdP to be signed
-Optional (0 or 1) defaults to 1 (TRUE) if not specified.
+Specifies in the metadata whether the SP wants the Assertion from the IdP
+to be signed.  Defaults to 1 (TRUE) if not specified.
 
-=item B<sign_metadata>
+=item B<sign_metadata> => $bool
 
-Sign the metadata, defaults to 1 (TRUE) if not specified.
+Sign the metadata.  Defaults to 1 (TRUE) if not specified.
 
-=item B<single_logout_service>
+=item B<single_logout_service> => ARRAY-of-HASHes
 
 The following option replaces the previous C<slo_url_post>, C<slo_url_soap> and
 C<slo_url_redirect> constructor parameters. The former options are mapped to
 this new structure.
 
-This expects an array of hash refs where you define one or more Single Logout
-Services
+This expects an ARRAY of HASHes where you define one or more Single Logout
+Services. As example:
 
   [
     {
-        Binding => BINDING_HTTP_POST,
-        Location => https://foo.example.com/your-post-endpoint,
+       Binding  => BINDING_HTTP_POST,    # short names not yet supported
+       Location => 'https://foo.example.com/your-post-endpoint',
     },
     {
-        Binding => BINDING_HTTP_ARTIFACT,
-        Location => https://foo.example.com/your-artifact-endpoint,
-    }
+       Binding  => BINDING_HTTP_ARTIFACT,
+       Location => 'https://foo.example.com/your-artifact-endpoint',
+    },
   ]
 
-=item B<assertion_consumer_service>
+=item B<assertion_consumer_service> => ARRAY-of-HASHes
 
 The following option replaces the previous C<acs_url_post> and
 C<acs_url_artifact> constructor parameters. The former options are mapped to
 this new structure.
 
-This expects an array of hash refs where you define one or more Assertion
+This expects an ARRAY-of-HASHes, where you define one or more Assertion
 Consumer Services.
 
   [
-    # Order decides the index if not supplied, else we assume you have an index
     {
-        Binding => BINDING_HTTP_POST,
-        Location => https://foo.example.com/your-post-endpoint,
-        isDefault => 'false',
-        # optionally
-        index => 1,
+       Binding   => BINDING_HTTP_POST,
+       Location  => 'https://foo.example.com/your-post-endpoint',
+       isDefault => 'false',
+       index     => 1,  # optional: otherwise assigned by order
     },
     {
-        Binding => BINDING_HTTP_ARTIFACT,
-        Location => https://foo.example.com/your-artifact-endpoint,
-        isDefault => 'true',
-        index => 2,
-    }
+       Binding   => BINDING_HTTP_ARTIFACT,
+       Location  => 'https://foo.example.com/your-artifact-endpoint',
+       isDefault => 'true',
+       index     => 2,
+    },
   ]
+
+=item B<id> => $url
+
+[0.78] Deprecated: replaced by C<issuer>.
 
 =back
 
 =cut
 
-has 'url'    => (isa => Uri, is => 'ro', required => 1, coerce => 1);
+#XXX Do not understand the description of org_url
 
-has '_id' => (
-    isa      => XsdID,
-    is       => 'ro',
-    builder  => '_build_id',
-    init_arg => 'id'
-);
+has _id    => (isa => XsdID, is => 'ro', init_arg => 'id',
+    default => sub { generate_id() });
 
-has 'issuer' => (isa => 'Str', is => 'ro', required => 1);
+has issuer => (isa => 'Str', is => 'ro', required => 1);
+has cert   => (isa => 'Str', is => 'ro', required => 1);
+has key    => (isa => 'Str', is => 'ro', required => 1);
+has cacert => (isa => 'Str', is => 'rw');
+has lang   => (isa => 'Str', is => 'ro', default => 'en');
 
-has 'cert'   => (isa => 'Str', is => 'ro', required => 1, predicate => 'has_cert');
-has 'key'    => (isa => 'Str', is => 'ro', required => 1);
-has 'cacert' => (isa => 'Str', is => 'rw', required => 0, predicate => 'has_cacert');
+has signing_only     => (isa => 'Bool',is => 'ro');
+has encryption_key   => (isa => 'Str', is => 'ro');
+has error_url        => (isa =>  Uri,  is => 'ro', required => 1, coerce => 1);
+has org_name         => (isa => 'Str', is => 'ro', required => 1);
+has org_display_name => (isa => 'Str', is => 'ro', required => 1);
+has org_contact      => (isa => 'Str', is => 'ro', required => 1);
+has org_url          => (isa => 'Str', is => 'ro');
 
-has 'signing_only' => (isa => 'Bool', is => 'ro', required => 0);
+has attribute_consuming_service =>
+   (isa => 'Net::SAML2::AttributeConsumingService', is => 'ro');
+has authnreq_signed  => (isa => 'Bool', is => 'ro', default => 1);
+has sign_metadata    => (isa => 'Bool', is => 'ro', default => 1);
 
-has 'encryption_key'   => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_encryption_key');
-has 'error_url'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'org_name'         => (isa => 'Str', is => 'ro', required => 1);
-has 'org_display_name' => (isa => 'Str', is => 'ro', required => 1);
-has 'org_contact'      => (isa => 'Str', is => 'ro', required => 1);
-has 'org_url'          => (isa => 'Str', is => 'ro', required => 0);
+has want_assertions_signed     => (isa => 'Bool',     is => 'ro', default => 1);
+has assertion_consumer_service => (isa => 'ArrayRef', is => 'ro', required => 1);
+has single_logout_service      => (isa => 'ArrayRef', is => 'ro', required => 1);
 
 # These are no longer in use, but are not removed by the off change that
 # someone that extended us or added a role to us with these params.
-has 'slo_url_soap'     => (isa => 'Str', is => 'ro', required => 0);
-has 'slo_url_post'     => (isa => 'Str', is => 'ro', required => 0);
-has 'slo_url_redirect' => (isa => 'Str', is => 'ro', required => 0);
-has 'acs_url_post'     => (isa => 'Str', is => 'ro', required => 0);
-has 'acs_url_artifact' => (isa => 'Str', is => 'ro', required => 0);
-
-has 'attribute_consuming_service' =>
-  (isa => 'Net::SAML2::AttributeConsumingService', is => 'ro', predicate => 'has_attribute_consuming_service');
-
-has '_cert_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_cert_text', lazy => 1);
-
-has '_encryption_key_text' => (isa => 'Str', is => 'ro', init_arg => undef, builder => '_build_encryption_key_text', lazy => 1);
-has 'authnreq_signed'         => (isa => 'Bool', is => 'ro', required => 0, default => 1);
-has 'want_assertions_signed'  => (isa => 'Bool', is => 'ro', required => 0, default => 1);
-
-has 'sign_metadata' => (isa => 'Bool', is => 'ro', required => 0, default => 1);
-
-has assertion_consumer_service => (is => 'ro', isa => 'ArrayRef', required => 1);
-has single_logout_service => (is => 'ro', isa => 'ArrayRef', required => 1);
+has url              => (isa => Uri,   is => 'ro', required => 1, coerce => 1);
+has slo_url_soap     => (isa => 'Str', is => 'ro');
+has slo_url_post     => (isa => 'Str', is => 'ro');
+has slo_url_redirect => (isa => 'Str', is => 'ro');
+has acs_url_post     => (isa => 'Str', is => 'ro');
+has acs_url_artifact => (isa => 'Str', is => 'ro');
 
 around BUILDARGS => sub {
-    my $orig = shift;
-    my $self = shift;
+    my ($orig, $self, %args) = @_;
 
-    my %args = @_;
-
-    if (!exists $args{issuer} && exists $args{id}) {
-      Net::SAML2::Util::deprecation_warning
-        "id has been renamed to issuer and should be used instead";
-      $args{issuer} = delete $args{id};
+    if(!exists $args{issuer} && exists $args{id}) {
+        #XXX does not match the documentation of 'id'
+        deprecation_warning "id has been renamed to issuer and should be used instead";
+        $args{issuer} = delete $args{id};
     }
 
-    if (!$args{single_logout_service}) {
+    # [0.60] Old code will not use 'single_logout_service'; translate
+    # the old way of configuring this into the new way.
+
+    my $base_url = $args{url};
+
+    if(!$args{single_logout_service}) {
         #warn "Deprecation warning, please upgrade your code to use ..";
         my @slo;
-        if (my $slo = $args{slo_url_soap}) {
-            push(
-                @slo,
-                {
-                    Binding  => BINDING_SOAP,
-                    Location => $args{url} . $slo,
-                }
-            );
+        if(my $slo = $args{slo_url_soap}) {
+            push @slo, +{
+                Binding  => BINDING_SOAP,
+                Location => $base_url . $slo,
+            };
         }
-        if (my $slo = $args{slo_url_redirect}) {
-            push(
-                @slo,
-                {
-                    Binding  => BINDING_HTTP_REDIRECT,
-                    Location => $args{url} . $slo,
-                }
-            );
+        if(my $slo = $args{slo_url_redirect}) {
+            push @slo, +{
+                Binding  => BINDING_HTTP_REDIRECT,
+                Location => $base_url . $slo,
+            };
         }
-        if (my $slo = $args{slo_url_post}) {
-            push(
-                @slo,
-                {
-                    Binding  => BINDING_HTTP_POST,
-                    Location => $args{url} . $slo,
-                }
-            );
+        if(my $slo = $args{slo_url_post}) {
+            push @slo, +{
+                Binding  => BINDING_HTTP_POST,
+                Location => $base_url . $slo,
+            };
         }
         $args{single_logout_service} = \@slo;
     }
 
-    if (!$args{assertion_consumer_service}) {
-        #warn "Deprecation warning, please upgrade your code to use ..";
+    # [0.60] Old code will not use 'assertion_consumer_service'; translate
+    # the old way of configuring this into the new way.
+
+    my $acs = $args{assertion_consumer_service};
+    if(!$acs) {
         my @acs;
-        if (my $acs = delete $args{acs_url_post}) {
-            push(
-                @acs,
-                {
-                    Binding  => BINDING_HTTP_POST,
-                    Location => $args{url} . $acs,
-                    isDefault => 'true',
-                }
-            );
-        }
-        if (my $acs = $args{acs_url_artifact}) {
-            push(
-                @acs,
-                {
-                    Binding  => BINDING_HTTP_ARTIFACT,
-                    Location => $args{url} . $acs,
-                    isDefault => 'false',
-                }
-            );
+        if(my $post = delete $args{acs_url_post}) {
+            push @acs, +{
+                Binding   => BINDING_HTTP_POST,
+                Location  => $base_url . $post,
+                isDefault => 'true',
+            };
         }
 
-        $args{assertion_consumer_service} = \@acs;
-    }
-    if (!@{$args{assertion_consumer_service}}) {
-      croak("You don't have any Assertion Consumer Services configured!");
-    }
-
-    my $acs_index = 1;
-    if (none { $_->{index} } @{$args{assertion_consumer_service}}) {
-        foreach (@{$args{assertion_consumer_service}}) {
-            $_->{index} = $acs_index;
-            ++$acs_index;
+        if(my $arti = $args{acs_url_artifact}) {
+            push @acs, +{
+                Binding   => BINDING_HTTP_ARTIFACT,
+                Location  => $base_url . $arti,
+                isDefault => 'false',
+            };
         }
+        $acs = $args{assertion_consumer_service} = \@acs;
     }
 
-    return $self->$orig(%args);
+    # Auto-assign indexes, if none has one.
+
+    @$acs
+        or croak "You don't have any Assertion Consumer Services configured!";
+
+    if(none { $_->{index} } @$acs) {
+        my $acs_index;
+        $_->{index} = ++$acs_index for @$acs;
+    }
+
+    # 'org_display_name' is required, but often not different from the name.
+    $args{org_display_name} //= $args{org_name};
+
+    $self->$orig(%args);
 };
-
-sub _build_id {
-    my $self = shift;
-    return Net::SAML2::Util::generate_id();
-}
 
 sub id {
     my $self = shift;
-    Net::SAML2::Util::deprecation_warning
-      "id() has been renamed to issuer()";
+    deprecation_warning "id() has been renamed to issuer()";
     return $self->issuer;
 }
 
+has _encryption_key_text => (isa => 'Str', is => 'ro', init_arg => undef, lazy => 1,
+    builder => '_build_encryption_key_text');
 
 sub _build_encryption_key_text {
     my ($self) = @_;
-
-    return '' unless $self->has_encryption_key;
-    my $cert = Crypt::OpenSSL::X509->new_from_file($self->encryption_key);
-    my $text = $cert->as_string;
-    $text =~ s/-----[^-]*-----//gm;
-    return $text;
+    my $key  = $self->encryption_key or return '';
+    my $cert = Crypt::OpenSSL::X509->new_from_file($key);
+    return $cert->as_string =~ s/-----[^-]*-----//gmr;
 }
+
+has _cert_text => (isa => 'Str', is => 'ro', init_arg => undef, lazy => 1,
+    builder => '_build_cert_text');
 
 sub _build_cert_text {
     my ($self) = @_;
-
-    return '' unless $self->has_cert;
-    my $cert = Crypt::OpenSSL::X509->new_from_file($self->cert);
-    my $text = $cert->as_string;
-    $text =~ s/-----[^-]*-----//gm;
-    return $text;
+    my $c    = $self->cert or return '';
+    my $cert = Crypt::OpenSSL::X509->new_from_file($c);
+    return $cert->as_string =~ s/-----[^-]*-----//gmr;
 }
 
-=head2 authn_request( $destination, $nameid_format, %params )
+=head2 my $request = $sp->authn_request($dest, $nameid_format, %options)
 
 Returns an AuthnRequest object created by this SP, intended for the
 given destination, which should be the identity URI of the IdP.
 
-%params is a hash containing parameters valid for
-Net::SAML2::Protocol::AuthnRequest.  For example:
+The C<%options> are passed to L<Net::SAML2::Protocol::AuthnRequest>
+constructor C<new()>, where the C<issuer> is added automatically.
 
-=over
-
-my %params = (
-        force_authn => 1,
-        is_passive  => 1,
-    )
-
-my $authnreq = authn_request(
-                'https://keycloak.local:8443/realms/Foswiki/protocol/saml',
-                'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-                %params
-            );
-
-=back
+  use URN::OASIS::SAML2  qw(NAMEID_PERSISTENT);
+  my $authnreq = $sp->authn_request(
+    'https://keycloak.local:8443/realms/Foswiki/protocol/saml',
+    NAMEID_PERSISTENT,
+    force_authn => 1,
+    is_passive  => 1,
+  );
 
 =cut
 
 sub authn_request {
-    my $self = shift;
-    my $destination     = shift;
-    my $nameid_format   = shift;
-    my (%params)        = @_;
+    my ($self, $destination, $nameid_format, %args) = @_;
 
     return Net::SAML2::Protocol::AuthnRequest->new(
-        issueinstant        => DateTime->now,
         issuer              => $self->issuer,
         destination         => $destination,
-        nameidpolicy_format => $nameid_format || '',
-        %params,
+        nameidpolicy_format => $nameid_format // '',
+        %args,
     );
-
 }
 
-=head2 logout_request( $destination, $nameid, $nameid_format, $session, $params )
+=head2 my $req = $sp->logout_request($dest, $nameid, $format, $session, \%params)
 
-Returns a LogoutRequest object created by this SP, intended for the
-given destination, which should be the identity URI of the IdP.
+Returns a L<Net::SAML2::LogoutRequest> object created by this SP, intended
+for the given destination, which should be the identity URI of the IdP.
 
 Also requires the nameid (+format) and session to be logged out.
 
-=over
+%params is a HASH for parameters to L<Net::SAML2::Protocol::LogoutRequest>
+constructor C<new()>.
 
-$params is a HASH reference for parameters to Net::SAML2::Protocol::LogoutRequest
-
-$params =   (
-                # name qualifier parameters from Assertion NameId
-                name_qualifier      => "https://idp.shibboleth.local/idp/shibboleth"
-                sp_name_qualifier   => "https://netsaml2-testapp.local"
-            );
-
-=back
+  %params = ( # name qualifier parameters from Assertion NameId
+    name_qualifier    => "https://idp.shibboleth.local/idp/shibboleth",
+    sp_name_qualifier => "https://netsaml2-testapp.local",
+  );
 
 =cut
 
 sub logout_request {
     my ($self, $destination, $nameid, $nameid_format, $session, $params) = @_;
 
-    my $logout_req = Net::SAML2::Protocol::LogoutRequest->new(
-        issuer      => $self->issuer,
-        destination => $destination,
-        nameid      => $nameid,
-        session     => $session,
-        NonEmptySimpleStr->check($nameid_format)
-            ? (nameid_format => $nameid_format)
-            : (),
-        (defined $params->{sp_name_qualifier})
-            ? (affiliation_group_id => $params->{sp_name_qualifier})
-            : (),
-        (defined $params->{name_qualifier})
-            ? (name_qualifier => $params->{name_qualifier})
-            : (),
-        (defined $params->{include_name_qualifier})
-            ? ( include_name_qualifier => $params->{include_name_qualifier} )
-            : ( include_name_qualifier => 1),
+    return Net::SAML2::Protocol::LogoutRequest->new(
+        issuer        => $self->issuer,
+        destination   => $destination,
+        nameid        => $nameid,
+        session       => $session,
+        nameid_format => $nameid_format,
+        (exists $params->{sp_name_qualifier} ? (affiliation_group_id => $params->{sp_name_qualifier}) : ()),
+        (exists $params->{name_qualifier}    ? (name_qualifier       => $params->{name_qualifier})    : ()),
+        include_name_qualifier => $params->{include_name_qualifier} // 1,
     );
-    return $logout_req;
 }
 
-=head2 logout_response( $destination, $status, $in_response_to )
+=head2 my $resp = $sp->logout_response($dest, $status, $irt, %options)
 
-Returns a LogoutResponse object created by this SP, intended for the
-given destination, which should be the identity URI of the IdP.
+Returns a L<Net::SAML2::LogoutResponse> object created by this SP,
+intended for the given destination, which should be the identity URI of
+the IdP.
 
-Also requires the status and the ID of the corresponding
-LogoutRequest.
+Here C<$irt> means "in_response_to", which is the ID of the
+corresponding LogoutRequest object.  Also the status is taken from
+that request.
+
+All C<%options> are also passed to the resolver constructor, where
+C<issuer> is added automatically.
 
 =cut
 
 sub logout_response {
-    my ($self, $destination, $status, $in_response_to) = @_;
+    my ($self, $destination, $status, $in_response_to, %args) = @_;
 
+    #XXX move
     my $status_uri = Net::SAML2::Protocol::LogoutResponse->status_uri($status);
-    my $logout_req = Net::SAML2::Protocol::LogoutResponse->new(
+
+    return Net::SAML2::Protocol::LogoutResponse->new(
         issuer          => $self->issuer,
         destination     => $destination,
         status          => $status_uri,
         in_response_to  => $in_response_to,
+        %args,
     );
-
-    return $logout_req;
 }
 
-=head2 artifact_request( $destination, $artifact )
+=head2 my $req = $sp->artifact_request($dest, $artifact, %options)
 
-Returns an ArtifactResolve request object created by this SP, intended
-for the given destination, which should be the identity URI of the
-IdP.
+Returns a L<Net::SAML2::ArtifactResolve> request object created by this
+SP, intended for the given destination, which should be the identity
+URI of the IdP.
+
+All C<%options> are also passed to the resolver constructor, where
+C<issuer> is added automatically.
 
 =cut
 
 sub artifact_request {
-    my ($self, $destination, $artifact) = @_;
+    my ($self, $destination, $artifact, %args) = @_;
 
-    my $artifact_request = Net::SAML2::Protocol::ArtifactResolve->new(
+    return Net::SAML2::Protocol::ArtifactResolve->new(
         issuer       => $self->issuer,
         destination  => $destination,
         artifact     => $artifact,
-        issueinstant => DateTime->now,
+        %args,
     );
-
-    return $artifact_request;
 }
 
-=head2 sp_post_binding ( $idp, $param )
+=head2 my $post = $sp->sp_post_binding($idp, $param, %options)
 
-Returns a POST binding object for this SP, configured against the
-given IDP for Single Sign On. $param specifies the name of the query
-parameter involved - typically C<SAMLRequest>.
+Returns a L<Net::SAML2::Binding::POST> object for this SP, configured
+against the given IDP for Single Sign On. The optional C<$param> specifies the name of
+the query parameter involved; defaults to C<SAMLRequest>.
 
+All C<%options> are also passed to the Post constructor, where C<url>,
+C<cert>, C<key>, and C<insecure> are passed automatically.
 =cut
 
 sub sp_post_binding {
-    my ($self, $idp, $param) = @_;
+    my ($self, $idp) = (shift, shift);
+    $idp or croak "Unable to create a post binding without an IDP";
+    my ($param, %args) = @_ % 2 ? @_ : (undef, @_);
 
-    unless ($idp) {
-        croak("Unable to create a post binding without an IDP");
-    }
-
-    $param //= 'SAMLRequest';
-
-    my $post = Net::SAML2::Binding::POST->new(
-        url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'),
-        cert  => ($self->cert,),
-        $self->authnreq_signed ? (
-            key   => $self->key,
-        ) : (
-            insecure => 1,
-        ),
-        param => $param,
+    return Net::SAML2::Binding::POST->new(
+        url   => $idp->sso_url('post'),
+        cert  => $self->cert,
+        $self->authnreq_signed ? (key => $self->key) : (insecure => 1),
+        param => $param // 'SAMLRequest',
+        %args,
     );
-
-    return $post;
 }
 
-=head2 sso_redirect_binding( $idp, $param )
+=head2 my $binding = $sp->sso_redirect_binding($idp, $param, %args)
 
-Returns a Redirect binding object for this SP, configured against the
-given IDP for Single Sign On. $param specifies the name of the query
-parameter involved - typically C<SAMLRequest>.
+Returns a L<Net::SAML2::Binding::Redirect> binding object for this SP,
+configured against the given IDP for Single Sign On.
 
+The optional C<$param> specifies the name of the query parameter involved;
+defaults to C<SAMLRequest>.
+
+All C<%options> are also passed to the Redirect constructor, where C<url>,
+C<cert>, C<key>, and C<insecure> are passed automatically.
 =cut
 
 sub sso_redirect_binding {
-    my ($self, $idp, $param) = @_;
+    my ($self, $idp) = (shift, shift);
+    $idp or croak "Unable to create a redirect binding without an IDP";
+    my ($param, %args) = @_ % 2 ? @_ : (undef, @_);
 
-    unless ($idp) {
-        croak("Unable to create a redirect binding without an IDP");
-    }
-
-    $param = 'SAMLRequest' unless $param;
-
-    my $redirect = Net::SAML2::Binding::Redirect->new(
-        url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    return Net::SAML2::Binding::Redirect->new(
+        url   => $idp->sso_url('redirect'),
         cert  => $idp->cert('signing'),
-        $self->authnreq_signed ? (
-            key   => $self->key,
-        ) : (
-            insecure => 1,
-        ),
-        param => $param,
+        $self->authnreq_signed ? (key => $self->key) : (insecure => 1),
+        param => $param // 'SAMLRequest',
+        %args,
     );
-
-    return $redirect;
 }
 
-=head2 slo_redirect_binding( $idp, $param )
+=head2 my $binding = $sp->slo_redirect_binding($idp, $param, %options)
 
-Returns a Redirect binding object for this SP, configured against the
-given IDP for Single Log Out. $param specifies the name of the query
-parameter involved - typically C<SAMLRequest> or C<SAMLResponse>.
+Returns a L<Net::SAML2::Binding::Redirect> binding object for this SP,
+configured against the given IDP for Single Log Out. C<$param> specifies
+the name of the query parameter involved - typically C<SAMLRequest>
+or C<SAMLResponse>.
 
+All C<%options> are also passed to the Redirect constructor, where C<url>,
+C<cert>, and C<key> are passed automatically.
 =cut
 
 sub slo_redirect_binding {
-    my ($self, $idp, $param) = @_;
+    my ($self, $idp) = (shift, shift);
+    $idp or croak "Unable to create a redirect binding without an IDP";
+    my ($param, %args) = @_ % 2 ? @_ : (undef, @_);
 
-    my $redirect = Net::SAML2::Binding::Redirect->new(
-        url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    return Net::SAML2::Binding::Redirect->new(
+        url   => $idp->sso_url('redirect'),
         cert  => $idp->cert('signing'),
-        key   => $self->key,
-        param => $param,
+        $self->authnreq_signed ? (key => $self->key) : (insecure => 1),
+        param => $param // 'SAMLRequest',
+        %args,
     );
-    return $redirect;
 }
 
-=head2 soap_binding( $ua, $idp_url, $idp_cert )
+=head2 my $soap = $sp->soap_binding($ua, $idp_url, $idp_cert, %options)
 
-Returns a SOAP binding object for this SP, with a destination of the
-given URL and signing certificate.
+Returns a L<Net::SAML2::Binding::SOAP> binding object for this SP,
+with a destination of the given URL and signing certificate.
 
-XXX UA
+All other C<%options> are passed to the SOAP constructor as well, where
+C<key>, C<cert>, and C<cacert> are added automatically.
 
 =cut
 
 sub soap_binding {
-    my ($self, $ua, $idp_url, $idp_cert) = @_;
+    my ($self, $ua, $idp_url, $idp_cert, %args) = @_;
 
     return Net::SAML2::Binding::SOAP->new(
         ua       => $ua,
@@ -567,88 +512,78 @@ sub soap_binding {
         cert     => $self->cert,
         url      => $idp_url,
         idp_cert => $idp_cert,
-        $self->has_cacert ? (cacert => $self->cacert) : (),
+        cacert   => $self->cacert,
+        %args,
     );
 }
 
-=head2 post_binding( )
+=head2 my $post = $sp->post_binding(%options)
 
-Returns a POST binding object for this SP.
+Returns a L<Net::SAML2::Binding::POST> binding object for this SP.
+All arguments are passed to its constructor, where C<cacert> is
+passed-on automatically.
 
 =cut
 
 sub post_binding {
-    my ($self) = @_;
+    my ($self, %args) = @_;
 
     return Net::SAML2::Binding::POST->new(
-        $self->has_cacert ? (cacert => $self->cacert) : ()
+        cacert => $self->cacert,
+        %args,
     );
 }
 
-=head2 generate_metadata( )
+=head2 my $meta = $sp->generate_metadata()
 
-Generate the metadata XML document for this SP.
+Generate the metadata XML document for this SP.  Method C<metadata()>
+produces the signed version of this.
 
 =cut
 
-my $md = ['md' => URN_METADATA];
-my $ds = ['ds' => URN_SIGNATURE];
+my $md = [ md => URN_METADATA  ];
+my $ds = [ ds => URN_SIGNATURE ];
 
 sub generate_metadata {
     my $self = shift;
 
-    my $x = XML::Generator->new(conformance => 'loose', xml => { version => "1.0", encoding => 'UTF-8' });
+    my $x = XML::Generator->new(conformance => 'loose',
+         xml => { version => "1.0", encoding => 'UTF-8' });
 
     my $error_uri = $self->error_url;
     if (!$error_uri->scheme) {
         $error_uri = $self->url . $self->error_url;
     }
 
+    my $acs        = $self->attribute_consuming_service;
+    my @encryption = $self->encryption_key ? ('encryption', 'signing') : 'both';
+    my $lang       = { 'xml:lang' => $self->lang };
+
     return $x->xml( $x->EntityDescriptor(
-        $md,
-        {
-            entityID => $self->issuer,
-            ID       => $self->_id,
-        },
+        $md, { entityID => $self->issuer, ID => $self->_id },
         $x->SPSSODescriptor(
             $md,
             {
-                AuthnRequestsSigned        => $self->authnreq_signed ? 'true' : 'false',
-                WantAssertionsSigned       => $self->want_assertions_signed ? 'true' : 'false',
+                AuthnRequestsSigned        => xml_bool($self->authnreq_signed),
+                WantAssertionsSigned       => xml_bool($self->want_assertions_signed),
                 errorURL                   => $error_uri,
                 protocolSupportEnumeration => URN_PROTOCOL,
             },
 
-            $self->has_encryption_key
-                ? ($self->_generate_key_descriptors($x, 'encryption'),
-                   $self->_generate_key_descriptors($x, 'signing'))
-                : $self->_generate_key_descriptors($x, 'both'),
-
-
+            (map $self->_generate_key_descriptors($x, $_), @encryption),
             $self->_generate_single_logout_service($x),
-
             $self->_generate_assertion_consumer_service($x),
-            $self->has_attribute_consuming_service ? $self->attribute_consuming_service->to_xml : (),
+            $acs ? $acs->to_xml : (),
 
         ),
         $x->Organization(
             $md,
-            $x->OrganizationName(
-                $md, $self->lang, $self->org_name,
-            ),
-            $x->OrganizationDisplayName(
-                $md, $self->lang,
-                $self->org_display_name,
-            ),
-            $x->OrganizationURL(
-                $md,
-                $self->lang,
-                defined($self->org_url) ? $self->org_url : $self->url
-            )
+            $x->OrganizationName($md, $lang, $self->org_name),
+            $x->OrganizationDisplayName($md, $lang, $self->org_display_name),
+            $x->OrganizationURL($md, $lang, $self->org_url // $self->url),
         ),
         $x->ContactPerson(
-            $md,
-            { contactType => 'other' },
+            $md, { contactType => 'other' },
             $x->Company($md, $self->org_display_name,),
             $x->EmailAddress($md, $self->org_contact,),
         )
@@ -656,22 +591,17 @@ sub generate_metadata {
 }
 
 sub _generate_key_descriptors {
-    my $self = shift;
-    my $x    = shift;
-    my $use  = shift;
+    my ($self, $x, $use) = @_;
 
-    return
-           if !$self->authnreq_signed
-        && !$self->want_assertions_signed
-        && !$self->sign_metadata;
+    $self->authnreq_signed || $self->want_assertions_signed || $self->sign_metadata
+        or return;
 
     my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
-
-    $use = 'signing' if $self->signing_only && $use eq 'both';
+    $use    = 'signing' if $self->signing_only && $use eq 'both';
 
     return $x->KeyDescriptor(
         $md,
-        $use ne 'both' ? { use => $use } : {},
+        ($use eq 'both' ? {} : { use => $use }),
         $x->KeyInfo(
             $ds,
             $x->X509Data($ds, $x->X509Certificate($ds, $key)),
@@ -680,96 +610,72 @@ sub _generate_key_descriptors {
     );
 }
 
-=head2 key_name($type)
+=head2 my $enckey = $sp->key_name($type)
 
-Get the key name for either the C<signing> or C<encryption> key
+Get the MD5-HEX of the key name for either the C<signing> or C<encryption>
+key.
 
 =cut
 
+#XXX I don't think you want this public
+
 sub key_name {
-    my $self = shift;
-    my $use  = shift;
+    my ($self, $use) = @_;
     my $key = $use eq 'encryption' ? $self->_encryption_key_text : $self->_cert_text;
-    return unless $key;
-    return Digest::MD5::md5_hex($key);
+    return $key ? md5_hex($key) : undef;
 }
 
 sub _generate_single_logout_service {
-    my $self = shift;
-    my $x    = shift;
-    return map { $x->SingleLogoutService($md, $_) } @{ $self->single_logout_service };
+    my ($self, $x) = @_;
+    return map $x->SingleLogoutService($md, $_), @{$self->single_logout_service};
 }
 
 sub _generate_assertion_consumer_service {
-    my $self = shift;
-    my $x    = shift;
-    return map { $x->AssertionConsumerService($md, $_) } @{ $self->assertion_consumer_service };
+    my ($self, $x) = @_;
+    return map $x->AssertionConsumerService($md, $_), @{$self->assertion_consumer_service};
 }
 
 
-=head2 metadata( )
+=head2 my $string = $sp->metadata()
 
-Returns the metadata XML document for this SP.
+Returns the signed metadata as XML document for this SP.  Method
+C<generated_metadata()> produces the unsigned version.
 
 =cut
 
 sub metadata {
     my $self = shift;
 
-    my $metadata = $self->generate_metadata();
-    return $metadata->stringify unless $self->sign_metadata;
+    # Create the metadata itself.
 
-    use Net::SAML2::XML::Sig;
-    my $signer = Net::SAML2::XML::Sig->new(
-        {
-            key         => $self->key,
-            cert        => $self->cert,
-            sig_hash    => 'sha256',
-            digest_hash => 'sha256',
-            x509        => 1,
-            ns          => { md => URN_METADATA },
-            id_attr     => '/md:EntityDescriptor[@ID]',
-        }
-    );
-    my $md = $signer->sign($metadata);
+    my $metadata = $self->generate_metadata;
+    $self->sign_metadata
+        or return $metadata->stringify;
 
-    my $xp = XML::LibXML::XPathContext->new(
-        XML::LibXML->load_xml(string =>$md)
-    );
-    $xp->registerNs('md', URN_METADATA);
-    $xp->registerNs('dsig', URN_SIGNATURE);
+    # Sign the metadata
 
-    my $nodes = $xp->findnodes('/md:EntityDescriptor[@ID]');
-    my $rootnode = $nodes->get_node(1);
-
-    my $child = $rootnode->firstChild;
-    return $md if $child->nodeName() eq 'dsig:Signature';
-
-    $nodes = $xp->findnodes('//dsig:Signature');
-    my $signode = $nodes->get_node(1);
-
-    $signode->unbindNode;
-    $rootnode->insertBefore($signode, $child);
-
-    return '<?xml version="1.0" encoding="UTF-8"?>' . $rootnode->toString;
+    return Net::SAML2::XML::Sig->new(
+        key      => $self->key,
+        cert     => $self->cert,
+        x509     => 1,
+        ns       => { md => URN_METADATA },
+        id_attr  => '/md:EntityDescriptor[@ID]',
+    )->sign_metadata($metadata->stringify);
 }
 
-=head2 get_default_assertion_service
+=head2 my $assert = $sp->get_default_assertion_service()
 
-Return the assertion service which is the default
+Return the assertion service which is the default.
 
 =cut
 
 sub get_default_assertion_service {
-    my $self = shift;
-    my $default = first { $_->{isDefault} eq 1 || $_->{isDefault} eq 'true' }
-        grep { defined $_->{isDefault} } @{ $self->assertion_consumer_service };
-    return $default if $default;
+    my $self    = shift;
+    my $acs     = $self->assertion_consumer_service;
 
-    $default = first { ! defined $_->{isDefault} } @{ $self->assertion_consumer_service };
-    return $default if $default;
-
-    return $self->assertion_consumer_service->[0];
+    my $default = first { my $d = $_->{isDefault} // 0; $d eq 1 || $d eq 'true' } @$acs;
+    $default  //= first { ! defined $_->{isDefault} } @$acs;
+    return $default // $acs->[0];
 }
 
 __PACKAGE__->meta->make_immutable;

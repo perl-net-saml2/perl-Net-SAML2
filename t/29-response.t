@@ -15,7 +15,8 @@ sub get_object {
 
 {
   my $response = get_object('t/data/digid-anul-artifact-response.xml');
-  ok(!$response->has_assertions, "We don't have an assertion");
+  my $asserts = $response->assertions;
+  ok(! defined $asserts, "We don't have an assertion");
   ok(!$response->success, "Unsuccessful response");
   is($response->status, STATUS_RESPONDER(), "... because its a status:Responder");
   is($response->substatus, STATUS_AUTH_FAILED(), "... and substatus is also correct");
@@ -24,7 +25,8 @@ sub get_object {
 
 {
   my $response = get_object('t/data/eherkenning-assertion.xml');
-  ok($response->has_assertions, "We have an assertion");
+  my $asserts = $response->assertions;
+  ok(defined $asserts, "We have an assertion");
   ok($response->success, "It was successful");
   is($response->assertions->size, 3, "Got the correct amount or assertions");
 
@@ -35,7 +37,8 @@ sub get_object {
 
 {
   my $response = get_object('t/data/response-no-assertion.xml');
-  ok(!$response->has_assertions, "We don't have an assertion");
+  my $asserts = $response->assertions;
+  ok(! defined $asserts, "We don't have an assertion");
   ok(!$response->success, "Unsuccessful response");
   is($response->status, STATUS_RESPONDER(), "... because its a status:Responder");
 }

@@ -70,7 +70,7 @@ isa_ok($redirect, "Net::SAML2::Binding::Redirect", "Redirect created successfull
 # Sign the AuthnRequest and generate the URL
 #############################################
 my $url = $redirect->sign($authnreq->as_xml);
-ok($url =~ /rsa/, "Sucessfully signed AuthnRequest");
+ok($url =~ /rsa/, "Successfully signed AuthnRequest");
 
 ############################################
 # Redirect to the user's browser to the URL

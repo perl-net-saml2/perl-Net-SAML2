@@ -3,23 +3,46 @@ use Moose;
 
 # VERSION
 
+use Crypt::OpenSSL::Verify ();
+use Crypt::OpenSSL::X509   ();
+use HTTP::Request::Common  qw/GET/;
+use LWP::UserAgent         ();
+use MooseX::Types::URI     qw/Uri/;
+use Try::Tiny;
+use Net::SAML2::Util       qw/xml_without_comments new_xpc/;
+
 # ABSTRACT: SAML Identity Provider object
 
 =head1 SYNOPSIS
 
   my $idp = Net::SAML2::IdP->new_from_url(
-        url => $url,
-        cacert => $cacert,
-        ssl_opts =>         # Optional options supported by LWP::Protocol::https
-            {
-                SSL_ca_file     => '/your/directory/cacert.pem',
-                SSL_ca_path     => '/etc/ssl/certs',
-                verify_hostname => 1,
-            }
-        );
+    url      => $url,
+    cacert   => $cacert,
+    ssl_opts => {  # see LWP::Protocol::https
+        SSL_ca_file     => '/your/directory/cacert.pem',
+        SSL_ca_path     => '/etc/ssl/certs',
+        verify_hostname => 1,
+    });
+
+  # Get the bindings from the IdP settings:
+
   my $sso_url = $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');
 
-Note that LWP::UserAgent is used which means that environment variables
+  use URN::OASIS::SAML2 qw/BINDING_REDIRECT/;
+  my $sso_url = $idp->sso_url(BINDING_REDIRECT);
+
+  my $sso_url = $idp->sso_url('redirect');  # requires Net::SAML2 >= 2.0
+
+=head1 DESCRIPTION
+
+The Identity Provider (IdP) is the central authenication service.
+You need either the URI of the service or an XML which describes the
+service to be able to connect.  Besides, you need the public certificate
+of the service to verify the origin of the configuration.
+
+=head2 Configuring SSL
+
+Note that L<LWP::UserAgent> is used which means that environment variables
 may affect the use of https see:
 
 =over
@@ -32,174 +55,157 @@ may affect the use of https see:
 
 =head1 METHODS
 
-=cut
+=head2 my $idp = Net::SAML2::IdP->new(%options)
 
-use Crypt::OpenSSL::Verify;
-use Crypt::OpenSSL::X509;
-use HTTP::Request::Common;
-use LWP::UserAgent;
-use MooseX::Types::URI qw/ Uri /;
-use Try::Tiny;
-use XML::LibXML::XPathContext;
-
-use Net::SAML2::XML::Util qw/ no_comments /;
-
-=head2 new( )
-
-Constructor
-
-=over
-
-=item B<entityid>
-
-=back
+Hidden constructor.  Start the IdP from its remote location or XML description
+file, via the other constructors.
 
 =cut
 
-has 'entityid' => (isa => 'Str',          is => 'ro', required => 1);
-has 'cacert'   => (isa => 'Maybe[Str]',   is => 'ro', required => 1);
-has 'sso_urls' => (isa => 'HashRef[Str]', is => 'ro', required => 1);
-has 'slo_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
-has 'art_urls' => (isa => 'Maybe[HashRef[Str]]', is => 'ro');
-has 'certs'    => (isa => 'HashRef[ArrayRef[Str]]', is => 'ro', required => 1);
+has entityid => (isa => 'Str',          is => 'ro', required => 1);
+has cacert   => (isa => 'Maybe[Str]',   is => 'ro', required => 1);
+has sso_urls => (isa => 'HashRef[Str]', is => 'ro', required => 1);
+has slo_urls => (isa => 'Maybe[HashRef[Str]]', is => 'ro', default => sub { +{} });
+has art_urls => (isa => 'Maybe[HashRef[Str]]', is => 'ro', default => sub { +{} });
+has certs    => (isa => 'HashRef[ArrayRef[Str]]', is => 'ro', required => 1);
+has formats  => (isa => 'HashRef[Str]', is => 'ro', default  => sub { {} });
+has debug    => (isa => 'Bool', is => 'ro', default => 0);
+has default_format => (isa => 'Str', is => 'ro');
 
-has 'formats' => (
-    isa      => 'HashRef[Str]',
-    is       => 'ro',
-    required => 0,
-    default  => sub { {} }
-);
-has 'default_format' => (isa => 'Str', is => 'ro', required => 0);
-has 'debug' => (isa => 'Bool', is => 'ro', required => 0, default => 0);
-
-=head2 new_from_url( url => $url, cacert => $cacert, ssl_opts => {} )
+=head2 my $idp = Net::SAML2::IdP->new_from_url(%options)
 
 Create an IdP object by retrieving the metadata at the given URL.
 
 Dies if the metadata can't be retrieved with reason.
 
+Options:
+
+=over 4
+
+=item B<url> => $url (required)
+
+The location of your ID providing process, either as string or URI-object.
+
+=item B<cacert> => $cacert (required)
+
+Certificate text.
+
+=item B<ssl_opts> => \%config|undef
+
+When a HASH is passed, then https is used and initiated with the given
+configuration.
+
+=item B<ua> => LWP::UserAgent-object
+
+[2.0] Pass a prepared user-agent.
+
+=back
+
 =cut
+
+sub _create_ua($) {
+    my $ssl_opts = shift;
+    my $ua = LWP::UserAgent->new;
+    if(defined $ssl_opts)
+    {   require LWP::Protocol::https;
+        $ua->ssl_opts(%$ssl_opts);
+    }
+    return $ua;
+}
 
 sub new_from_url {
     my ($class, %args) = @_;
 
-    my $req = GET $args{url};
-    my $ua = $args{ua};
-    if (!$ua) {
-        $ua = LWP::UserAgent->new;
-        if (defined $args{ssl_opts}) {
-            require LWP::Protocol::https;
-            $ua->ssl_opts(%{ $args{ssl_opts} });
-        }
-    }
+    my $ua  = $args{ua} // _create_ua $args{ssl_opts};
+    my $res = $ua->request(GET $args{url});
+    $res->is_success
+        or die sprintf "Error retrieving IdP metadata: %s (%s)\n", $res->message, $res->code;
 
-    my $res = $ua->request($req);
-    if (!$res->is_success) {
-        die(
-            sprintf(
-                "Error retrieving metadata: %s (%s)\n",
-                $res->message, $res->code
-            )
-        );
-    }
-
-    my $xml = $res->decoded_content;
-
-    return $class->new_from_xml(
-        xml                          => $xml,
-        cacert                       => $args{cacert},
-    );
+    return $class->new_from_xml(xml => $res->decoded_content, cacert => $args{cacert});
 }
 
-=head2 new_from_xml( xml => $xml, cacert => $cacert )
+=head2 my $idp = Net::SAML2::IdP->new_from_xml(%options)
 
 Constructor. Create an IdP object using the provided metadata XML
 document.
 
+=over 4
+
+=item B<xml> => $string
+
+The XML message which described the IdP.
+
+=item B<cacert> => $cacert (required)
+
+Certificate text.
+
+=back
+
 =cut
 
 sub new_from_xml {
-    my($class, %args) = @_;
+    my ($class, %args) = @_;
 
-    my $dom = no_comments($args{xml});
+    my $xpc = new_xpc xml_without_comments $args{xml};
 
-    my $xpath = XML::LibXML::XPathContext->new($dom);
-    $xpath->registerNs('md', 'urn:oasis:names:tc:SAML:2.0:metadata');
-    $xpath->registerNs('ds', 'http://www.w3.org/2000/09/xmldsig#');
+    my (%sso, %slo, %art);
+    my $descr = $xpc->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor')->shift;
 
-    my $data;
-
-    my $basepath  = '//md:EntityDescriptor/md:IDPSSODescriptor';
-
-    for my $sso ($xpath->findnodes("$basepath/md:SingleSignOnService")) {
-        my $binding = $sso->getAttribute('Binding');
-        $data->{SSO}->{$binding} = $sso->getAttribute('Location');
+    foreach my $sso ($xpc->findnodes("md:SingleSignOnService", $descr)) {
+        my $binding    = $sso->getAttribute('Binding') or next;
+        $sso{$binding} = $sso->getAttribute('Location');
     }
 
-    for my $slo ($xpath->findnodes("$basepath/md:SingleLogoutService")) {
-        my $binding = $slo->getAttribute('Binding');
-        $data->{SLO}->{$binding} = $slo->getAttribute('Location');
+    foreach my $slo ($xpc->findnodes('md:SingleLogoutService', $descr)) {
+        my $binding    = $slo->getAttribute('Binding') or next;
+        $slo{$binding} = $slo->getAttribute('Location');
     }
 
-    for my $art ($xpath->findnodes("$basepath/md:ArtifactResolutionService")) {
-        my $binding = $art->getAttribute('Binding');
-        $data->{Art}->{$binding} = $art->getAttribute('Location');
+    foreach my $art ($xpc->findnodes('md:ArtifactResolutionService', $descr)) {
+        my $binding    = $art->getAttribute('Binding') or next;
+        $art{$binding} = $art->getAttribute('Location');
     }
 
-    for my $format ($xpath->findnodes("$basepath/md:NameIDFormat")) {
-        $format = $format->string_value;
-        $format =~ s/^\s+//g;
-        $format =~ s/\s+$//g;
+    my ($default_format, %formats);
+    foreach my $format ($xpc->findnodes('md:NameIDFormat', $descr)) {
+        $format = $format->string_value =~ s/^\s+//r =~ s/\s+$//r;
 
-        my($short_format)
-            = $format =~ /urn:oasis:names:tc:SAML:(?:2.0|1.1):nameid-format:(.*)$/;
+        my ($short_format) = $format =~ /^urn:oasis:names:tc:SAML:(?:2\.0|1\.1):nameid-format:(.*)$/
+            or next;
 
-        if(defined $short_format) {
-            $data->{NameIDFormat}{$short_format} = $format;
-            $data->{DefaultFormat} = $short_format unless exists $data->{DefaultFormat};
-        }
+        $formats{$short_format} = $format;
+        $default_format //= $short_format;
     }
 
-    my %certs = ();
-    for my $key ($xpath->findnodes("$basepath/md:KeyDescriptor")) {
-        my $use = $key->getAttribute('use');
+    my %certs;
+    foreach my $key ($xpc->findnodes('md:KeyDescriptor', $descr)) {
         my $pem = $class->_get_pem_from_keynode($key);
-        if (!$use) {
-            push(@{$certs{signing}}, $pem);
-            push(@{$certs{encryption}}, $pem);
-        }
-        else {
-            push(@{$certs{$use}}, $pem);
+        if(my $use = $key->getAttribute('use')) {
+            push @{$certs{$use}}, $pem;
+        } else {
+            push @{$certs{signing}}, $pem;
+            push @{$certs{encryption}}, $pem;
         }
     }
 
     return $class->new(
-        entityid => $xpath->findvalue('//md:EntityDescriptor/@entityID'),
-        sso_urls => $data->{SSO},
-        slo_urls => $data->{SLO} || {},
-        art_urls => $data->{Art} || {},
+        entityid => $xpc->findvalue('//md:EntityDescriptor/@entityID'),
+        sso_urls => \%sso,
+        slo_urls => \%slo,
+        art_urls => \%art,
         certs    => \%certs,
         cacert   => $args{cacert},
         debug    => $args{debug},
-        $data->{DefaultFormat}
-        ? (
-            default_format => $data->{DefaultFormat},
-            formats        => $data->{NameIDFormat},
-            )
-        : (),
+        ($default_format ? (default_format => $default_format, formats => \%formats) : ()),
     );
-
 }
 
 sub _get_pem_from_keynode {
-    my $self = shift;
-    my $node = shift;
-
-    $node->setNamespace('http://www.w3.org/2000/09/xmldsig#', 'ds');
-
-    my ($text)
-        = $node->findvalue("ds:KeyInfo/ds:X509Data/ds:X509Certificate", $node)
-        =~ /^\s*(.+?)\s*$/s;
+    my ($self, $node) = @_;
+    my $xpc = new_xpc $node;
+    my ($text) = $xpc->findvalue('ds:KeyInfo/ds:X509Data/ds:X509Certificate', $node);
+    $text =~ s/^\s+//gm;
+    $text =~ s/\s+$//gm;
 
     # rewrap the base64 data from the metadata; it may not
     # be wrapped at 64 characters as PEM requires
@@ -207,47 +213,43 @@ sub _get_pem_from_keynode {
 
     my @lines;
     while(length $text > 64) {
-        push @lines, substr $text, 0, 64, '';
+        push @lines, (substr $text, 0, 64, '');
     }
-    push @lines, $text;
+    push @lines, $text if length $text;
 
-    $text = join "\n", @lines;
-
-    return "-----BEGIN CERTIFICATE-----\n$text\n-----END CERTIFICATE-----\n";
+    return join "\n",
+        '-----BEGIN CERTIFICATE-----',
+        @lines,
+        '-----END CERTIFICATE-----', '';
 }
 
 
 # BUILDARGS ( hashref of the parameters passed to the constructor )
-#
 # Called after the object is created to validate the IdP using the cacert
-#
 
 around BUILDARGS => sub {
-    my $orig = shift;
-    my $self = shift;
+    my ($orig, $self, %params) = @_;
 
-    my %params = @_;
-
-    if ($params{cacert}) {
-        my $ca = Crypt::OpenSSL::Verify->new($params{cacert}, { strict_certs => 0, });
+    if(my $cacert = $params{cacert}) {
+        my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0, });
 
         my %certificates;
         my @errors;
-        for my $use (keys %{$params{certs}}) {
-            my $certs = $params{certs}{$use};
-            for my $pem (@{$certs}) {
+        my $using = $params{certs} || {};
+        foreach my $use (keys %$using) {
+            my $certs = $using->{$use};
+            foreach my $pem (@$certs) {
                 my $cert = Crypt::OpenSSL::X509->new_from_string($pem);
                 try {
                     $ca->verify($cert);
-                    push(@{$certificates{$use}}, $pem);
+                    push @{$certificates{$use}}, $pem;
                 }
-                catch { push (@errors, $_); };
+                catch { push @errors, $_ };
             }
         }
 
-        if ( $params{debug} && @errors ) {
-            warn "Can't verify IdP cert(s): " . join(", ", @errors);
-        }
+        !$params{debug} || !@errors
+            or warn "Can't verify IdP cert(s): " . (join ", ", @errors);
 
         $params{certs} = \%certificates;
     }
@@ -255,104 +257,90 @@ around BUILDARGS => sub {
     return $self->$orig(%params);
 };
 
-=head2 sso_url( $binding )
+=head2 my $url = $idp->sso_url($binding)
 
-Returns the url for the SSO service using the given binding. Binding
-name should be the full URI.
+Returns the url for the SSO service using the given binding.
+The C<$binding> should be the full URI or [2.0] a name.
 
 =cut
 
 sub sso_url {
-    my($self, $binding) = @_;
-    return $self->sso_urls->{$binding};
+    my ($self, $binding) = @_;
+    my $uri = $self->binding($binding);
+    return $self->sso_urls->{$uri};
 }
 
-=head2 slo_url( $binding )
+=head2 my $url = $idp->slo_url($binding)
 
 Returns the url for the Single Logout Service using the given
-binding. Binding name should be the full URI.
+binding.  The C<$binding> should be the full URI or [2.0] a name.
 
 =cut
 
 sub slo_url {
     my ($self, $binding) = @_;
-    return $self->slo_urls ? $self->slo_urls->{$binding} : undef;
+    my $uri = $self->binding($binding);
+    return $self->slo_urls->{$uri};
 }
 
-=head2 art_url( $binding )
+=head2 my $url = $idp->art_url($binding)
 
-Returns the url for the Artifact Resolution service using the given
-binding. Binding name should be the full URI.
+Returns the url for the Artifact Resolution Service using the given
+binding.  The C<$binding> should be the full URI or [2.0] a name.
 
 =cut
 
 sub art_url {
     my ($self, $binding) = @_;
-    return $self->art_urls ? $self->art_urls->{$binding} : undef;
+    my $uri = $self->binding($binding);
+    return $self->art_urls->{$uri};
 }
 
-=head2 cert( $use )
+=head2 my $url = $idp->cert($use)
 
 Returns the IdP's certificates for the given use (e.g. C<signing>).
 
 IdP's are generated from the metadata it is possible for multiple certificates
 to be contained in the metadata and therefore possible for them to be there to
-be multiple verified certs in $self->certs.  At this point any certs in the IdP
+be multiple verified certs in C<<$self->certs>>.  At this point any certs in the IdP
 have been verified and are valid for the specified use.  All certs are of type
 $use are returned.
 
 =cut
 
 sub cert {
-    my($self, $use) = @_;
+    my ($self, $use) = @_;
     return $self->certs->{$use};
 }
 
-=head2 binding( $name )
+=head2 my $binding = $idp->binding($urn|$name)
 
-Returns the full Binding URI for the given binding name (i.e. C<redirect> or C<soap>).
-Includes this module's currently-supported bindings.
+Returns the full binding URN for the given binding name.
+[2.0] This is simply calling L<Net::SAML2::Binding>
+method C<urnFor()>.
 
 =cut
 
 sub binding {
-    my($self, $name) = @_;
-
-    my $bindings = {
-        post     => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-        redirect => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-        soap     => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
-    };
-
-    if(exists $bindings->{$name}) {
-        return $bindings->{$name};
-    }
-
-    return;
+    my ($self, $name) = @_;
+    return Net::SAML2::Binding->urnFor($name);
 }
 
-=head2 format( $short_name )
+=head2 my $nameid = $idp->format($short_name)
 
 Returns the full NameID Format URI for the given short name.
 
 If no short name is provided, returns the URI for the default format,
 the one listed first by the IdP.
 
-If no NameID formats were advertised by the IdP, returns undef.
+If no NameID formats were advertised by the IdP, this returns C<undef>.
 
 =cut
 
 sub format {
-    my($self, $short_name) = @_;
-
-    if(defined $short_name && exists $self->formats->{$short_name}) {
-        return $self->formats->{$short_name};
-    }
-    elsif($self->default_format) {
-        return $self->formats->{$self->default_format};
-    }
-
-    return;
+    my ($self, $short_name) = @_;
+    my $format = $short_name // $self->default_format;
+    return defined $format ? $self->formats->{$format} : undef;
 }
 
 __PACKAGE__->meta->make_immutable;

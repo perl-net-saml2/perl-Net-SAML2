@@ -8,11 +8,9 @@ use Net::SAML2::XML::Sig;
 
 my $override
     = Sub::Override->override(
-    'Net::SAML2::Protocol::AuthnRequest::issue_instant' =>
-        sub { return 'myissueinstant' });
+    'Net::SAML2::Protocol::issue_instant' => sub { return 'myissueinstant' });
 
-$override->override('Net::SAML2::Protocol::AuthnRequest::_build_id' =>
-        sub { return 'NETSAML2_fake_id' });
+$override->override('Net::SAML2::Protocol::_build_id' => sub { return 'NETSAML2_fake_id' });
 
 {
     my ($ar, $xp) = net_saml2_authnreq(
@@ -45,7 +43,7 @@ $override->override('Net::SAML2::Protocol::AuthnRequest::_build_id' =>
 
     %attributes = (
         Format      => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-        AllowCreate => 1,
+        AllowCreate => 'true',
     );
 
     test_node_attributes_ok($xp, '/samlp:AuthnRequest/samlp:NameIDPolicy',

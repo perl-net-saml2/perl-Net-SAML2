@@ -417,7 +417,7 @@ XML
                 cacert => 't/net-saml2-cacert.pem',
             );
         },
-        qr/Error retrieving metadata: I'm a teapot \(418\)/,
+        qr/Error retrieving IdP metadata: I'm a teapot \(418\)/,
         "Unable to get metadata because we're talking to a teapot",
     );
 }

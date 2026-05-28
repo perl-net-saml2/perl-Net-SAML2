@@ -1,152 +1,106 @@
 package Net::SAML2::Binding::SOAP;
 use Moose;
 
+extends 'Net::SAML2::Binding';
+
 # VERSION
 
-use Carp qw(croak);
-use HTTP::Request::Common;
-use LWP::UserAgent;
-use MooseX::Types::URI qw/ Uri /;
+use Carp                  qw/croak confess/;
+use MooseX::Types::URI    qw/Uri/;
+use LWP::UserAgent        ();
+use Net::SAML2::XML::Sig  ();
+use Net::SAML2::Util      qw/xml_without_comments new_xpc/;
+use HTTP::Request::Common qw/POST/;
 use Try::Tiny;
-use XML::LibXML::XPathContext;
-
-use Net::SAML2::XML::Sig;
-use Net::SAML2::XML::Util qw/ no_comments /;
-use Net::SAML2::Util qw/ deprecation_warning /;
-
-with 'Net::SAML2::Role::VerifyXML';
 
 # ABSTRACT: SOAP binding for SAML
 
 =head1 SYNOPSIS
 
-    my $soap = Net::SAML2::Binding::SOAP->new(
-        url      => $idp_url,
-        key      => $key,
-        cert     => $cert,
-        idp_cert => $idp_cert,
-    );
+  my $soap = Net::SAML2::Binding::SOAP->new(
+    url      => $idp_url,
+    key      => $key,
+    cert     => $cert,
+    idp_cert => $idp_cert,
+  );
 
-    my $response = $soap->request($req);
+  my $response = $soap->request($req);
 
-Note that LWP::UserAgent maybe used which means that environment variables
-may affect the use of https see:
 
-=over
+=head1 DESCRIPTION
 
-=item * L<PERL_LWP_SSL_CA_FILE and HTTPS_CA_FILE|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_file-=%3E-$path>
-
-=item * L<PERL_LWP_SSL_CA_PATH and HTTPS_CA_DIR|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_path-=%3E-$path>
-
-=back
+Transport SAML2 messages over SOAP.
 
 =head1 METHODS
 
-=cut
+=head2 my $soap = $class->new(%options)
 
-=head2 new( ... )
+Returns an instance of the SOAP binding configured for the given IdP
+service url.
 
-Constructor. Returns an instance of the SOAP binding configured for
-the given IdP service url.
+You can use all options from the base-class L<Net::SAML2::Binding> constructor
+C<new()>, and additional C<%options>:
 
-Arguments:
+=over 4
 
-=over
+=item B<ua> => L<LWP::UserAgent> object
 
-=item B<ua>
+Pass your own, fully prepared, user-agent.  For instance, when you wish to
+use https.
 
-(optional) a LWP::UserAgent-compatible UA
-You can build the user agent to your liking when extending this class by
-overriding C<build_user_agent>
+You can also build the user agent to your liking when extending this class by
+overriding C<build_user_agent>.  Besides, you may also tune the default C<ua> via the 
+L<PERL_LWP_SSL_CA_FILE, HTTPS_CA_FILE|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_file-=%3E-$path>,
+L<PERL_LWP_SSL_CA_PATH and HTTPS_CA_DIR|https://metacpan.org/pod/LWP::UserAgent#SSL_ca_path-=%3E-$path>
+environment variables.
 
-=item B<url>
+=item B<url> => $url (required)
 
-the service URL
+The service URL, as string or URI object.
 
-=item B<key>
+=item B<key> => $filename (required)
 
-the key to sign with
+The key to sign with.
 
-=item B<cert>
+=item B<cert> => $filename (required)
 
-the corresponding certificate
+The corresponding certificate.
 
-=item B<idp_cert>
+=item B<idp_cert> => ARRAY-of-??? (required)
 
-the idp's signing certificate
-
-=item B<cacert>
-
-the CA for the SAML CoT
+The idp's signing certificates.
 
 =back
 
 =cut
 
-has 'ua' => (
-    isa      => 'Object',
-    is       => 'ro',
-    lazy     => 1,
-    builder  => 'build_user_agent',
-);
-
-=head2 build_user_agent
-
-Builder for the user agent
-
-=cut
-
-sub build_user_agent {
-    return LWP::UserAgent->new();
-}
-
-has 'url'      => (isa => Uri, is => 'ro', required => 1, coerce => 1);
-has 'key'      => (isa => 'Str', is => 'ro', required => 1);
-has 'cert'     => (isa => 'Str', is => 'ro', required => 1);
-has 'idp_cert' => (isa => 'ArrayRef[Str]', is => 'ro', required => 1, predicate => 'has_idp_cert');
-has 'cacert' => (
-    is        => 'ro',
-    isa       => 'Str',
-    required  => 0,
-    predicate => 'has_cacert'
-);
-has 'anchors' => (
-    is        => 'ro',
-    isa       => 'HashRef',
-    required  => 0,
-    predicate => 'has_anchors'
-);
-
-has verify => (
-    is        => 'ro',
-    isa       => 'HashRef',
-    predicate => 'has_verify',
-);
+has ua       => (isa => 'Object', is => 'ro', lazy => 1, builder => 'build_user_agent');
+has url      => (isa =>  Uri,  is => 'ro', required => 1, coerce => 1);
+has key      => (isa => 'Str', is => 'ro', required => 1);
+has cert     => (isa => 'Str', is => 'ro', required => 1);
+has idp_cert => (isa => 'ArrayRef[Str]', is => 'ro', required => 1);
+has verify   => (isa => 'HashRef', is => 'ro');
 
 # BUILDARGS
 
-# Earlier versions expected the idp_cert to be a string.  However, metadata
-# can include multiple signing certificates so the $idp->cert is now
-# expected to be an arrayref to the certificates.  To avoid breaking existing
-# applications this changes the the cert to an arrayref if it is not
-# already an array ref.
-#
-# Please remove the build args logic after 6 months from april 18th 2024
-
 around BUILDARGS => sub {
-    my $orig = shift;
-    my $self = shift;
-
-    my %params = @_;
-    if ($params{idp_cert} && ref($params{idp_cert}) ne 'ARRAY') {
-        $params{idp_cert} = [$params{idp_cert}];
-        deprecation_warning("Please use an array ref for idp_cert");
+    my ($orig, $self, %params) = @_;
+    if(my $c = $params{idp_cert}) {
+        $params{idp_cert} = [ $c ] if ref $c ne 'ARRAY';
     }
-
-    return $self->$orig(%params);
+    $self->$orig(%params);
 };
 
-=head2 request( $message )
+=head2 build_user_agent
+
+Builder for the user agent (for the C<ua> attribute>).  It should return
+a L<LWP::UserAgent> compatible object.
+
+=cut
+
+sub build_user_agent { return LWP::UserAgent->new }
+
+=head2 my $response = $soap->request($message)
 
 Submit the message to the IdP's service.
 
@@ -156,74 +110,67 @@ Returns the Response, or dies if there was an error.
 
 sub request {
     my ($self, $message) = @_;
-    my $request = $self->create_soap_envelope($message);
-
+    my $request     = $self->create_soap_envelope($message);
     my $soap_action = 'http://www.oasis-open.org/committees/security';
 
-    my $req = POST $self->url, Content => $request;
+    my $req         = POST $self->url, Content => $request;
     # SOAP actions should be wrapped in double quotes:
     # https://www.w3.org/TR/2000/NOTE-SOAP-20000508/#_Toc478383528
-    $req->header('SOAPAction'     => sprintf('"%s"', $soap_action));
+    $req->header('SOAPAction'     => qq{"$soap_action"});
     $req->header('Content-Type'   => 'text/xml');
     $req->header('Content-Length' => length $request);
 
     my $res = $self->ua->request($req);
-
-    if (!$res->is_success) {
-        croak(
-            sprintf(
-                "Unable to perform request: %s (%s)",
-                $res->message, $res->code
-            )
-        );
-    }
+    $res->is_success
+        or croak sprintf("Unable to perform request: %s (%s)", $res->message, $res->code);
 
     return $self->handle_response($res->decoded_content);
-
 }
 
-=head2 handle_response( $response )
+=head2 my $saml = $soap->handle_response($response)
 
 Handle a response from a remote system on the SOAP binding.
 
-Accepts a string containing the complete SOAP response.
+Accepts a string containing the complete SOAP response.  Returns
+the saml XML on success and croaks on failure.
 
 =cut
 
 sub handle_response {
     my ($self, $response) = @_;
 
-    my $saml = _get_saml_from_soap($response);
+    my $saml   = _get_saml_from_soap($response);
+    my $verify = $self->verify;
     my @errors;
+
     foreach my $cert (@{$self->idp_cert}) {
         my $success = try {
             $self->verify_xml(
                 $saml,
                 no_xml_declaration => 1,
                 cert_text          => $cert,
-                cacert             => $self->cacert,
-                anchors            => $self->anchors,
-                $self->has_verify ? (
-                    ns => { 'artifact' => $self->verify->{ns} },
-                    id_attr => '/artifact:' . $self->verify->{attr_id},
+                $verify ? (
+                    ns => { artifact => $verify->{ns} },
+                    id_attr => '/artifact:' . $verify->{attr_id},
                 ) : (),
             );
             return 1;
         }
-        catch { push (@errors, $_); return 0; };
-
+        catch { push @errors, $_; return 0; };
         return $saml if $success;
     }
 
-    if (@errors) {
-        croak "Unable to verify XML with the given certificates: "
-        . join(", ", @errors);
-    }
+    !@errors
+        or croak "Unable to verify XML with the given certificates: " . join(", ", @errors);
+
+    return undef;
 }
 
-=head2 handle_request( $request )
+=head2 my $success = $soap->handle_request($request)
 
 Handle a request from a remote system on the SOAP binding.
+Returns true on a success.  Croaks when no certificate was
+found.
 
 Accepts a string containing the complete SOAP request.
 
@@ -232,45 +179,33 @@ Accepts a string containing the complete SOAP request.
 sub handle_request {
     my ($self, $request) = @_;
 
-    my $saml = _get_saml_from_soap($request);
-    my @errors;
-    if (defined $saml) {
-        foreach my $cert (@{$self->idp_cert}) {
-            my $success = try {
-                $self->verify_xml(
-                    $saml,
-                    cert_text => $cert,
-                    cacert    => $self->cacert
-                );
-                return 1;
-            }
-            catch { push (@errors, $_); return 0; };
-            return $saml if $success;
-        }
+    my $saml = _get_saml_from_soap($request)
+        or return;
 
-        if (@errors) {
-            croak "Unable to verify XML with the given certificates: "
-            . join(", ", @errors);
+    my @errors;
+    foreach my $cert (@{$self->idp_cert}) {
+        my $success = try {
+            $self->verify_xml($saml, cert_text => $cert);
+            return 1;
         }
+        catch { push @errors, $_; return 0; };
+        return $saml if $success;
     }
 
-    return;
+    !@errors
+        or croak "Unable to verify XML with the given certificates: ". join(", ", @errors);
+
+    return undef;
 }
 
 sub _get_saml_from_soap {
-    my $soap  = shift;
-    my $dom   = no_comments($soap);
-    my $parser = XML::LibXML::XPathContext->new($dom);
-    $parser->registerNs('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-    $parser->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-    my $set = $parser->findnodes('/soap-env:Envelope/soap-env:Body/*');
-    if ($set->size) {
-        return $set->get_node(1)->toString();
-    }
-    return;
+    my $soap = shift;
+    my $xpc  = new_xpc xml_without_comments $soap;
+    my $saml = $xpc->findnodes('/soap-env:Envelope/soap-env:Body/*')->shift;
+    return $saml ? $saml->toString : undef;
 }
 
-=head2 create_soap_envelope( $message )
+=head2 my $xml = $soap->create_soap_envelope($message)
 
 Signs and SOAP-wraps the given message.
 
@@ -280,41 +215,22 @@ sub create_soap_envelope {
     my ($self, $message) = @_;
 
     # sign the message
-    my $sig = Net::SAML2::XML::Sig->new({
-        x509 => 1,
-        key  => $self->key,
-        cert => $self->cert,
-        exclusive => 1,
+    my $signer = Net::SAML2::XML::Sig->new(
+        key                => $self->key,
+        cert               => $self->cert,
+        x509               => 1,
+        exclusive          => 1,
         no_xml_declaration => 1,
-    });
-    my $signed_message = $sig->sign($message);
-
-    # OpenSSO ArtifactResolve hack
-    #
-    # OpenSSO's ArtifactResolve parser is completely hateful. It demands that
-    # the order of child elements in an ArtifactResolve message be:
-    #
-    # 1: saml:Issuer
-    # 2: dsig:Signature
-    # 3: samlp:Artifact
-    #
-    # Really.
-    #
-    if ($signed_message =~ /ArtifactResolve/) {
-        $signed_message =~ s!(<dsig:Signature.*?</dsig:Signature>)!!s;
-        my $signature = $1;
-        $signed_message =~ s/(<\/saml:Issuer>)/$1$signature/;
-    }
+    );
+    my $signed_message = $signer->sign_message($message);
 
     # test verify
-    my $ret = $sig->verify($signed_message);
-    die "failed to sign" unless $ret;
+    my $ret = $signer->verify($signed_message)
+        or confess "failed to sign soap message correctly";
 
-    my $soap = <<"SOAP";
+    return <<"__SOAP";
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Body>$signed_message</SOAP-ENV:Body></SOAP-ENV:Envelope>
-SOAP
-    return $soap;
+__SOAP
 }
 
 __PACKAGE__->meta->make_immutable;
-

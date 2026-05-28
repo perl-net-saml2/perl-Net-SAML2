@@ -16,9 +16,9 @@ The metadata is provided by the Identity Provider (IdP).  Net::SAML2:IdP->new_fr
 
 ```
 my $idp = Net::SAML2::IdP->new_from_url(
-    url => $metadata,   # URL where the xml is located
-    cacert => $cacert,  # Filename of the Identity Providers CACert
-    ssl_opts =>         # Optional options supported by LWP::Protocol::https
+    url      => $metadata, # URL where the xml is located
+    cacert   => $filename, # $filename of the Identity Provider's CACert
+    ssl_opts =>            # For https, options for LWP::Protocol::https
     {
         SSL_ca_file     => '/your/directory/cacert.pem',
         SSL_ca_path     => '/etc/ssl/certs',
@@ -29,12 +29,12 @@ my $idp = Net::SAML2::IdP->new_from_url(
 # or
 
 my $idp = Net::SAML2::IdP->new_from_xml(
-    xml => $metadata_string,    # xml as a string
-    cacert => $cacert,          # Filename of the Identity Providers CACert
+    xml    => $metadata_string, # xml as a string
+    cacert => $filename,        # $filename of the Identity Provider's CACert
 );
 ```
 
-The IdP object contains the Identity Providers settings that were parse from the metadata and are then used for the rest of the calls.
+The IdP object contains the Identity Provider's settings that were parse from the metadata and are then used for the rest of the calls.
 
 The Net::SAML2::IdP generated results in:
 
@@ -93,7 +93,7 @@ However, it is better to use new() here because it makes tracking the AuthnReque
 ```
 my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
     issuer        => $issuer,
-    destination   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    destination   => $idp->sso_url('redirect'),
     provider_name => $provider_name,
 );
 
@@ -165,11 +165,10 @@ In addition, it could be used to process a redirect from the IdP to process a Lo
 
 ```
 my $redirect = Net::SAML2::Binding::Redirect->new(
-    key => $sp_signing_cert,
-    cert => $idp->cert('signing'),
+    key   => $sp_signing_cert,
+    cert  => $idp->cert('signing'),
     param => 'SAMLRequest',
-    # The ssl_url destination for redirect
-    url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    url   => $idp->sso_url('redirect'), # The sso_url destination for redirect
 );
 ```
 
@@ -407,34 +406,36 @@ The process begins with the creation of the LogoutRequest XML with the correct v
 The following is from Foswiki's SamlLoginContrib function:
 ```
 
-    # Foswiki's SamlLoginContrib stores the Assertions session_index
-    my $sessionindex = $this->getSessionValue('saml_session_index');
+   # Foswiki's SamlLoginContrib stores the Assertions session_index
+   my $sessionindex = $this->getSessionValue('saml_session_index');
+   my $saml = $this->{Saml};
 
-    my $idp = Net::SAML2::IdP->new_from_url(
-￼        url     => $this->{Saml}{ metadata},
-￼        cacert  => $this->{Saml}{ cacert },
-￼    );
-￼
-    my $logoutrequest = Net::SAML2::Protocol::LogoutRequest->new(
-￼        issuer        => $this->{Saml}{ issuer },
-￼        nameid_format => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-￼        destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼        nameid      => $session->{users}->getLoginName($session->{user}),
-￼        session     => $sessionindex,
-￼    );
-￼
-￼    my $logoutreq = $logoutrequest->as_xml;
-￼
-￼    my $redirect = Net::SAML2::Binding::Redirect->new(
-￼              key => $this->{Saml}{ sp_signing_key },
-￼              cert => $this->{Saml}{ sp_signing_cert },
-￼              destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼              param => 'SAMLRequest',
-￼              url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼    );
-￼    my $url = $redirect->sign($logoutreq);
+   my $idp = Net::SAML2::IdP->new_from_url(
+       url     => $saml->{metadata},
+       cacert  => $saml->{cacert},
+   );
 
-     # The $url is then sent to the browser as a redirect to initiate the logout.
+   use URN::OASIS::SAML2 qw(NAMEID_EMAIL);
+   my $logoutrequest = Net::SAML2::Protocol::LogoutRequest->new(
+       issuer        => $saml->{issuer},
+       nameid_format => NAMEID_EMAIL,
+       destination   => $idp->slo_url('redirect'),
+       nameid        => $session->{users}->getLoginName($session->{user}),
+       session       => $sessionindex,
+    );
+
+    my $logoutreq = $logoutrequest->as_xml;
+
+    my $redirect = Net::SAML2::Binding::Redirect->new(
+        key   => $saml->{sp_signing_key},
+        cert  => $saml->{sp_signing_cert},
+        param => 'SAMLRequest',
+        url   => $idp->slo_url('redirect'),
+        destination => $idp->slo_url('redirect'),
+    );
+
+    my $url = $redirect->sign($logoutreq);
+    # The $url is then sent to the browser as a redirect to initiate the logout.
 
 ```
 The IdP will respond with a LogoutResponse that is sent to the browser via a HTTP-POST or an HTTP-Redirect depending on the SP's configuration at the IdP (the SP metadata would specify the slo_url that is supported).
@@ -445,31 +446,31 @@ The following is from Foswiki's SamlLoginContrib function:
 ```
     # Foswiki's SamlLoginContrib stores the Assertions session_index
     # my $sessionindex = $this->getAndClearSessionValue('saml_session_index');
-￼
-￼    my $idp = Net::SAML2::IdP->new_from_url(
-￼        url     => $this->{Saml}{metadata},
-￼        cacert  => $this->{Saml}{cacert},
-￼    );
+    my $saml = $this->{Saml};
+
+    my $idp = Net::SAML2::IdP->new_from_url(
+        url     => $saml->{metadata},
+        cacert  => $saml->{cacert},
+    );
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
-        url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-        key => $this->{Saml}{sp_signing_key},
-        cert => $idp->cert('signing'),
+        url   => $idp->slo_url('redirect'),
+        key   => $saml->{sp_signing_key},
+        cert  => $idp->cert('signing'),
         param => 'SAMLResponse',
     );
 
     my ($response, $relaystate) = $redirect->verify($uri);
-￼
-    if ($response) {
-￼        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
-￼                        xml => $response
-￼        );
-￼
-￼        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
-￼            deleteSession(...)
-￼        }
-￼    }
 
+    if($response) {
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+            xml => $response
+        );
+
+        if ($logout->success) {
+            deleteSession(...)
+        }
+    }
 ```
 
 ### Creating the LogoutRequest
@@ -486,8 +487,8 @@ The SP needs to create the Net::SAML2::IdP object as is done above (in this case
 
 ```
     my $idp = Net::SAML2::IdP->new_from_xml(
-            xml    => $metadata,  # URL where the xml is located
-            cacert => $cacert2,   # Filename of the Identity Providers CACert
+       xml    => $metadata,  # URL where the xml is located
+       cacert => $cacert2,   # Filename of the Identity Providers CACert
     );
 
 ```
@@ -495,12 +496,12 @@ Create the Net::SAML2::Binding::Redirect object.
 
 ```
     my $redirect = Net::SAML2::Binding::Redirect->new(
-        key => 't/sign-nopw-cert.pem',
-        cert => $idp->cert('signing'),
+        key      => 't/sign-nopw-cert.pem',
+        cert     => $idp->cert('signing'),
         sig_hash => 'sha256',
-        param => 'SAMLRequest',
-        # The ssl_url destination for redirect
-        url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        param    => 'SAMLRequest',
+        # The sso_url destination for redirect
+        url      => $idp->sso_url('redirect'),
     );
 ```
 Verify signature on the URL, decode the request and retrieve the XML request and RelayState.
@@ -532,10 +533,11 @@ The data that the SP requires is in the resulting Net::SAML2::Protocol::LogoutRe
 The logout response should be sent to the IdP by the SP after the local user's session has been invalidated.  The LogoutResponse is created by creating the Net::SAML2::Protocol::LogoutResponse object with the correct values.  The response_to is the id from the LogoutRequest.  It is the LogoutRequest to which the LogoutRespones is related.  Below shows the issue and the destination as the opposite of the same values from the LogoutRequest.  The issuer in the request is likely where the LogoutResponse should be sent (the destination).  More properly the issuer should be the $sp->{issuer} and the destination the $idp->{slo_url}->{urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}.
 
 ```
+    use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
     my $logoutresponse = Net::SAML2::Protocol::LogoutResponse->new(
         issuer      => $logoutrequest->{destination},
         destination => $logoutrequest->{issuer},
-        status      => "urn:oasis:names:tc:SAML:2.0:status:Success",
+        status      => STATUS_SUCCESS,
         response_to => $logoutrequest->{id},
     );
 ```
@@ -613,17 +615,17 @@ this results in the following XML
       </ds:KeyInfo>
     </md:KeyDescriptor>
     <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
-                            Location="http://localhost:3000/saml/slo-soap" />
+         Location="http://localhost:3000/saml/slo-soap" />
     <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
-                            Location="http://localhost:3000/saml/sls-redirect-response" />
+         Location="http://localhost:3000/saml/sls-redirect-response" />
     <md:AssertionConsumerService isDefault="true"
-                                 Location="http://localhost:3000/saml/consumer-post"
-                                 index="1"
-                                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" />
+         Location="http://localhost:3000/saml/consumer-post"
+         index="1"
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" />
     <md:AssertionConsumerService index="2"
-                                 Location="http://localhost:3000/saml/consumer-artifact"
-                                 isDefault="false"
-                                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" />
+         Location="http://localhost:3000/saml/consumer-artifact"
+         isDefault="false"
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" />
   </md:SPSSODescriptor>
   <md:Organization>
     <md:OrganizationName xml:lang="en">Net::SAML2</md:OrganizationName>
@@ -635,5 +637,4 @@ this results in the following XML
     <md:EmailAddress>timlegge@cpan.org</md:EmailAddress>
   </md:ContactPerson>
 </md:EntityDescriptor>
-
 ```

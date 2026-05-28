@@ -1,181 +1,190 @@
 package Net::SAML2::Protocol::Assertion;
 use Moose;
 
+extends 'Net::SAML2::Protocol';
+
 # VERSION
 
-use MooseX::Types::DateTime qw/ DateTime /;
-use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
-use DateTime;
-use DateTime::HiRes;
-use DateTime::Format::XSD;
-use Net::SAML2::XML::Util qw/ no_comments /;
-use Net::SAML2::XML::Sig;
-use XML::Enc;
-use XML::LibXML::XPathContext;
-use List::Util qw(first);
-use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
-use Carp qw(croak);
+use MooseX::Types::DateTime       qw/DateTime/;
+use MooseX::Types::Common::String qw/NonEmptySimpleStr/;
 
-with 'Net::SAML2::Role::ProtocolMessage';
+use Carp                   qw/croak/;
+use List::Util             qw/first/;
+use Net::SAML2::Util       qw/xml_without_comments new_xpc/;
+use URN::OASIS::SAML2      qw/STATUS_SUCCESS/;
+
+use DateTime               ();
+use DateTime::HiRes        ();
+use DateTime::Format::XSD  ();
+use Net::SAML2::XML::Sig   ();
+use XML::Enc               ();
 
 # ABSTRACT: SAML2 assertion object
 
 =head1 SYNOPSIS
 
   my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-    xml => decode_base64($SAMLResponse)
+    xml => decode_base64($SAMLResponse),
   );
 
-=cut
-
-has 'attributes' => (isa => 'HashRef[ArrayRef]', is => 'ro', required => 1);
-has 'audience'   => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
-has 'not_after'  => (isa => DateTime,          is => 'ro', required => 1);
-has 'not_before' => (isa => DateTime,          is => 'ro', required => 1);
-has 'session'         => (isa => 'Str', is => 'ro', required => 1);
-has 'in_response_to'  => (isa => 'Str', is => 'ro', required => 1);
-has 'response_status' => (isa => 'Str', is => 'ro', required => 1);
-has 'response_substatus' => (isa => 'Str', is => 'ro');
-has 'xpath' => (isa => 'XML::LibXML::XPathContext', is => 'ro', required => 1);
-has 'nameid_object' => (
-    isa       => 'XML::LibXML::Element',
-    is        => 'ro',
-    required  => 0,
-    init_arg  => 'nameid',
-    predicate => 'has_nameid',
-);
-has 'authnstatement_object' => (
-    isa       => 'XML::LibXML::Element',
-    is        => 'ro',
-    required  => 0,
-    init_arg  => 'authnstatement',
-    predicate => 'has_authnstatement',
-);
+=head1 DESCRIPTION
 
 =head1 METHODS
 
+=head2 my $assert = $class->new(%options)
+
+Create a new Assertion object.  You probably want to use C<new_from_xml()>
+to configure the C<%options>.
+
+All options provided by the base class L<Net::SAML2::Protocol> constructor
+C<new()> are supported, with the C<in_response_to> required.
+
+More C<%options>: (which also have read accessors)
+
+=over 4
+
+=item B<attributes> => HASH-of-ARRAYS
+
+=item B<audience> => $string (required)
+
+=item B<not_after> => DateTime object (required)
+
+=item B<not_before> => DateTime object (required)
+
+=item B<session> => $index (required)
+
+=item B<response_status> => $string (required)
+
+=item B<response_substatus> => $string
+
+SAML errors are usually "nested" ("Responder -> RequestDenied" for instance,
+means that the responder in this transaction (the IdP) denied the login
+request). For proper error message generation, both levels are needed.
+
+=back
+
 =cut
 
-=head2 new_from_xml( ... )
+has '+in_response_to' => (required => 1);
+has attributes      => (isa => 'HashRef[ArrayRef]', is => 'ro', required => 1);
+has audience        => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has not_after       => (isa => DateTime,          is => 'ro', required => 1);
+has not_before      => (isa => DateTime,          is => 'ro', required => 1);
+has session         => (isa => 'Str', is => 'ro', required => 1);
+has response_status => (isa => 'Str', is => 'ro', required => 1);
+has response_substatus => (isa => 'Str', is => 'ro');
 
-Constructor. Creates an instance of the Assertion object, parsing the
-given XML to find the attributes, session and nameid.
+has nameid_object => (
+    isa       => 'XML::LibXML::Element',
+    is        => 'ro',
+    init_arg  => 'nameid',
+);
 
-Arguments:
+has authnstatement_object => (
+    isa       => 'XML::LibXML::Element',
+    is        => 'ro',
+    init_arg  => 'authnstatement',
+);
+
+
+=head2 my $assert = $class->new_from_xml(xml => $string, %options)
+
+Constructor. Creates an Assertion object, parsing the given XML to find
+the attributes, session, and nameid.
+
+All parameters which are required for C<new()> are extracted from
+the provided xml.  You have these C<%options> here:
 
 =over
 
-=item B<xml>
+=item xml => $string (required)
 
-XML data
+XML string.
 
-=item B<key_file>
+=item key_file => $filename
 
-Optional but Required handling Encrypted Assertions.
+Required only when handling Encrypted Assertions.
 
-path to the SP's private key file that matches the SP's public certificate
+Path to the SP's private key file that matches the SP's public certificate
 used by the IdP to Encrypt the response (or parts of the response)
 
-=item B<cacert>
+=item cacert => $filename
 
-path to the CA certificate for verification.  Optional: This is only used for
-validating the certificate provided for a signed Assertion that was found
-when the EncryptedAssertion is decrypted.
+Path to the CA certificate for verification.  This is only used for
+validating the certificate provided for a signed C<Assertion> that was
+found when the C<EncryptedAssertion> is decrypted.
 
-While optional it is recommended for ensuring that the Assertion in an
-EncryptedAssertion is properly validated.
+While optional it is recommended for ensuring that the C<Assertion> in an
+C<EncryptedAssertion> is properly validated.
 
 =back
 
 =cut
 
 sub _verify_encrypted_assertion {
-    my $self     = shift;
-    my $xml      = shift;
-    my $cacert   = shift;
-    my $key_file = shift;
-    my $key_name = shift;
+    my ($self, $xml, $cacert, $key_file, $key_name) = @_;
 
-    my $xpath = XML::LibXML::XPathContext->new($xml);
-    $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-    $xpath->registerNs('dsig',  'http://www.w3.org/2000/09/xmldsig#');
-    $xpath->registerNs('xenc',  'http://www.w3.org/2001/04/xmlenc#');
+    my $xpc = new_xpc $xml;
+    $xpc->exists('//saml:EncryptedAssertion')
+        or return $xml;
 
-    return $xml unless $xpath->exists('//saml:EncryptedAssertion');
+    defined $key_file
+        or croak "Encrypted Assertions require key_file";
 
-    croak "Encrypted Assertions require key_file" if !defined $key_file;
+    $xml = $self->_decrypt($xml, key_file => $key_file, key_name => $key_name);
+    $xpc->setContextNode($xml);
 
-    $xml = $self->_decrypt(
-        $xml,
-        key_file => $key_file,
-        key_name => $key_name,
-    );
-    $xpath->setContextNode($xml);
+    my $assert = $xpc->findnodes('//saml:Assertion')->shift
+        or return $xml;
 
-    my $assert_nodes = $xpath->findnodes('//saml:Assertion');
-    return $xml unless $assert_nodes->size;
-    my $assert = $assert_nodes->get_node(1);
+    $xpc->exists('ds:Signature', $assert)
+        or return $xml;
 
-    return $xml unless $xpath->exists('dsig:Signature', $assert);
-    my $xml_opts->{ no_xml_declaration } = 1;
-    my $x   = Net::SAML2::XML::Sig->new($xml_opts);
-    my $ret = $x->verify($assert->toString());
-    die "Decrypted Assertion signature check failed" unless $ret;
+    my $signer = Net::SAML2::XML::Sig->new(no_xml_declaration => 1);
+    $signer->verify($assert->toString)
+        or die "Decrypted Assertion signature check failed";
 
-    return $xml unless $cacert;
-    my $cert = $x->signer_cert;
-    die "Certificate not provided in SAML Response, cannot validate" unless $cert;
+    $cacert
+        or return $xml;
+
+    my $cert = $signer->signer_cert
+        or die "Certificate not provided in SAML Response, cannot validate";
 
     my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
-    die "Unable to verify signer cert with cacert: " . $cert->subject
-        unless $ca->verify($cert);
+    $ca->verify($cert)
+        or die "Unable to verify signer cert with cacert: " . $cert->subject;
+
     return $xml;
 }
 
 sub new_from_xml {
-    my($class, %args) = @_;
+    my ($class, %args) = @_;
 
     my $key_file = $args{key_file};
+    my $key_name = $args{key_name};
     my $cacert   = delete $args{cacert};
+    my $xml      = xml_without_comments $args{xml};
 
-    my $xpath = XML::LibXML::XPathContext->new();
-    $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-    $xpath->registerNs('samlp', 'urn:oasis:names:tc:SAML:2.0:protocol');
-    $xpath->registerNs('dsig',  'http://www.w3.org/2000/09/xmldsig#');
-    $xpath->registerNs('xenc',  'http://www.w3.org/2001/04/xmlenc#');
+    $xml         = $class->_verify_encrypted_assertion($xml, $cacert, $key_file, $key_name);
 
-    my $xml = no_comments($args{xml});
-    $xpath->setContextNode($xml);
+    #XXX _decrypt is called again: also within the previous call. Nothing to do?
+    my $dec      = $class->_decrypt($xml, key_file => $key_file, key_name => $key_name);
+    my $xpc      = new_xpc $dec;
 
-    $xml = $class->_verify_encrypted_assertion(
-        $xml,
-        $cacert,
-        $key_file,
-        $args{key_name},
-    );
-
-    my $dec = $class->_decrypt(
-        $xml,
-        key_file => $key_file,
-        key_name => $args{key_name}
-    );
-    $xpath->setContextNode($dec);
-
-    my $attributes = {};
-    for my $node ($xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue/..'))
+    my %attributes;
+    for my $node ($xpc->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue/..'))
     {
-        my @values = $xpath->findnodes("saml:AttributeValue", $node);
-        $attributes->{$node->getAttribute('Name')} = [map $_->string_value, @values];
+        my @values = $xpc->findnodes('saml:AttributeValue', $node);
+        $attributes{$node->getAttribute('Name')} = [ map $_->string_value, @values ];
     }
 
-    my $xpath_base = '//samlp:Response/saml:Assertion/saml:Conditions/';
+    my $conditions = '//samlp:Response/saml:Assertion/saml:Conditions/';
 
     my $not_before;
-    if (my $value = $xpath->findvalue($xpath_base . '@NotBefore')) {
+    if (my $value = $xpc->findvalue($conditions . '@NotBefore')) {
         $not_before = DateTime::Format::XSD->parse_datetime($value);
     }
-    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotBefore')) {
+    elsif (my $global = $xpc->findvalue('//saml:Conditions/@NotBefore')) {
         $not_before = DateTime::Format::XSD->parse_datetime($global);
     }
     else {
@@ -183,132 +192,105 @@ sub new_from_xml {
     }
 
     my $not_after;
-    if (my $value = $xpath->findvalue($xpath_base . '@NotOnOrAfter')) {
+    if(my $value = $xpc->findvalue($conditions . '@NotOnOrAfter')) {
         $not_after = DateTime::Format::XSD->parse_datetime($value);
     }
-    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
+    elsif(my $global = $xpc->findvalue('//saml:Conditions/@NotOnOrAfter')) {
         $not_after = DateTime::Format::XSD->parse_datetime($global);
     }
     else {
         $not_after = DateTime->from_epoch(epoch => time() + 1000);
     }
 
-    my $nameid;
-    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
-        $nameid = $node->get_node(1);
-    }
-    elsif (my $global = $xpath->findnodes('//saml:Subject/saml:NameID')) {
-        $nameid = $global->get_node(1);
-    }
+    my $nameid
+      = $xpc->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID')->shift
+     || $xpc->findnodes('//saml:Subject/saml:NameID')->shift;
 
-    my $authnstatement;
-    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement')) {
-        $authnstatement = $node->get_node(1);
-    }
+    my $authnstatement = $xpc->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement')->shift;
 
-    my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode|/samlp:ArtifactResponse/samlp:Status/samlp:StatusCode');
+    my $status_node = $xpc->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode|/samlp:ArtifactResponse/samlp:Status/samlp:StatusCode')->shift
+        or croak "Unable to parse status from assertion";
+    my $status      = $status_node->getAttribute('Value');
 
-    croak("Unable to parse status from assertion") unless $nodeset->size;
-
-    my $status_node = $nodeset->get_node(1);
-    my $status = $status_node->getAttribute('Value');
     my $substatus;
-
-    if (my $s = first { $_->isa('XML::LibXML::Element') } $status_node->childNodes) {
+    if(my $s = first { $_->isa('XML::LibXML::Element') } $status_node->childNodes) {
         $substatus = $s->getAttribute('Value');
     }
 
-    my $self = $class->new(
-        id             => $xpath->findvalue('//saml:Assertion/@ID'),
-        issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer'),
-        destination    => $xpath->findvalue('/samlp:Response/@Destination'),
-        attributes     => $attributes,
-        session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex'),
-        $nameid ? (nameid => $nameid) : (),
-        audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
-        not_before     => $not_before,
-        not_after      => $not_after,
-        xpath          => $xpath,
-        in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
+    return $class->new(
+        id              => $xpc->findvalue('//saml:Assertion/@ID'),
+        issuer          => $xpc->findvalue('//saml:Assertion/saml:Issuer'),
+        destination     => $xpc->findvalue('/samlp:Response/@Destination'),
+        attributes      => \%attributes,
+        session         => $xpc->findvalue('//saml:AuthnStatement/@SessionIndex'),
+        audience        => $xpc->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
+        not_before      => $not_before,
+        not_after       => $not_after,
+        in_response_to  => $xpc->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
         response_status => $status,
-        $substatus ? (response_substatus => $substatus) : (),
+        $nameid         ? (nameid => $nameid) : (),
+        $substatus      ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
     );
-
-    return $self;
 }
 
-
-=head2 response_status
-
-Returns the response status
-
-=head2 response_substatus
-
-SAML errors are usually "nested" ("Responder -> RequestDenied" for instance,
-means that the responder in this transaction (the IdP) denied the login
-request). For proper error message generation, both levels are needed.
-
-=head2 name
+=head2 my $name = $assert->name()
 
 Returns the CN attribute, if provided.
 
 =cut
 
-sub name {
-    my $self = shift;
-    return $self->attributes->{CN}[0];
-}
+sub name { return shift->attributes->{CN}[0] }
 
-=head2 nameid
+=head2 my $nameid = $assert->nameid()
 
-Returns the NameID
+Returns the NameID.
 
 =cut
 
 sub nameid {
-    my $self = shift;
-    return unless $self->has_nameid;
-    return $self->nameid_object->textContent;
+    my $self   = shift;
+    my $nameid = $self->nameid_object;
+    return $nameid ? $nameid->textContent : undef;
 }
 
-=head2 nameid_format
+=head2 my $format = $assert->nameid_format()
 
-Returns the NameID Format
+Returns the NameID Format.
 
 =cut
 
 sub nameid_format {
-    my $self = shift;
-    return unless $self->has_nameid;
-    return $self->nameid_object->getAttribute('Format');
+    my $self   = shift;
+    my $nameid = $self->nameid_object;
+    return $nameid ? $nameid->getAttribute('Format') : undef;
 }
 
-=head2 nameid_name_qualifier
+=head2 my $qual = $assert->nameid_name_qualifier()
 
 Returns the NameID NameQualifier
 
 =cut
 
 sub nameid_name_qualifier {
-    my $self = shift;
-    return unless $self->has_nameid;
-    return $self->nameid_object->getAttribute('NameQualifier');
+    my $self   = shift;
+    my $nameid = $self->nameid_object;
+    return $nameid ? $nameid->getAttribute('NameQualifier') : undef;
 }
 
-=head2 nameid_sp_name_qualifier
+=head2 my $qual = $assert->nameid_sp_name_qualifier()
 
-Returns the NameID SPNameQualifier
+Returns the NameID SPNameQualifier.
 
 =cut
 
 sub nameid_sp_name_qualifier {
-    my $self = shift;
-    return unless $self->has_nameid;
-    return $self->nameid_object->getAttribute('SPNameQualifier');
+    my $self   = shift;
+    my $nameid = $self->nameid_object;
+    return $nameid ? $nameid->getAttribute('SPNameQualifier') : undef;
 }
 
-=head2 nameid_sp_provided_id
+=head2 my $spid = $assert->nameid_sp_provided_id()
 
 Returns the NameID SPProvidedID
 
@@ -316,142 +298,122 @@ Returns the NameID SPProvidedID
 
 sub nameid_sp_provided_id {
     my $self = shift;
-    return unless $self->has_nameid;
-    return $self->nameid_object->getAttribute('SPProvidedID');
+    my $nameid = $self->nameid_object;
+    return $nameid ? $nameid->getAttribute('SPProvidedID') : undef;
 }
 
-=head2 authnstatement
+=head2 my $stm = $assert->authnstatement()
 
-Returns the AuthnStatement
+Returns the AuthnStatement xml content as text.
 
 =cut
 
 sub authnstatement {
     my $self = shift;
-    return unless $self->has_authnstatement;
-    return $self->authnstatement_object->textContent;
+    my $auth = $self->authnstatement_object;
+    return $auth ? $auth->textContent : undef;
 }
 
-=head2 authnstatement_authninstant
+=head2 my $inst = $assert->authnstatement_authninstant()
 
-Returns the AuthnStatement AuthnInstant
+Returns the AuthnStatement attribute AuthnInstant.
 
 =cut
 
 sub authnstatement_authninstant {
     my $self = shift;
-    return unless $self->has_authnstatement;
-    return $self->authnstatement_object->getAttribute('AuthnInstant');
+    my $auth = $self->authnstatement_object;
+    return $auth ? $auth->getAttribute('AuthnInstant') : undef;
 }
 
-=head2 authnstatement_sessionindex
+=head2 my $index = $assert->authnstatement_sessionindex()
 
-Returns the AuthnStatement SessionIndex
+Returns the AuthnStatement attribute SessionIndex.
 
 =cut
 
 sub authnstatement_sessionindex {
     my $self = shift;
-    return unless $self->has_authnstatement;
-    return $self->authnstatement_object->getAttribute('SessionIndex');
+    my $auth = $self->authnstatement_object;
+    return $auth ? $auth->getAttribute('SessionIndex') : undef;
 }
 
-=head2 authnstatement_subjectlocality
+=head2 my $subj = $assert->authnstatement_subjectlocality()
 
-Returns the AuthnStatement SubjectLocality
+Returns the AuthnStatement node SubjectLocality.
 
 =cut
 
 sub authnstatement_subjectlocality {
     my $self = shift;
-    return unless $self->has_authnstatement;
-
-    my $xpc = XML::LibXML::XPathContext->new;
-    $xpc->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-    my $subjectlocality;
-    my $xpath_base = '//saml:AuthnStatement/saml:SubjectLocality';
-    if (my $nodes = $xpc->find($xpath_base, $self->authnstatement_object)) {
-        my $node = $nodes->get_node(1);
-        $subjectlocality = $node;
-    }
-    return $subjectlocality;
+    my $auth = $self->authnstatement_object or return;
+    return new_xpc($auth)->findnodes('//saml:AuthnStatement/saml:SubjectLocality')->shift;
 }
 
-=head2 subjectlocality_address
+=head2 my $address = $assert->subjectlocality_address()
 
-Returns the SubjectLocality Address
+Returns the SubjectLocality attribute Address.
 
 =cut
 
 sub subjectlocality_address {
     my $self = shift;
-    return unless $self->has_authnstatement;
     my $subjectlocality = $self->authnstatement_subjectlocality;
-    return unless $subjectlocality;
-    return $subjectlocality->getAttribute('Address');
+    return $subjectlocality ? $subjectlocality->getAttribute('Address') : undef;
 }
 
-=head2 subjectlocality_dnsname
+=head2 my $hostname = $assert->subjectlocality_dnsname()
 
-Returns the SubjectLocality DNSName
+Returns the SubjectLocality attribute DNSName.
 
 =cut
 
 sub subjectlocality_dnsname {
     my $self = shift;
-    return unless $self->has_authnstatement;
     my $subjectlocality = $self->authnstatement_subjectlocality;
-    return unless $subjectlocality;
-    return $subjectlocality->getAttribute('DNSName');
+    return $subjectlocality ? $subjectlocality->getAttribute('DNSName') : undef;
 }
 
-=head2 authnstatement_authncontext
+=head2 my $ctx = $assert->authnstatement_authncontext()
 
-Returns the AuthnContext for the AuthnStatement
+Returns the AuthnContext node for the AuthnStatement.
 
 =cut
 
 sub authnstatement_authncontext {
     my $self = shift;
-    return unless $self->has_authnstatement;
-
-    my $xpc = XML::LibXML::XPathContext->new;
-    $xpc->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-    my $authncontext;
-    my $xpath_base = '//saml:AuthnStatement/saml:AuthnContext';
-    if (my $nodes = $xpc->find($xpath_base, $self->authnstatement_object)) {
-        my $node = $nodes->get_node(1);
-        $authncontext = $node;
-    }
-    return $authncontext;
+    my $auth = $self->authnstatement_object or return;
+    return $self->{authnctx} ||=
+        new_xpc($auth)->findnodes('//saml:AuthnStatement/saml:AuthnContext')->shift;
 }
 
-=head2 contextclass_authncontextclassref
+=head2 my $ctx = $assert->contextclass_authncontextclassref()
 
-Returns the ContextClass AuthnContextClassRef
+Returns the ContextClass AuthnContextClassRef.
 
 =cut
 
 sub contextclass_authncontextclassref {
     my $self = shift;
-    return unless $self->has_authnstatement;
-    my $authncontextclassref = $self->authnstatement_authncontext;
-    return unless $authncontextclassref;
-    my $xpc = XML::LibXML::XPathContext->new;
-    $xpc->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
-    if (my $value = $xpc->findvalue('//saml:AuthnContextClassRef', $self->authnstatement_object)) {
-        $authncontextclassref = $value;
+    my $auth = $self->authnstatement_object or return;
+    my $authncontextclassref = $self->authnstatement_authncontext or return;
+
+    my $xpc = new_xpc $auth;
+    if(my $value = $xpc->findvalue('//saml:AuthnContextClassRef')) {
+        return $value;
     }
-    return $authncontextclassref;
+
+    return $authncontextclassref;   #XXX fishy.  Return undef?
 }
 
-=head2 valid( $audience, $in_response_to )
+=head2 $assert->valid($audience, $in_response_to)
 
 Returns true if this Assertion is currently valid for the given audience.
 
-Also accepts $in_response_to which it checks against the returned
-Assertion.  This is very important for security as it helps ensure
-that the assertion that was received was for the request that was made.
+Also accepts C<$in_response_to> (optional), which it checks against the
+returned Assertion.  This is very important for security as it helps
+ensure that the assertion that was received was for the request that
+was made.
 
 Checks the audience matches, and that the current time is within the
 Assertions validity period as specified in its Conditions element.
@@ -461,48 +423,36 @@ Assertions validity period as specified in its Conditions element.
 sub valid {
     my ($self, $audience, $in_response_to) = @_;
 
-    return 0 unless defined $audience;
-    return 0 unless($audience eq $self->audience);
+    defined $audience && $audience eq $self->audience
+        or return 0;
 
-    return 0 unless !defined $in_response_to
-        or $in_response_to eq $self->in_response_to;
+    !defined $in_response_to || $in_response_to eq $self->in_response_to
+        or return 0;
 
     my $now = DateTime::HiRes->now;
 
     # not_before is "NotBefore" element - exact match is ok
     # not_after is "NotOnOrAfter" element - exact match is *not* ok
-    return 0 unless DateTime::->compare($now,             $self->not_before) > -1;
-    return 0 unless DateTime::->compare($self->not_after, $now) > 0;
-
-    return 1;
+    return DateTime->compare($now, $self->not_before) > -1
+       && DateTime->compare($self->not_after,  $now) > 0 ? 1 : 0; #XXX tests require false=0
 }
 
-=head2 success
+=head2 my $found = $assert->success
 
 Returns true if the response status is a success, returns false otherwise.
 In case the assertion isn't successfull, the L</response_status> and L</response_substatus> calls can be use to see why the assertion wasn't successful.
 
 =cut
 
-sub success {
-    my $self = shift;
-    return 1 if $self->response_status eq STATUS_SUCCESS;
-    return 0;
-}
+sub success { return shift->response_status eq STATUS_SUCCESS }
 
 sub _decrypt {
-    my $self    = shift;
-    my $xml     = shift;
-    my %options = @_;
+    my ($self, $xml, %options) = @_;
 
-    return $xml unless $options{key_file};
+    my $key_file = $options{key_file}
+        or return $xml;
 
-    my $enc = XML::Enc->new(
-        {
-            no_xml_declaration => 1,
-            key                => $options{key_file},
-        }
-    );
+    my $enc = XML::Enc->new({ no_xml_declaration => 1, key => $key_file });
     return XML::LibXML->load_xml(string => $enc->decrypt($xml, %options));
 }
 
