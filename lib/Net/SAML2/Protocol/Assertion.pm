@@ -12,9 +12,12 @@ use Net::SAML2::XML::Util qw/ no_comments /;
 use Net::SAML2::XML::Sig;
 use XML::Enc;
 use XML::LibXML::XPathContext;
+use Crypt::OpenSSL::X509;
+use Crypt::OpenSSL::Verify;
 use List::Util qw(first);
 use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
 use Carp qw(croak);
+use Net::SAML2::Types qw(XsdID);
 
 with 'Net::SAML2::Role::ProtocolMessage';
 with 'Net::SAML2::Role::VerifyXML';
@@ -181,18 +184,19 @@ sub assert_saml_value {
 sub _get_actual_destination {
     my ($class, $destination, $xpath) = @_;
 
-    return $class->assert_saml_value($xpath, $destination, '/samlp:Response/@Destination');
+    return $class->assert_saml_value($xpath, $destination,
+         '/samlp:Response/@Destination | /samlp:ArtifactResponse/@Destination');
 }
 
 sub _get_not_before {
-    my ($class, $xpath, $xpath_base) = @_;
+    my ($class, $xpath, $ctx) = @_;
 
     my $not_before;
-    if (my $value = $xpath->findvalue($xpath_base . '@NotBefore')) {
+    if (my $value = $ctx
+            ? $xpath->findvalue('saml:Conditions/@NotBefore', $ctx)
+            : $xpath->findvalue('//samlp:Response/saml:Assertion/saml:Conditions/@NotBefore')
+            || $xpath->findvalue('//saml:Conditions/@NotBefore')) {
         $not_before = DateTime::Format::XSD->parse_datetime($value);
-    }
-    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotBefore')) {
-        $not_before = DateTime::Format::XSD->parse_datetime($global);
     }
     else {
         $not_before = DateTime::HiRes->now();
@@ -201,14 +205,14 @@ sub _get_not_before {
 }
 
 sub _get_not_after {
-    my ($class, $xpath, $xpath_base) = @_;
+    my ($class, $xpath, $ctx) = @_;
 
     my $not_after;
-    if (my $value = $xpath->findvalue($xpath_base . '@NotOnOrAfter')) {
+    if (my $value = $ctx
+            ? $xpath->findvalue('saml:Conditions/@NotOnOrAfter', $ctx)
+            : $xpath->findvalue('//samlp:Response/saml:Assertion/saml:Conditions/@NotOnOrAfter')
+            || $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
         $not_after = DateTime::Format::XSD->parse_datetime($value);
-    }
-    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
-        $not_after = DateTime::Format::XSD->parse_datetime($global);
     }
     else {
         $not_after = DateTime->from_epoch(epoch => time() + 1000);
@@ -217,38 +221,100 @@ sub _get_not_after {
 }
 
 sub _get_nameid {
-    my ($class, $xpath) = @_;
+    my ($class, $xpath, $ctx) = @_;
 
     my $nameid;
-    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
-        croak("Invalid number of NameIds found in the Response") if $node->size != 1;
-        $nameid = $node->get_node(1);
+    my $nameid_nodes = $ctx
+        ? $xpath->findnodes('saml:Subject/saml:NameID', $ctx)
+        : $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID');
+    if ($nameid_nodes->size) {
+        $nameid = $nameid_nodes->get_node(1);
     }
-    elsif (my $encrypted = $xpath->findnodes('//samlp:Response/saml:EncryptedAssertion/saml:Assertion/saml:Subject/saml:NameID')) {
-        croak("Invalid number of NameIds found in the Response") if $encrypted->size != 1;
-        $nameid = $encrypted->get_node(1);
-    }
-    elsif (my $global = $xpath->findnodes('//samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
-        croak("Invalid number of NameIds found in the Response") if $global->size != 1;
-        $nameid = $global->get_node(1);
+    elsif (!$ctx) {
+        my $global = $xpath->findnodes('//saml:Subject/saml:NameID');
+        $nameid = $global->get_node(1) if $global->size;
     }
     return $nameid;
 }
 
 sub _get_authnstatement {
-    my ($class, $xpath, $xpath_base) = @_;
+    my ($class, $xpath, $ctx) = @_;
 
     my $authnstatement;
-    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement')) {
-        $authnstatement = $node->get_node(1);
+    my $authn_nodes = $ctx
+        ? $xpath->findnodes('saml:AuthnStatement', $ctx)
+        : $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement');
+    if ($authn_nodes->size) {
+        $authnstatement = $authn_nodes->get_node(1);
     }
     return $authnstatement;
 }
 
 sub _get_actual_issuer {
-    my ($class, $issuer, $xpath) = @_;
+    my ($class, $issuer, $xpath, $ctx) = @_;
 
     return $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
+}
+
+sub _trusted_signature_refs {
+    my ($class, $xpath, $cacert) = @_;
+
+    return unless $cacert;
+
+    my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
+
+    my @trusted_refs;
+    for my $sig ($xpath->findnodes('//dsig:Signature')) {
+        my $cert_b64 = $xpath->findvalue(
+            './dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate', $sig);
+        next unless defined $cert_b64 && $cert_b64 =~ /\S/;
+
+        # Strip whitespace from the base64 and wrap as PEM. Crypt::OpenSSL::X509
+        # expects 64-char lines.
+        $cert_b64 =~ s/\s+//g;
+        my $pem = "-----BEGIN CERTIFICATE-----\n"
+                . join("\n", $cert_b64 =~ /(.{1,64})/g) . "\n"
+                . "-----END CERTIFICATE-----\n";
+
+        my $cert_obj = eval { Crypt::OpenSSL::X509->new_from_string($pem) };
+        next unless $cert_obj;
+
+        # Crypt::OpenSSL::Verify->verify can both return a bool AND die on
+        # parse / chain failure; treat both as untrusted.
+        my $ok = eval { $ca->verify($cert_obj)};
+        next unless $ok;
+
+        my $ref = $xpath->findvalue(
+            './dsig:SignedInfo/dsig:Reference/@URI', $sig);
+        next unless defined $ref;
+        $ref =~ s/^#//;
+        next unless length $ref;
+
+        next unless XsdID->check($ref);
+
+        my $resolved = $xpath->findnodes("//*[\@ID='$ref']");
+
+        # A CA-trusted signature whose Reference URI resolves to more than
+        # one element is an active XSW1 (duplicate-ID) attack - fail closed.
+        die("XSW guard: trusted signature Reference URI '$ref' is "
+            . "ambiguous (matched " . $resolved->size . " elements)")
+            if $resolved->size > 1;
+
+        next unless $resolved->size == 1;
+        my $node = $resolved->get_node(1);
+
+        my $genuine = eval {
+            Net::SAML2::XML::Sig->new({
+                cert_text          => $pem,
+                no_xml_declaration => 1,
+            })->verify($node->toString);
+        };
+        next unless $genuine;
+
+        push @trusted_refs, $ref;
+    }
+
+    return @trusted_refs;
 }
 
 sub _verify_encrypted_assertion {
@@ -293,11 +359,11 @@ sub _verify_encrypted_assertion {
     my $assert = $assert_nodes->get_node(1);
 
     unless ($xpath->exists('dsig:Signature', $assert)) {
+        return $xml unless $require_signed_assertion;
         croak(
             "Decrypted assertion has no signature. Set require_signed_assertion => 0 "
           . "to accept unsigned encrypted assertions (not recommended)."
-        ) if $require_signed_assertion;
-        return $xml;
+        );
     }
 
     $self->verify_xml(
@@ -331,6 +397,20 @@ sub new_from_xml {
     $xpath->setContextNode($xml);
 
     my $actual_destination = $class->_get_actual_destination($destination, $xpath);
+    if ($cacert && $xpath->findnodes('//dsig:Signature')->size > 0) {
+        my $verifier = Net::SAML2::XML::Sig->new({
+            x509               => 1,
+            no_xml_declaration => 1,
+        });
+        my $ok = eval { $verifier->verify($xml->toString) };
+        my $err = $@;
+        unless ($ok) {
+            croak(sprintf(
+                "XML signature verification failed in new_from_xml%s",
+                $err ? " ($err)" : '',
+            ));
+        }
+    }
 
     $xml = $class->_verify_encrypted_assertion(
         $xml,
@@ -349,20 +429,96 @@ sub new_from_xml {
     );
     $xpath->setContextNode($dec);
 
+    my @trusted_refs = $class->_trusted_signature_refs($xpath, $cacert);
+    my $sig_count = $xpath->findnodes('//dsig:Signature')->size;
+    if ($cacert && $sig_count > 0 && !@trusted_refs) {
+        croak(
+            "No <dsig:Signature> in the document chains to the configured "
+          . "cacert. Refusing to extract assertion content."
+        );
+    }
+
+    my @candidate_refs;
+    if (@trusted_refs) {
+        @candidate_refs = @trusted_refs;
+    }
+    else {
+        # No cacert configured, or no signatures present. Best-effort
+        # anchoring at the first signature's reference URI.
+        my $ref = $xpath->findvalue(
+            '//dsig:Signature[1]/dsig:SignedInfo/dsig:Reference/@URI'
+        );
+        $ref =~ s/^#//;
+        @candidate_refs = ($ref) if length $ref;
+    }
+
+    my $signed_root;
+    my $assertion_node;
+    for my $sign_id_ref (@candidate_refs) {
+        next unless (defined $sign_id_ref && XsdID->check($sign_id_ref));
+        my $candidates = $xpath->findnodes("//*[\@ID='$sign_id_ref']");
+        croak("XSW guard: signed Reference URI '$sign_id_ref' is ambiguous "
+            . "(matched " . $candidates->size . " elements)")
+            if $candidates->size > 1;
+        my $root = $candidates->get_node(1);
+        next unless $root;
+
+        my $ln = $root->localname // '';
+        my $ns = $root->namespaceURI // '';
+        if ($ln eq 'Assertion'
+            && $ns eq 'urn:oasis:names:tc:SAML:2.0:assertion') {
+            $signed_root    = $root;
+            $assertion_node = $root;
+            last;
+        }
+        my $asns = $xpath->findnodes('.//saml:Assertion', $root);
+        if ($asns->size) {
+            $signed_root    = $root;
+            $assertion_node = $asns->get_node(1);
+            last;
+        }
+    }
+
+    if ($cacert && $sig_count > 0 && !$assertion_node) {
+        croak(
+            "XSW guard: no CA-trusted signature anchors a <saml:Assertion>. "
+          . "Refusing to extract assertion content via document order."
+        );
+    }
+
+    if (defined $destination && $assertion_node) {
+        my $recipient = $xpath->findvalue(
+            'saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@Recipient',
+            $assertion_node,
+        );
+        if (($recipient // '') ne $destination) {
+            croak(sprintf(
+                "Assertion SubjectConfirmationData/Recipient (%s) does "
+              . "not match expected destination (%s)",
+                $recipient, $destination,
+            ));
+        }
+    }
+
+    my $ctx = $assertion_node;
+
     my $attributes = {};
-    for my $node ($xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue/..'))
-    {
+    my @attr_owners = $assertion_node
+        ? $xpath->findnodes(
+            './saml:AttributeStatement/saml:Attribute/saml:AttributeValue/..',
+            $assertion_node)
+        : $xpath->findnodes(
+            '//saml:Assertion/saml:AttributeStatement/saml:Attribute/saml:AttributeValue/..');
+    for my $node (@attr_owners) {
         my @values = $xpath->findnodes("saml:AttributeValue", $node);
         $attributes->{$node->getAttribute('Name')} = [map $_->string_value, @values];
     }
 
-    my $xpath_base = '//samlp:Response/saml:Assertion/saml:Conditions/';
-
-    my $not_before      = $class->_get_not_before($xpath, $xpath_base);
-    my $not_after       = $class->_get_not_after($xpath, $xpath_base);
-    my $nameid          = $class->_get_nameid($xpath);
-    my $authnstatement  = $class->_get_authnstatement($xpath, $xpath_base);
-    my $actual_issuer   = $class->_get_actual_issuer($issuer, $xpath);
+    my $not_before      = $class->_get_not_before($xpath, $assertion_node);
+    my $not_after       = $class->_get_not_after($xpath, $assertion_node);
+    my $nameid          = $class->_get_nameid($xpath, $assertion_node);
+    my $authnstatement  = $class->_get_authnstatement($xpath, $assertion_node);
+    my $actual_issuer   = $class->_get_actual_issuer($issuer, $xpath, $assertion_node);
 
     my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode|/samlp:ArtifactResponse/samlp:Status/samlp:StatusCode');
 
@@ -377,17 +533,25 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
-        id             => $xpath->findvalue('//saml:Assertion/@ID'),
-        issuer         => $xpath->findvalue('//saml:Assertion/saml:Issuer'),
+        id             => $assertion_node
+            ? $assertion_node->getAttribute('ID')
+            : $xpath->findvalue('//saml:Assertion/@ID'),
+        issuer         => $actual_issuer,
         destination    => $actual_destination,
         attributes     => $attributes,
-        session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex'),
+        session        => $assertion_node
+            ? $xpath->findvalue('saml:AuthnStatement/@SessionIndex', $assertion_node)
+            : $xpath->findvalue('//saml:AuthnStatement/@SessionIndex'),
         $nameid ? (nameid => $nameid) : (),
-        audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
+        audience       => $assertion_node
+            ? $xpath->findvalue('saml:Conditions/saml:AudienceRestriction/saml:Audience', $assertion_node)
+            : $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
         not_before     => $not_before,
         not_after      => $not_after,
         xpath          => $xpath,
-        in_response_to => $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
+        in_response_to => $assertion_node
+            ? $xpath->findvalue('saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo', $assertion_node)
+            : $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
         response_status => $status,
         $substatus ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
