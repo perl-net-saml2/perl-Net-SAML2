@@ -9,7 +9,8 @@ use Net::SAML2::Protocol::Assertion;
 my $xml = path('t/data/eherkenning-decrypted.xml')->slurp;
 
 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
-    xml      => $xml,
+    xml     => $xml,
+    cacert  => 't/net-saml2-cacert.pem',
 );
 
 isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
