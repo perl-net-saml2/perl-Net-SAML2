@@ -40,6 +40,7 @@ has 'session'         => (isa => 'Str', is => 'ro', required => 1);
 has 'in_response_to'  => (isa => 'Str', is => 'ro', required => 1);
 has 'response_status' => (isa => 'Str', is => 'ro', required => 1);
 has 'response_substatus' => (isa => 'Str', is => 'ro');
+has 'cacert'     => (isa => 'Str', is => 'ro', required => 0);
 has 'xpath' => (isa => 'XML::LibXML::XPathContext', is => 'ro', required => 1);
 has 'nameid_object' => (
     isa       => 'XML::LibXML::Element',
@@ -54,6 +55,11 @@ has 'authnstatement_object' => (
     required  => 0,
     init_arg  => 'authnstatement',
     predicate => 'has_authnstatement',
+);
+has 'insecure_no_trust_anchor' => (
+    isa       => 'Bool',
+    is        => 'ro',
+    default   => 0,
 );
 
 =head1 METHODS
@@ -118,6 +124,26 @@ B<Notice>: This may become required in a future version.
 
 =cut
 
+# BUILDARGS
+
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my %params = @_;
+    unless ($params{cacert} || $params{insecure_no_trust_anchor}) {
+        croak(
+            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
+          . "to verify encrypted assertion signatures. Without it the "
+          . "verifier accepts any KeyInfo-embedded certificate. To "
+          . "explicitly disable this check (test/dev only), pass "
+          . "insecure_no_trust_anchor => 1 to new_from_xml()."
+        );
+    }
+
+    return $self->$orig(%params);
+};
+
 sub _verify_encrypted_assertion {
     my $self     = shift;
     my $xml      = shift;
@@ -125,6 +151,16 @@ sub _verify_encrypted_assertion {
     my $key_file = shift;
     my $key_name = shift;
     my $insecure_no_trust_anchor = shift;
+
+    unless ($cacert || $insecure_no_trust_anchor) {
+        croak(
+            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
+          . "to verify encrypted assertion signatures. Without it the "
+          . "verifier accepts any KeyInfo-embedded certificate. To "
+          . "explicitly disable this check (test/dev only), pass "
+          . "insecure_no_trust_anchor => 1 to new_from_xml()."
+        );
+    }
 
     my $xpath = XML::LibXML::XPathContext->new($xml);
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
@@ -153,15 +189,6 @@ sub _verify_encrypted_assertion {
     my $ret = $x->verify($assert->toString());
     die "Decrypted Assertion signature check failed" unless $ret;
 
-    unless ($cacert || $insecure_no_trust_anchor) {
-        croak(
-            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
-          . "to verify encrypted assertion signatures. Without it the "
-          . "verifier accepts any KeyInfo-embedded certificate. To "
-          . "explicitly disable this check (test/dev only), pass "
-          . "insecure_no_trust_anchor => 1 to new_from_xml()."
-        );
-    }
     return $xml unless $cacert;
     my $cert = $x->signer_cert;
     die "Certificate not provided in SAML Response, cannot validate" unless $cert;
@@ -180,17 +207,6 @@ sub new_from_xml {
     my $issuer   = delete $args{issuer};
     my $destination   = delete $args{destination};
     my $insecure_no_trust_anchor = delete $args{insecure_no_trust_anchor};
-
-    # Fail early
-    unless ($cacert || $insecure_no_trust_anchor) {
-        croak(
-            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
-          . "to verify encrypted assertion signatures. Without it the "
-          . "verifier accepts any KeyInfo-embedded certificate. To "
-          . "explicitly disable this check (test/dev only), pass "
-          . "insecure_no_trust_anchor => 1 to new_from_xml()."
-        );
-    }
 
     my $xpath = XML::LibXML::XPathContext->new();
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
@@ -303,6 +319,8 @@ sub new_from_xml {
         response_status => $status,
         $substatus ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
+        $cacert ? (cacert => $cacert) : (),
+        $insecure_no_trust_anchor ? (insecure_no_trust_anchor => $insecure_no_trust_anchor) : (),
     );
 
     return $self;

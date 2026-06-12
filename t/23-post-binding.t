@@ -25,10 +25,15 @@ use XML::Sig;
 lives_ok(sub { Net::SAML2::Binding::POST->new; },
     'bare new() is permitted (signing-only callers do not call handle_response)');
 
+# handle_response proceeds with a cacert or cert_text
+throws_ok(sub { Net::SAML2::Binding::POST->new(cacert => 't/net-saml2-cacert.pem' )->handle_response(''); },
+    qr/unable to parse xml/,
+    'handle_response does not fail with a cacert');
+
 # handle_response refuses to proceed without a trust anchor.
 throws_ok(sub { Net::SAML2::Binding::POST->new->handle_response(''); },
     qr/requires 'cacert' or 'cert_text'/,
-    'handle_response croaks without a trust anchor');
+    'handle_response croaks without a cacert or cert_text');
 
 # Explicit opt-out unblocks handle_response.
 lives_ok(sub {
@@ -36,7 +41,8 @@ lives_ok(sub {
     # decode_base64('') -> '' -> verify_xml('') will fail downstream,
     # but the trust-anchor check should pass. Trap downstream error.
     eval { $b->handle_response(''); };
-    pass('handle_response does not croak on the trust-anchor check '
+    unlike ($!, qr/requires 'cacert' or 'cert_text'/,
+        'handle_response does not croak on the trust-anchor check '
         . 'when insecure_no_trust_anchor => 1');
 }, 'explicit insecure_no_trust_anchor opt-out lets handle_response proceed');
 

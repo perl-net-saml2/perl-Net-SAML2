@@ -88,14 +88,15 @@ __END__
         my $acs = first { $_->{Binding} eq 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST' }
             @{ $sp->assertion_consumer_service };
 
-        # At least one of C<cacert> or C<cert_text> must be
-        # supplied at construction, unless C<insecure_no_trust_anchor> is set.
-        # Without a trust anchor the handle_response accepts whatever signing
-        # certificate the response embeds in its KeyInfo block, which is
-        # equivalent to no signature checking at all.
+        # At least one of C<cacert> or C<cert_text> must be supplied at
+        # construction, unless C<insecure_no_trust_anchor> is set.
+        # Without a C<cacert> or C<cert_text> the handle_response accepts
+        # whatever signing certificate the response embeds in its KeyInfo
+        # block, which is equivalent to no signature checking at all.
+        # Has no effect on the binding's signing path (C<sign_xml>).
 
         my $post = Net::SAML2::Binding::POST->new(
-            cacert                      => "IdP-cacert.pem",
+            cacert                      => "IdP-cacert.pem", # Optional for sign_xml()
             insecure_no_trust_anchor    => 0, Default - false require trust anchor
         );
         my $ret = $post->handle_response(

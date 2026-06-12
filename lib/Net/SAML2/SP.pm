@@ -31,6 +31,7 @@ my $sp = Net::SAML2::SP->new(
     issuer => 'http://localhost:3000',
     url    => 'http://localhost:3000',
     cert   => 'sign-nopw-cert.pem',
+    cacert => 'IdP-cacert.pem',
     key    => 'sign-nopw-key.pem',
 );
 
@@ -216,6 +217,12 @@ has 'sign_metadata' => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 
 has assertion_consumer_service => (is => 'ro', isa => 'ArrayRef', required => 1);
 has single_logout_service => (is => 'ro', isa => 'ArrayRef', required => 1);
+
+has 'insecure_no_trust_anchor' => (
+    isa       => 'Bool',
+    is        => 'ro',
+    default   => 0,
+);
 
 around BUILDARGS => sub {
     my $orig = shift;
@@ -492,6 +499,10 @@ sub sp_post_binding {
         ) : (
             insecure => 1,
         ),
+        $self->cacert ? (cacert => $self->cacert) : (),
+        $self->insecure_no_trust_anchor ? (
+            insecure_no_trust_anchor => $self->insecure_no_trust_anchor
+        ) : (),
         param => $param,
     );
 
