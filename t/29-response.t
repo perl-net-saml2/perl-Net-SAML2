@@ -11,6 +11,7 @@ sub get_object {
   my $destination = shift;
   my $response = Net::SAML2::Object::Response->new_from_xml(xml => $xml,
                     cacert  => 't/net-saml2-cacert.pem',
+                    require_signed_response => 1,
                     defined $destination ? (destination => $destination) : (),
                 );
   isa_ok($response, 'Net::SAML2::Object::Response');
@@ -39,6 +40,7 @@ sub get_object {
   my $assertion = $response->to_assertion(cacert  => 't/net-saml2-cacert.pem');
   isa_ok($assertion, "Net::SAML2::Protocol::Assertion");
 }
+
 
 {
   throws_ok(sub{get_object('t/data/response-no-assertion.xml', 'INCORRECT_DESTINATION');},

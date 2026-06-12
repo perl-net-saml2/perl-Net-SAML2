@@ -65,6 +65,22 @@ Returns the sub status of the response
 
 Returns the nodes of the assertion
 
+=head2 cacert
+
+path to the CA certificate for verification.  This is required for
+validating the certificate provided for a Response.
+
+It is required for ensuring that the Response is properly
+validated.
+
+=head2 insecure_no_trust_anchor
+
+Boolean, default false. When true, C<to_assertion> proceeds with
+no pre-configured trust anchor (every embedded signing certificate
+is accepted). B<This disables effective signature verification and
+is intended only for local testing.> Production deployments must
+leave this false and supply C<cacert>.
+
 =cut
 
 has _dom => (
@@ -94,6 +110,43 @@ has assertions => (
     predicate => 'has_assertions',
 );
 
+has 'cacert'     => (
+    isa => 'Str',
+    is => 'ro',
+    required => 0);
+
+has 'insecure_no_trust_anchor' => (
+    isa       => 'Bool',
+    is        => 'ro',
+    default   => 0,
+);
+
+has 'require_signed_response' => (
+    isa       => 'Bool',
+    is        => 'ro',
+    default   => 1,
+);
+
+# BUILDARGS
+
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my %params = @_;
+    unless ($params{cacert}
+         || $params{insecure_no_trust_anchor}) {
+        croak(
+            "Net::SAML2::Object::Response->new() requires 'cacert' "
+          . "on the object to verify SAML response signatures. "
+          . "To explicitly disable signature verification (test/dev only) "
+          . ", pass insecure_no_trust_anchor => 1 to new()."
+        );
+    }
+
+    return $self->$orig(%params);
+};
+
 =head1 METHODS
 
 =head2 $self->new_from_xml(xml => $xml, destination => $destination)
@@ -108,10 +161,14 @@ sub new_from_xml {
 
     my $xml = no_comments($args{xml});
     my $destination = delete $args{destination};
+    my $cacert = delete $args{cacert};
+    my $require_signed_response = delete $args{require_signed_response};
+    my $insecure_no_trust_anchor = delete $args{insecure_no_trust_anchor};
 
     my $xpath = XML::LibXML::XPathContext->new($xml);
     $xpath->registerNs('saml',  URN_ASSERTION);
     $xpath->registerNs('samlp', URN_PROTOCOL);
+    $xpath->registerNs('dsig',  'http://www.w3.org/2000/09/xmldsig#');
 
     my $actual_destination = $xpath->findvalue(
         '/samlp:Response/@Destination | /samlp:ArtifactResponse/@Destination');
@@ -125,6 +182,15 @@ sub new_from_xml {
     my $response = $xpath->findnodes('/samlp:Response|/samlp:ArtifactResponse');
     croak("Unable to parse response") unless $response->size;
     $response = $response->get_node(1);
+
+    my $signature = $xpath->findnodes('/samlp:Response/dsig:Signature|/samlp:ArtifactResponse/dsig:Signature', $response);
+
+    # This needs the additional check that the response is Related to the Signature
+    unless ((defined $require_signed_response && $require_signed_response == 1) && ($signature->size eq 1)) {
+            croak "Net::SAML2::Object::Response requires that the Response "
+            . "include exactly one Signature.  Pass `require_signed_response` = 0 "
+            . "to allow unsigned Responses";
+    }
 
     my $code_path = 'samlp:Status/samlp:StatusCode';
     if ($response->nodePath eq '/samlp:ArtifactResponse') {
@@ -149,6 +215,8 @@ sub new_from_xml {
         id     => $response->getAttribute('ID'),
         in_response_to => $response->getAttribute('InResponseTo'),
         $nodes->size ? (assertions => $nodes) : (),
+        $cacert ? (cacert => $cacert) : (),
+        $insecure_no_trust_anchor ? (insecure_no_trust_anchor => $insecure_no_trust_anchor) : (),
     );
 }
 
