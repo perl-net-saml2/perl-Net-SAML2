@@ -56,7 +56,7 @@ has 'authnstatement_object' => (
     init_arg  => 'authnstatement',
     predicate => 'has_authnstatement',
 );
-has 'insecure_no_trust_anchor' => (
+has 'insecure_trust_embedded_cert' => (
     isa       => 'Bool',
     is        => 'ro',
     default   => 0,
@@ -131,13 +131,13 @@ around BUILDARGS => sub {
     my $self = shift;
 
     my %params = @_;
-    unless ($params{cacert} || $params{insecure_no_trust_anchor}) {
+    unless ($params{cacert} || $params{insecure_trust_embedded_cert}) {
         croak(
             "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
           . "to verify encrypted assertion signatures. Without it the "
           . "verifier accepts any KeyInfo-embedded certificate. To "
           . "explicitly disable this check (test/dev only), pass "
-          . "insecure_no_trust_anchor => 1 to new_from_xml()."
+          . "insecure_trust_embedded_cert => 1 to new_from_xml()."
         );
     }
 
@@ -150,15 +150,15 @@ sub _verify_encrypted_assertion {
     my $cacert   = shift;
     my $key_file = shift;
     my $key_name = shift;
-    my $insecure_no_trust_anchor = shift;
+    my $insecure_trust_embedded_cert = shift;
 
-    unless ($cacert || $insecure_no_trust_anchor) {
+    unless ($cacert || $insecure_trust_embedded_cert) {
         croak(
             "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
           . "to verify encrypted assertion signatures. Without it the "
           . "verifier accepts any KeyInfo-embedded certificate. To "
           . "explicitly disable this check (test/dev only), pass "
-          . "insecure_no_trust_anchor => 1 to new_from_xml()."
+          . "insecure_trust_embedded_cert => 1 to new_from_xml()."
         );
     }
 
@@ -206,7 +206,7 @@ sub new_from_xml {
     my $cacert   = delete $args{cacert};
     my $issuer   = delete $args{issuer};
     my $destination   = delete $args{destination};
-    my $insecure_no_trust_anchor = delete $args{insecure_no_trust_anchor};
+    my $insecure_trust_embedded_cert = delete $args{insecure_trust_embedded_cert};
 
     my $xpath = XML::LibXML::XPathContext->new();
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
@@ -230,7 +230,7 @@ sub new_from_xml {
         $cacert,
         $key_file,
         $args{key_name},
-        $insecure_no_trust_anchor,
+        $insecure_trust_embedded_cert,
     );
 
     my $dec = $class->_decrypt(
@@ -320,7 +320,7 @@ sub new_from_xml {
         $substatus ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
         $cacert ? (cacert => $cacert) : (),
-        $insecure_no_trust_anchor ? (insecure_no_trust_anchor => $insecure_no_trust_anchor) : (),
+        $insecure_trust_embedded_cert ? (insecure_trust_embedded_cert => $insecure_trust_embedded_cert) : (),
     );
 
     return $self;

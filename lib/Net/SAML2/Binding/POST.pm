@@ -43,7 +43,7 @@ path to the CA certificate for verification
 
 B<Notice>: when C<handle_response> is called, at least one of
 C<cacert> or C<cert_text> must have been supplied at construction,
-unless C<insecure_no_trust_anchor> is set. Without a trust anchor
+unless C<insecure_trust_embedded_cert> is set. Without a trust anchor
 the binding accepts whatever signing certificate the response embeds
 in its KeyInfo block, which is equivalent to no signature checking
 at all.
@@ -58,13 +58,13 @@ certificate that includes the public key related to the B<key>
 text form of the certificate in FORMAT_ASN1 or FORMAT_PEM that is used to
 verify the signed XML.
 
-See B<insecure_no_trust_anchor>
+See B<insecure_trust_embedded_cert>
 
 =item B<key>
 
 path to a key used to sign the XML.
 
-=item B<insecure_no_trust_anchor>
+=item B<insecure_trust_embedded_cert>
 
 Boolean, default false. When true, C<handle_response> proceeds with
 no pre-configured trust anchor (every embedded signing certificate
@@ -95,7 +95,7 @@ has 'cacert' => (isa => 'Maybe[Str]', is => 'ro');
 has 'cert' => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_cert');
 has 'cert_text' => (isa => 'Str', is => 'ro');
 has 'key'  => (isa => 'Str', is => 'ro', required => 0, predicate => 'has_key');
-has 'insecure_no_trust_anchor' => (isa => 'Bool', is => 'ro', default => 0);
+has 'insecure_trust_embedded_cert' => (isa => 'Bool', is => 'ro', default => 0);
 
 =head2 handle_response( $response )
 
@@ -111,12 +111,12 @@ sub handle_response {
 
     unless ($self->cacert
          || $self->cert_text
-         || $self->insecure_no_trust_anchor) {
+         || $self->insecure_trust_embedded_cert) {
         croak(
             "Net::SAML2::Binding::POST::handle_response requires 'cacert' "
           . "or 'cert_text' on the binding to verify SAML response "
           . "signatures. To explicitly disable signature verification "
-          . "(test/dev only), pass insecure_no_trust_anchor => 1 to new()."
+          . "(test/dev only), pass insecure_trust_embedded_cert => 1 to new()."
         );
     }
 

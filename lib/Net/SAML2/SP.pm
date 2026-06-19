@@ -218,7 +218,7 @@ has 'sign_metadata' => (isa => 'Bool', is => 'ro', required => 0, default => 1);
 has assertion_consumer_service => (is => 'ro', isa => 'ArrayRef', required => 1);
 has single_logout_service => (is => 'ro', isa => 'ArrayRef', required => 1);
 
-has 'insecure_no_trust_anchor' => (
+has 'insecure_trust_embedded_cert' => (
     isa       => 'Bool',
     is        => 'ro',
     default   => 0,
@@ -500,8 +500,8 @@ sub sp_post_binding {
             insecure => 1,
         ),
         $self->cacert ? (cacert => $self->cacert) : (),
-        $self->insecure_no_trust_anchor ? (
-            insecure_no_trust_anchor => $self->insecure_no_trust_anchor
+        $self->insecure_trust_embedded_cert ? (
+            insecure_trust_embedded_cert => $self->insecure_trust_embedded_cert
         ) : (),
         param => $param,
     );

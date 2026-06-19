@@ -15,7 +15,7 @@ use XML::Sig;
 # Net::SAML2::Role::VerifyXML short-circuits and accepts the SAML
 # response's embedded KeyInfo certificate - equivalent to no signature
 # verification. handle_response refuses to enter that state unless the
-# caller opts out explicitly via insecure_no_trust_anchor => 1.
+# caller opts out explicitly via insecure_trust_embedded_cert => 1.
 #
 # Constructing the binding for signing-only use (sp_post_binding
 # passes cert/key without cacert) is still permitted - the check
@@ -37,14 +37,15 @@ throws_ok(sub { Net::SAML2::Binding::POST->new->handle_response(''); },
 
 # Explicit opt-out unblocks handle_response.
 lives_ok(sub {
-    my $b = Net::SAML2::Binding::POST->new(insecure_no_trust_anchor => 1);
+    my $b = Net::SAML2::Binding::POST->new(insecure_trust_embedded_cert => 1);
     # decode_base64('') -> '' -> verify_xml('') will fail downstream,
     # but the trust-anchor check should pass. Trap downstream error.
-    eval { $b->handle_response(''); };
-    unlike ($!, qr/requires 'cacert' or 'cert_text'/,
-        'handle_response does not croak on the trust-anchor check '
-        . 'when insecure_no_trust_anchor => 1');
-}, 'explicit insecure_no_trust_anchor opt-out lets handle_response proceed');
+    my $override = Sub::Override->new(
+        'MIME::Base64::decode_base64' => sub :prototype($) { return '' }
+    );
+    $override->override('Net::SAML2::Binding::POST::verify_xml' => sub { return 0 });
+    $b->handle_response('');
+}, 'explicit insecure_trust_embedded_cert opt-out lets handle_response proceed');
 
 my $sp = net_saml2_sp();
 

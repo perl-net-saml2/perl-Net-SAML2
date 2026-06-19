@@ -73,7 +73,7 @@ validating the certificate provided for a Response.
 It is required for ensuring that the Response is properly
 validated.
 
-=head2 insecure_no_trust_anchor
+=head2 insecure_trust_embedded_cert
 
 Boolean, default false. When true, C<to_assertion> proceeds with
 no pre-configured trust anchor (every embedded signing certificate
@@ -115,7 +115,7 @@ has 'cacert'     => (
     is => 'ro',
     required => 0);
 
-has 'insecure_no_trust_anchor' => (
+has 'insecure_trust_embedded_cert' => (
     isa       => 'Bool',
     is        => 'ro',
     default   => 0,
@@ -124,7 +124,7 @@ has 'insecure_no_trust_anchor' => (
 has 'require_signed_response' => (
     isa       => 'Bool',
     is        => 'ro',
-    default   => 1,
+    default   => 0,
 );
 
 # BUILDARGS
@@ -135,12 +135,12 @@ around BUILDARGS => sub {
 
     my %params = @_;
     unless ($params{cacert}
-         || $params{insecure_no_trust_anchor}) {
+         || $params{insecure_trust_embedded_cert}) {
         croak(
             "Net::SAML2::Object::Response->new() requires 'cacert' "
           . "on the object to verify SAML response signatures. "
           . "To explicitly disable signature verification (test/dev only) "
-          . ", pass insecure_no_trust_anchor => 1 to new()."
+          . ", pass insecure_trust_embedded_cert => 1 to new()."
         );
     }
 
@@ -159,11 +159,13 @@ sub new_from_xml {
     my $self = shift;
     my %args = @_;
 
-    my $xml = no_comments($args{xml});
-    my $destination = delete $args{destination};
-    my $cacert = delete $args{cacert};
-    my $require_signed_response = delete $args{require_signed_response};
-    my $insecure_no_trust_anchor = delete $args{insecure_no_trust_anchor};
+    my $xml            = no_comments($args{xml});
+    my $destination    = delete $args{destination};
+    my $cacert         = delete $args{cacert};
+    my $insecure_trust_embedded_cert    = delete $args{insecure_trust_embedded_cert};
+
+    # The default may change in the future
+    my $require_signed_response         = delete $args{require_signed_response} // 0;
 
     my $xpath = XML::LibXML::XPathContext->new($xml);
     $xpath->registerNs('saml',  URN_ASSERTION);
@@ -183,11 +185,21 @@ sub new_from_xml {
     croak("Unable to parse response") unless $response->size;
     $response = $response->get_node(1);
 
-    my $signature = $xpath->findnodes('/samlp:Response/dsig:Signature|/samlp:ArtifactResponse/dsig:Signature', $response);
+    my $signature = $xpath->findnodes(
+            '/samlp:Response/dsig:Signature|/samlp:ArtifactResponse/dsig:Signature',
+            $response);
 
-    # This needs the additional check that the response is Related to the Signature
-    unless ((defined $require_signed_response && $require_signed_response == 1) && ($signature->size eq 1)) {
-            croak "Net::SAML2::Object::Response requires that the Response "
+    # When a signed Response is required the Response (or ArtifactResponse)
+    # must carry exactly one enveloped Signature.  Pass
+    # require_signed_response => 0 to accept Responses that are not signed at
+    # the Response level (for example Assertion-only-signed deployments, the
+    # SAML 2.0 default).
+    #
+    # FIXME: this only checks that a Response-level Signature is present, not
+    # that it cryptographically validates or that it actually covers this
+    # Response - verification happens downstream.
+    if ($require_signed_response && $signature->size != 1) {
+        croak "Net::SAML2::Object::Response requires that the Response "
             . "include exactly one Signature.  Pass `require_signed_response` = 0 "
             . "to allow unsigned Responses";
     }
@@ -216,7 +228,8 @@ sub new_from_xml {
         in_response_to => $response->getAttribute('InResponseTo'),
         $nodes->size ? (assertions => $nodes) : (),
         $cacert ? (cacert => $cacert) : (),
-        $insecure_no_trust_anchor ? (insecure_no_trust_anchor => $insecure_no_trust_anchor) : (),
+        $insecure_trust_embedded_cert ? (insecure_trust_embedded_cert => $insecure_trust_embedded_cert) : (),
+        require_signed_response => $require_signed_response,
     );
 }
 

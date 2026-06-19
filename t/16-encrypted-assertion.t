@@ -34,7 +34,7 @@ lives_ok(
 # Without a cacert configured on new_from_xml,
 # _verify_encrypted_assertion previously short-circuited and accepted
 # the KeyInfo-embedded signing certificate. new_from_xml now refuses
-# unless the caller explicitly opts out via insecure_no_trust_anchor.
+# unless the caller explicitly opts out via insecure_trust_embedded_cert.
 
 throws_ok(sub {
     Net::SAML2::Protocol::Assertion->new_from_xml(
@@ -48,9 +48,9 @@ lives_ok(sub {
     Net::SAML2::Protocol::Assertion->new_from_xml(
         xml                      => decode_base64($response),
         key_file                 => 't/encrypted-sign-private.pem',
-        insecure_no_trust_anchor => 1,
+        insecure_trust_embedded_cert => 1,
     );
-}, 'explicit insecure_no_trust_anchor opt-out lets encrypted assertion through');
+}, 'explicit insecure_trust_embedded_cert opt-out lets encrypted assertion through');
 
 # require_signed_assertion: when set, the decrypted assertion must
 # carry a <dsig:Signature>. The existing fixture is a signed encrypted

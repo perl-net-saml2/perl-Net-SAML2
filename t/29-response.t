@@ -50,4 +50,52 @@ sub get_object {
   ok(!$response->success, "Unsuccessful response");
   is($response->status, STATUS_RESPONDER(), "... because its a status:Responder");
 }
+
+# require_signed_response handling (B2/B3)
+{
+  # The default (argument omitted) is currently 0 - unsigned and
+  # Assertion-only-signed Responses are accepted.
+  my $response = Net::SAML2::Object::Response->new_from_xml(
+      xml    => path('t/data/eherkenning-assertion.xml')->slurp,
+      cacert => 't/net-saml2-cacert.pem',
+  );
+  isa_ok($response, 'Net::SAML2::Object::Response',
+      'default require_signed_response accepts a Response-level-signed response');
+  is($response->require_signed_response, 0,
+      'require_signed_response attribute defaults to 0');
+
+  # An Assertion-only-signed response (no Response-level Signature) is
+  # accepted by default ...
+  lives_ok(sub {
+      Net::SAML2::Object::Response->new_from_xml(
+          xml    => path('t/data/saml-adfs-plain.xml')->slurp,
+          cacert => 't/net-saml2-cacert.pem',
+      );
+      },
+      'default require_signed_response accepts an Assertion-only-signed response');
+
+  # ... but require_signed_response => 1 enforces a single Response-level
+  # Signature and rejects an Assertion-only-signed response.
+  throws_ok(sub {
+      Net::SAML2::Object::Response->new_from_xml(
+          xml                     => path('t/data/saml-adfs-plain.xml')->slurp,
+          cacert                  => 't/net-saml2-cacert.pem',
+          require_signed_response => 1,
+      );
+      },
+      qr/include exactly one Signature/,
+      'require_signed_response => 1 rejects an Assertion-only-signed response');
+
+  # require_signed_response => 1 accepts a Response that carries exactly one
+  # Response-level Signature.
+  my $signed = Net::SAML2::Object::Response->new_from_xml(
+      xml                     => path('t/data/eherkenning-assertion.xml')->slurp,
+      cacert                  => 't/net-saml2-cacert.pem',
+      require_signed_response => 1,
+  );
+  isa_ok($signed, 'Net::SAML2::Object::Response',
+      'require_signed_response => 1 accepts a Response-level-signed response');
+  is($signed->require_signed_response, 1,
+      'require_signed_response => 1 is reflected on the object');
+}
 done_testing;

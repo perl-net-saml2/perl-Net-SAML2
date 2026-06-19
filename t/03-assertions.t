@@ -68,7 +68,7 @@ XML
 throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
                     issuer => 'INCORRECT_ISSUER',
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );},
                 qr/Assertion Issuer \(http:\/\/sso.dev.venda.com\/opensso\) does not match expected value \(INCORRECT_ISSUER\)/,
                 'Incorrect Issuer will croak'
@@ -77,7 +77,7 @@ throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
 lives_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
                     issuer => 'http://sso.dev.venda.com/opensso',
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );},
                 'Correct Issuer will not croak'
         );
@@ -85,7 +85,7 @@ lives_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
 lives_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
                     destination => 'http://ct.local/saml/consumer-post',
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );},
                 'Correct Destination will not croak'
         );
@@ -93,7 +93,7 @@ lives_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
 throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
                     destination => 'INCORRECT_DESTINATION',
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );},
                 qr/Response Destination \(http:\/\/ct.local\/saml\/consumer-post\) does not match expected value \(INCORRECT_DESTINATION\)/,
                 'Incorrect Destination will croak'
@@ -101,7 +101,7 @@ throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
 
 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );
 
 isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
@@ -202,7 +202,7 @@ BASE64
 $xml = decode_base64($assertion_b64);
 $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );
 isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
 
@@ -241,7 +241,7 @@ lives_ok(
        my  $xml = path('t/data/eherkenning-assertion.xml')->slurp;
        $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );
     },
     "Correct parsing of dates"
@@ -259,7 +259,7 @@ lives_ok(
        my  $xml = path('t/data/saml-adfs-plain.xml')->slurp;
        $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );
     },
     "Correct parsing of plain ADFS"
@@ -270,7 +270,7 @@ lives_ok(
        my  $xml = path('t/data/failed-assertion.xml')->slurp;
        $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );
     },
     "Correct parsing of failed assertion"
@@ -293,7 +293,7 @@ is(
     my $xml = path('t/data/digid-live.xml')->slurp;
     my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
                     xml => $xml,
-                    insecure_no_trust_anchor => 1,
+                    insecure_trust_embedded_cert => 1,
                 );
     isa_ok($assertion, 'Net::SAML2::Protocol::Assertion');
 }
