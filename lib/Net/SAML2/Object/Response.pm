@@ -14,6 +14,7 @@ use DateTime::HiRes;
 use DateTime::Format::XSD;
 use Net::SAML2::XML::Util qw/ no_comments /;
 use Net::SAML2::XML::Sig;
+use Net::SAML2::Protocol::Assertion;
 use XML::Enc;
 use XML::LibXML::XPathContext;
 use List::Util qw(first);
@@ -259,8 +260,19 @@ sub to_assertion {
         croak("There are no assertions found in the response object");
     }
 
-    return Net::SAML2::Protocol::Assertion->new_from_xml(%args,
-        xml => $self->to_string,);
+    # Propagate the trust configuration from the Response so the Assertion
+    # inherits the same trust anchor.  Without this the caller would have to
+    # supply cacert (or insecure_trust_embedded_cert) a second time, and a
+    # Response built with a trust anchor could silently produce an Assertion
+    # built with none.  Caller-supplied %args still override these defaults.
+    return Net::SAML2::Protocol::Assertion->new_from_xml(
+        $self->cacert ? (cacert => $self->cacert) : (),
+        $self->insecure_trust_embedded_cert
+            ? (insecure_trust_embedded_cert => $self->insecure_trust_embedded_cert)
+            : (),
+        %args,
+        xml => $self->to_string,
+    );
 }
 
 1;
