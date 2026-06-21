@@ -98,4 +98,35 @@ sub get_object {
   is($signed->require_signed_response, 1,
       'require_signed_response => 1 is reflected on the object');
 }
+
+# require_signed_response is exempt for ArtifactResponse (B5): an
+# ArtifactResponse is retrieved over an authenticated TLS back-channel, so it
+# is not subject to the front-channel Response signature requirement even when
+# require_signed_response => 1.  This uses an UNSIGNED ArtifactResponse so the
+# test actually exercises the exemption (the real fixtures are wrapper-signed
+# and would pass regardless).
+{
+  my $unsigned_artifact = <<'ARTIFACT';
+<samlp:ArtifactResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="ID_unsigned_artifact" Version="2.0" IssueInstant="2023-01-29T16:21:09.254Z" InResponseTo="NETSAML2_req">
+  <saml:Issuer>https://idp.example.com</saml:Issuer>
+  <samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>
+  <samlp:Response ID="ID_inner" Version="2.0" IssueInstant="2023-01-29T16:21:09.253Z">
+    <saml:Issuer>https://idp.example.com</saml:Issuer>
+    <samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>
+  </samlp:Response>
+</samlp:ArtifactResponse>
+ARTIFACT
+
+  my $artifact;
+  lives_ok(
+    sub {
+           $artifact = Net::SAML2::Object::Response->new_from_xml(
+             xml                     => $unsigned_artifact,
+             cacert                  => 't/net-saml2-cacert.pem',
+             require_signed_response => 1,
+           );
+    }, 'require_signed_response => 1 accepts an unsigned ArtifactResponse (back-channel exemption)'
+  );
+  isa_ok($artifact, 'Net::SAML2::Object::Response');
+}
 done_testing;

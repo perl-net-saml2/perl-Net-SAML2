@@ -186,27 +186,29 @@ sub new_from_xml {
     croak("Unable to parse response") unless $response->size;
     $response = $response->get_node(1);
 
-    my $signature = $xpath->findnodes(
-            '/samlp:Response/dsig:Signature|/samlp:ArtifactResponse/dsig:Signature',
-            $response);
-
-    # When a signed Response is required the Response (or ArtifactResponse)
-    # must carry exactly one enveloped Signature.  Pass
-    # require_signed_response => 0 to accept Responses that are not signed at
-    # the Response level (for example Assertion-only-signed deployments, the
-    # SAML 2.0 default).
+    # require_signed_response only applies to front-channel Responses.
     #
-    # FIXME: this only checks that a Response-level Signature is present, not
-    # that it cryptographically validates or that it actually covers this
-    # Response - verification happens downstream.
-    if ($require_signed_response && $signature->size != 1) {
-        croak "Net::SAML2::Object::Response requires that the Response "
-            . "include exactly one Signature.  Pass `require_signed_response` = 0 "
-            . "to allow unsigned Responses";
+    # ArtifactResponse is retrieved by the SP over a mutually authenticated
+    # TLS back-channel (the SP initiates the connection to the IdP's known
+    # artifact resolution endpoint), so transport already authenticates it
+    # and it is exempt from this check.
+
+    my $is_artifact = $response->nodePath eq '/samlp:ArtifactResponse';
+
+    if ($require_signed_response && !$is_artifact) {
+        my $signature = $xpath->findnodes('/samlp:Response/dsig:Signature', $response);
+        # FIXME: should check that a Response-level Signature cryptographically
+        # validates and it actually covers this Response - Assertion verification
+        # happens downstream.
+        if ($signature->size != 1) {
+            croak "Net::SAML2::Object::Response requires that the Response "
+                . "include exactly one Signature.  Pass `require_signed_response` = 0 "
+                . "to allow unsigned Responses";
+        }
     }
 
     my $code_path = 'samlp:Status/samlp:StatusCode';
-    if ($response->nodePath eq '/samlp:ArtifactResponse') {
+    if ($is_artifact) {
       $code_path = "samlp:Response/$code_path";
     }
 
