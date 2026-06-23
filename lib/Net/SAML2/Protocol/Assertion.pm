@@ -17,6 +17,7 @@ use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
 use Carp qw(croak);
 
 with 'Net::SAML2::Role::ProtocolMessage';
+with 'Net::SAML2::Role::VerifyXML';
 
 # ABSTRACT: SAML2 assertion object
 
@@ -41,6 +42,7 @@ has 'in_response_to'  => (isa => 'Str', is => 'ro', required => 1);
 has 'response_status' => (isa => 'Str', is => 'ro', required => 1);
 has 'response_substatus' => (isa => 'Str', is => 'ro');
 has 'cacert'     => (isa => 'Str', is => 'ro', required => 0);
+has 'cert_text'  => (isa => 'Str', is => 'ro', required => 0);
 has 'xpath' => (isa => 'XML::LibXML::XPathContext', is => 'ro', required => 1);
 has 'nameid_object' => (
     isa       => 'XML::LibXML::Element',
@@ -95,6 +97,23 @@ when the EncryptedAssertion is decrypted.
 While optional it is recommended for ensuring that the Assertion in an
 EncryptedAssertion is properly validated.
 
+C<cacert> verifies the signature against the certificate embedded in the
+document's C<KeyInfo>.  When the IdP references its signing key by
+C<KeyName> or C<RetrievalMethod> (no embedded C<X509Certificate>), use
+C<cert_text> instead.
+
+=item B<cert_text>
+
+text form of the IdP signing certificate (FORMAT_PEM) used to verify the
+assertion signature.  Unlike C<cacert>, this B<pins> a specific
+certificate: the signature is verified directly against it. One of
+C<cacert>, C<cert_text> or C<insecure_trust_embedded_cert> is required.
+
+=item B<require_signed_assertion>
+
+Boolean.  When true, a decrypted C<EncryptedAssertion> that carries no
+signature is rejected rather than accepted.
+
 =item B<issuer>
 
 Specifies the expected Issuer value in the Assertion.  Results in a croak
@@ -131,11 +150,13 @@ around BUILDARGS => sub {
     my $self = shift;
 
     my %params = @_;
-    unless ($params{cacert} || $params{insecure_trust_embedded_cert}) {
+    unless ($params{cacert}
+         || $params{cert_text}
+         || $params{insecure_trust_embedded_cert}) {
         croak(
             "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
-          . "to verify encrypted assertion signatures. Without it the "
-          . "verifier accepts any KeyInfo-embedded certificate. To "
+          . "or 'cert_text' to verify assertion signatures. Without a trust "
+          . "anchor the verifier accepts any KeyInfo-embedded certificate. To "
           . "explicitly disable this check (test/dev only), pass "
           . "insecure_trust_embedded_cert => 1 to new_from_xml()."
         );
@@ -151,14 +172,16 @@ sub _verify_encrypted_assertion {
     my $key_file = shift;
     my $key_name = shift;
     my $insecure_trust_embedded_cert = shift;
+    my $cert_text = shift;
+    my $require_signed_assertion = shift;
 
-    unless ($cacert || $insecure_trust_embedded_cert) {
+    unless ($cacert || $cert_text || $insecure_trust_embedded_cert) {
         croak(
             "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
-          . "to verify encrypted assertion signatures. Without it the "
-          . "verifier accepts any KeyInfo-embedded certificate. To "
-          . "explicitly disable this check (test/dev only), pass "
-          . "insecure_trust_embedded_cert => 1 to new_from_xml()."
+          . "or 'cert_text' to verify encrypted assertion signatures. Without "
+          . "a trust anchor the verifier accepts any KeyInfo-embedded "
+          . "certificate. To explicitly disable this check (test/dev only), "
+          . "pass insecure_trust_embedded_cert => 1 to new_from_xml()."
         );
     }
 
@@ -183,19 +206,22 @@ sub _verify_encrypted_assertion {
     return $xml unless $assert_nodes->size;
     my $assert = $assert_nodes->get_node(1);
 
-    return $xml unless $xpath->exists('dsig:Signature', $assert);
-    my $xml_opts->{ no_xml_declaration } = 1;
-    my $x   = Net::SAML2::XML::Sig->new($xml_opts);
-    my $ret = $x->verify($assert->toString());
-    die "Decrypted Assertion signature check failed" unless $ret;
+    unless ($xpath->exists('dsig:Signature', $assert)) {
+        croak(
+            "Net::SAML2::Protocol::Assertion::new_from_xml: decrypted "
+          . "assertion has no signature. Set require_signed_assertion => 0 "
+          . "to accept unsigned encrypted assertions (not recommended)."
+        ) if $require_signed_assertion;
+        return $xml;
+    }
 
-    return $xml unless $cacert;
-    my $cert = $x->signer_cert;
-    die "Certificate not provided in SAML Response, cannot validate" unless $cert;
+    $self->verify_xml(
+        $assert->toString(),
+        no_xml_declaration => 1,
+        $cert_text ? (cert_text => $cert_text) : (),
+        $cacert ? (cacert => $cacert) : (),
+    );
 
-    my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
-    die "Unable to verify signer cert with cacert: " . $cert->subject
-        unless $ca->verify($cert);
     return $xml;
 }
 
@@ -204,9 +230,11 @@ sub new_from_xml {
 
     my $key_file = $args{key_file};
     my $cacert   = delete $args{cacert};
+    my $cert_text = delete $args{cert_text};
     my $issuer   = delete $args{issuer};
     my $destination   = delete $args{destination};
-    my $insecure_trust_embedded_cert = delete $args{insecure_trust_embedded_cert};
+    my $insecure_trust_embedded_cert = delete $args{insecure_trust_embedded_cert} // 0;
+    my $require_signed_assertion = delete $args{require_signed_assertion} // 0;
 
     my $xpath = XML::LibXML::XPathContext->new();
     $xpath->registerNs('saml',  'urn:oasis:names:tc:SAML:2.0:assertion');
@@ -231,6 +259,8 @@ sub new_from_xml {
         $key_file,
         $args{key_name},
         $insecure_trust_embedded_cert,
+        $cert_text,
+        $require_signed_assertion,
     );
 
     my $dec = $class->_decrypt(
@@ -320,6 +350,7 @@ sub new_from_xml {
         $substatus ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
         $cacert ? (cacert => $cacert) : (),
+        $cert_text ? (cert_text => $cert_text) : (),
         $insecure_trust_embedded_cert ? (insecure_trust_embedded_cert => $insecure_trust_embedded_cert) : (),
     );
 
