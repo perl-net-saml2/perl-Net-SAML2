@@ -42,7 +42,7 @@ throws_ok(sub {
         key_file => 't/encrypted-sign-private.pem',
         # no cacert
     );
-}, qr/requires 'cacert'/, 'encrypted assertion without cacert croaks');
+}, qr/'cacert' or 'cert_text' is required to verify/, 'encrypted assertion without cacert croaks');
 
 lives_ok(sub {
     Net::SAML2::Protocol::Assertion->new_from_xml(

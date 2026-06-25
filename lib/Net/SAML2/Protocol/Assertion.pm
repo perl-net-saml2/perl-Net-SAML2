@@ -154,11 +154,11 @@ around BUILDARGS => sub {
          || $params{cert_text}
          || $params{insecure_trust_embedded_cert}) {
         croak(
-            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
-          . "or 'cert_text' to verify assertion signatures. Without a trust "
-          . "anchor the verifier accepts any KeyInfo-embedded certificate. To "
-          . "explicitly disable this check (test/dev only), pass "
-          . "insecure_trust_embedded_cert => 1 to new_from_xml()."
+            "'cacert' or 'cert_text' is required to verify assertion signatures. "
+          . "Without a trusted certificate the verifier accepts any "
+          . "KeyInfo-embedded certificate. To explicitly disable this check "
+          . "(test/dev only), pass insecure_trust_embedded_cert => 1 to "
+          . "new_from_xml()."
         );
     }
 
@@ -177,11 +177,11 @@ sub _verify_encrypted_assertion {
 
     unless ($cacert || $cert_text || $insecure_trust_embedded_cert) {
         croak(
-            "Net::SAML2::Protocol::Assertion::new_from_xml requires 'cacert' "
-          . "or 'cert_text' to verify encrypted assertion signatures. Without "
-          . "a trust anchor the verifier accepts any KeyInfo-embedded "
-          . "certificate. To explicitly disable this check (test/dev only), "
-          . "pass insecure_trust_embedded_cert => 1 to new_from_xml()."
+            "'cacert' or 'cert_text' is required to verify assertion signatures. "
+          . "Without a trusted certificate the verifier accepts any "
+          . "KeyInfo-embedded certificate. To explicitly disable this check "
+          . "(test/dev only), pass insecure_trust_embedded_cert => 1 to "
+          . "new_from_xml()."
         );
     }
 
@@ -208,8 +208,7 @@ sub _verify_encrypted_assertion {
 
     unless ($xpath->exists('dsig:Signature', $assert)) {
         croak(
-            "Net::SAML2::Protocol::Assertion::new_from_xml: decrypted "
-          . "assertion has no signature. Set require_signed_assertion => 0 "
+            "Decrypted assertion has no signature. Set require_signed_assertion => 0 "
           . "to accept unsigned encrypted assertions (not recommended)."
         ) if $require_signed_assertion;
         return $xml;

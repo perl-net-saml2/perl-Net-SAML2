@@ -97,7 +97,7 @@ XML
                 cacert                   => $sp_crt,
             );
         },
-        qr/decrypted assertion has no signature/,
+        qr/Decrypted assertion has no signature/,
         'require_signed_assertion => 1 croaks on unsigned encrypted assertion'
     );
 }
