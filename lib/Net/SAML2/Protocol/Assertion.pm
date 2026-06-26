@@ -165,6 +165,105 @@ around BUILDARGS => sub {
     return $self->$orig(%params);
 };
 
+sub _get_actual_destination {
+    my ($class, $destination, $xpath) = @_;
+
+    my $actual_destination = $xpath->findvalue('/samlp:Response/@Destination');
+
+    # The Destination is only required if the Response is signed
+    # require it to be included regardless
+    croak("The Response does not include a Destination") unless defined $actual_destination;
+
+    return $actual_destination if ! defined $destination;
+
+    die (sprintf("Response Destination (%s) does not match expected value (%s)",
+                $actual_destination,
+                $destination)) if ($destination ne $actual_destination);
+    return $actual_destination;
+}
+
+sub _get_not_before {
+    my ($class, $xpath, $xpath_base) = @_;
+
+    my $not_before;
+    if (my $value = $xpath->findvalue($xpath_base . '@NotBefore')) {
+        $not_before = DateTime::Format::XSD->parse_datetime($value);
+    }
+    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotBefore')) {
+        $not_before = DateTime::Format::XSD->parse_datetime($global);
+    }
+    else {
+        $not_before = DateTime::HiRes->now();
+    }
+    return $not_before;
+}
+
+sub _get_not_after {
+    my ($class, $xpath, $xpath_base) = @_;
+
+    my $not_after;
+    if (my $value = $xpath->findvalue($xpath_base . '@NotOnOrAfter')) {
+        $not_after = DateTime::Format::XSD->parse_datetime($value);
+    }
+    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
+        $not_after = DateTime::Format::XSD->parse_datetime($global);
+    }
+    else {
+        $not_after = DateTime->from_epoch(epoch => time() + 1000);
+    }
+    return $not_after;
+}
+
+sub _get_nameid {
+    my ($class, $xpath) = @_;
+
+    my $nameid;
+    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
+        croak("Invalid number of NameIds found in the Response") if $node->size != 1;
+        $nameid = $node->get_node(1);
+    }
+    elsif (my $encrypted = $xpath->findnodes('//samlp:Response/saml:EncryptedAssertion/saml:Assertion/saml:Subject/saml:NameID')) {
+        croak("Invalid number of NameIds found in the Response") if $encrypted->size != 1;
+        $nameid = $encrypted->get_node(1);
+    }
+
+    elsif (my $global = $xpath->findnodes('//samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
+        croak("Invalid number of NameIds found in the Response") if $global->size != 1;
+        $nameid = $node->get_node(1);
+    }
+    elsif (my $global = $xpath->findnodes('//saml:Subject/saml:NameID')) {
+        $nameid = $global->get_node(1);
+    }
+    return $nameid;
+}
+
+sub _get_authnstatement {
+    my ($class, $xpath, $xpath_base) = @_;
+
+    my $authnstatement;
+    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement')) {
+        $authnstatement = $node->get_node(1);
+    }
+    return $authnstatement;
+}
+
+sub _get_actual_issuer {
+    my ($class, $issuer, $xpath) = @_;
+
+    my $actual_issuer = $xpath->findvalue('//saml:Assertion/saml:Issuer');
+
+    # The Issuer is required in the Assertion
+    croak("The Assertion does not include an Issuer") unless defined $actual_issuer;
+
+    return $actual_issuer if ! defined $issuer;
+
+    die (sprintf("Assertion Issuer (%s) does not match expected value (%s)",
+                $actual_issuer,
+                $issuer)) if ($issuer ne $actual_issuer);
+
+    return $actual_issuer;
+}
+
 sub _verify_encrypted_assertion {
     my $self     = shift;
     my $xml      = shift;
@@ -244,13 +343,7 @@ sub new_from_xml {
     my $xml = no_comments($args{xml});
     $xpath->setContextNode($xml);
 
-    my $actual_destination = $xpath->findvalue('/samlp:Response/@Destination');
-    if (defined $destination && ($destination ne $actual_destination)) {
-        croak(sprintf("Response Destination (%s) does not match expected value (%s)",
-                $actual_destination,
-                $destination)
-            );
-    }
+    my $actual_destination = $class->_get_actual_destination($destination, $xpath);
 
     $xml = $class->_verify_encrypted_assertion(
         $xml,
@@ -278,59 +371,22 @@ sub new_from_xml {
 
     my $xpath_base = '//samlp:Response/saml:Assertion/saml:Conditions/';
 
-    my $not_before;
-    if (my $value = $xpath->findvalue($xpath_base . '@NotBefore')) {
-        $not_before = DateTime::Format::XSD->parse_datetime($value);
-    }
-    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotBefore')) {
-        $not_before = DateTime::Format::XSD->parse_datetime($global);
-    }
-    else {
-        $not_before = DateTime::HiRes->now();
-    }
-
-    my $not_after;
-    if (my $value = $xpath->findvalue($xpath_base . '@NotOnOrAfter')) {
-        $not_after = DateTime::Format::XSD->parse_datetime($value);
-    }
-    elsif (my $global = $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
-        $not_after = DateTime::Format::XSD->parse_datetime($global);
-    }
-    else {
-        $not_after = DateTime->from_epoch(epoch => time() + 1000);
-    }
-
-    my $nameid;
-    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
-        $nameid = $node->get_node(1);
-    }
-    elsif (my $global = $xpath->findnodes('//saml:Subject/saml:NameID')) {
-        $nameid = $global->get_node(1);
-    }
-
-    my $authnstatement;
-    if (my $node = $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement')) {
-        $authnstatement = $node->get_node(1);
-    }
+    my $not_before      = $class->_get_not_before($xpath, $xpath_base);
+    my $not_after       = $class->_get_not_after($xpath, $xpath_base);
+    my $nameid          = $class->_get_nameid($xpath);
+    my $authnstatement  = $class->_get_authnstatement($xpath, $xpath_base);
+    my $actual_issuer   = $class->_get_actual_issuer($issuer, $xpath);
 
     my $nodeset = $xpath->findnodes('/samlp:Response/samlp:Status/samlp:StatusCode|/samlp:ArtifactResponse/samlp:Status/samlp:StatusCode');
 
     croak("Unable to parse status from assertion") unless $nodeset->size;
 
     my $status_node = $nodeset->get_node(1);
-    my $status = $status_node->getAttribute('Value');
+    my $status      = $status_node->getAttribute('Value');
     my $substatus;
 
     if (my $s = first { $_->isa('XML::LibXML::Element') } $status_node->childNodes) {
         $substatus = $s->getAttribute('Value');
-    }
-
-    my $actual_issuer = $xpath->findvalue('//saml:Assertion/saml:Issuer');
-    if (defined $issuer && ($issuer ne $actual_issuer)) {
-        croak(sprintf("Assertion Issuer (%s) does not match expected value (%s)",
-                $actual_issuer,
-                $issuer)
-            );
     }
 
     my $self = $class->new(
