@@ -228,12 +228,8 @@ sub _get_nameid {
         croak("Invalid number of NameIds found in the Response") if $encrypted->size != 1;
         $nameid = $encrypted->get_node(1);
     }
-
     elsif (my $global = $xpath->findnodes('//samlp:Response/saml:Assertion/saml:Subject/saml:NameID')) {
         croak("Invalid number of NameIds found in the Response") if $global->size != 1;
-        $nameid = $node->get_node(1);
-    }
-    elsif (my $global = $xpath->findnodes('//saml:Subject/saml:NameID')) {
         $nameid = $global->get_node(1);
     }
     return $nameid;
