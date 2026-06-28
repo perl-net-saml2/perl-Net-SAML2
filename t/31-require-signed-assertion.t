@@ -78,6 +78,7 @@ XML
             xml                      => $response,
             key_file                 => $sp_key,
             cacert                   => $sp_crt,
+            insecure_trust_embedded_cert => 1,
         );
     };
     ok($a, 'unsigned encrypted assertion is accepted without require_signed_assertion (backward compat)')

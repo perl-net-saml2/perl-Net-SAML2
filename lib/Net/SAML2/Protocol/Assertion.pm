@@ -443,13 +443,16 @@ sub new_from_xml {
         @candidate_refs = @trusted_refs;
     }
     else {
-        # No cacert configured, or no signatures present. Best-effort
-        # anchoring at the first signature's reference URI.
-        my $ref = $xpath->findvalue(
-            '//dsig:Signature[1]/dsig:SignedInfo/dsig:Reference/@URI'
-        );
-        $ref =~ s/^#//;
-        @candidate_refs = ($ref) if length $ref;
+        croak("No trusted signature found in the assertion. Pass "
+            . "insecure_trust_embedded_cert => 1 to new_from_xml() to trust "
+            . "embedded certificates (dev/test only).")
+            unless $insecure_trust_embedded_cert;
+
+        my $ids = $xpath->findnodes('//saml:Assertion/@ID');
+        if ($ids->size == 1) {
+            (my $ref = $ids->get_node(1)->value) =~ s/^#//;
+            @candidate_refs = ($ref) if length $ref;
+        }
     }
 
     my $signed_root;
@@ -500,7 +503,8 @@ sub new_from_xml {
         }
     }
 
-    my $ctx = $assertion_node;
+    die "Net::SAML2: no Assertion found in response\n"
+        unless $assertion_node || $xpath->exists('//saml:Assertion');
 
     my $attributes = {};
     my @attr_owners = $assertion_node

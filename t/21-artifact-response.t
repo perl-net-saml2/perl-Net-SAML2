@@ -88,7 +88,7 @@ isa_ok($assertion_artifact, "Net::SAML2::Protocol::Artifact");
 
 my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
     xml     => $assertion_artifact->response,
-    cacert  => 't/net-saml2-cacert.pem',
+    insecure_trust_embedded_cert => 1,
 );
 
 isa_ok($assertion, "Net::SAML2::Protocol::Assertion");
@@ -101,7 +101,7 @@ is($assertion->id, 'ID_ef9c4328-63de-4d55-ae05-e5342e67f36c', "Assertion ID - ok
 
 $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
     xml     => $assertion_artifact->get_response(),
-    cacert  => 't/net-saml2-cacert.pem',
+    insecure_trust_embedded_cert => 1,
 );
 
 isa_ok($assertion, "Net::SAML2::Protocol::Assertion", "from get_response");
