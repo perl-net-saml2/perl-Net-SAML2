@@ -257,6 +257,37 @@ sub _get_actual_issuer {
     return $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
 }
 
+sub _get_trusted_assertion {
+    my $class           = shift;
+    my $xpath           = shift;
+    my ($candidate_refs)  = @_;
+
+    my $assertion_node;
+    for my $sign_id_ref (@$candidate_refs) {
+        next unless (defined $sign_id_ref && XsdID->check($sign_id_ref));
+        my $candidates = $xpath->findnodes("//*[\@ID='$sign_id_ref']");
+        croak("XSW guard: signed Reference URI '$sign_id_ref' is ambiguous "
+            . "(matched " . $candidates->size . " elements)")
+            if $candidates->size > 1;
+        my $root = $candidates->get_node(1);
+        next unless $root;
+
+        my $ln = $root->localname // '';
+        my $ns = $root->namespaceURI // '';
+        if ($ln eq 'Assertion'
+            && $ns eq 'urn:oasis:names:tc:SAML:2.0:assertion') {
+            $assertion_node = $root;
+            last;
+        }
+        my $asns = $xpath->findnodes('.//saml:Assertion', $root);
+        if ($asns->size) {
+            $assertion_node = $asns->get_node(1);
+            last;
+        }
+    }
+    return $assertion_node;
+}
+
 sub _trusted_signature_refs {
     my ($class, $xpath, $cacert) = @_;
 
@@ -446,32 +477,7 @@ sub new_from_xml {
         }
     }
 
-    my $signed_root;
-    my $assertion_node;
-    for my $sign_id_ref (@candidate_refs) {
-        next unless (defined $sign_id_ref && XsdID->check($sign_id_ref));
-        my $candidates = $xpath->findnodes("//*[\@ID='$sign_id_ref']");
-        croak("XSW guard: signed Reference URI '$sign_id_ref' is ambiguous "
-            . "(matched " . $candidates->size . " elements)")
-            if $candidates->size > 1;
-        my $root = $candidates->get_node(1);
-        next unless $root;
-
-        my $ln = $root->localname // '';
-        my $ns = $root->namespaceURI // '';
-        if ($ln eq 'Assertion'
-            && $ns eq 'urn:oasis:names:tc:SAML:2.0:assertion') {
-            $signed_root    = $root;
-            $assertion_node = $root;
-            last;
-        }
-        my $asns = $xpath->findnodes('.//saml:Assertion', $root);
-        if ($asns->size) {
-            $signed_root    = $root;
-            $assertion_node = $asns->get_node(1);
-            last;
-        }
-    }
+    my $assertion_node = $class->_get_trusted_assertion($xpath, \@candidate_refs);
 
     if ($cacert && $sig_count > 0 && !$assertion_node) {
         croak(
