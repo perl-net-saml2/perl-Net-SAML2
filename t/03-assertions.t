@@ -70,7 +70,7 @@ throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     issuer => 'INCORRECT_ISSUER',
                     insecure_trust_embedded_cert => 1,
                 );},
-                qr/Assertion Issuer \(http:\/\/sso.dev.venda.com\/opensso\) does not match expected value \(INCORRECT_ISSUER\)/,
+                qr/assert_saml_value: \(INCORRECT_ISSUER\) does not match \(http:\/\/sso\.dev\.venda\.com\/opensso\) in \(\/\/saml:Assertion\/saml:Issuer\)/,
                 'Incorrect Issuer will croak'
         );
 
@@ -95,7 +95,7 @@ throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     destination => 'INCORRECT_DESTINATION',
                     insecure_trust_embedded_cert => 1,
                 );},
-                qr/Response Destination \(http:\/\/ct.local\/saml\/consumer-post\) does not match expected value \(INCORRECT_DESTINATION\)/,
+                qr/assert_saml_value: \(INCORRECT_DESTINATION\) does not match \(http:\/\/ct.local\/saml\/consumer-post\)/,
                 'Incorrect Destination will croak'
         );
 

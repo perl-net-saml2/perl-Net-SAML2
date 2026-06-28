@@ -165,21 +165,23 @@ around BUILDARGS => sub {
     return $self->$orig(%params);
 };
 
+sub assert_saml_value {
+    my ($self, $xpath, $needle, $haystack) = @_;
+
+    my $found = $xpath->findvalue($haystack); # findvalue WILL concat multiple values iirc
+    die "assert_saml_value: Unable to get a value for ($haystack)" unless defined $found;
+    return $found unless defined $needle;
+
+    if ($needle ne $found) {
+      die "assert_saml_value: ($needle) does not match ($found) in ($haystack)";
+    }
+    return $found;
+}
+
 sub _get_actual_destination {
     my ($class, $destination, $xpath) = @_;
 
-    my $actual_destination = $xpath->findvalue('/samlp:Response/@Destination');
-
-    # The Destination is only required if the Response is signed
-    # require it to be included regardless
-    croak("The Response does not include a Destination") unless defined $actual_destination;
-
-    return $actual_destination if ! defined $destination;
-
-    die (sprintf("Response Destination (%s) does not match expected value (%s)",
-                $actual_destination,
-                $destination)) if ($destination ne $actual_destination);
-    return $actual_destination;
+    return $class->assert_saml_value($xpath, $destination, '/samlp:Response/@Destination');
 }
 
 sub _get_not_before {
@@ -250,18 +252,7 @@ sub _get_authnstatement {
 sub _get_actual_issuer {
     my ($class, $issuer, $xpath) = @_;
 
-    my $actual_issuer = $xpath->findvalue('//saml:Assertion/saml:Issuer');
-
-    # The Issuer is required in the Assertion
-    croak("The Assertion does not include an Issuer") unless defined $actual_issuer;
-
-    return $actual_issuer if ! defined $issuer;
-
-    die (sprintf("Assertion Issuer (%s) does not match expected value (%s)",
-                $actual_issuer,
-                $issuer)) if ($issuer ne $actual_issuer);
-
-    return $actual_issuer;
+    return $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
 }
 
 sub _verify_encrypted_assertion {
