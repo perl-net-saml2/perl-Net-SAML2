@@ -21,6 +21,7 @@ use Net::SAML2::Types qw(XsdID);
 
 with 'Net::SAML2::Role::ProtocolMessage';
 with 'Net::SAML2::Role::VerifyXML';
+with 'Net::SAML2::Role::XMLCertificate';
 
 # ABSTRACT: SAML2 assertion object
 
@@ -265,17 +266,7 @@ sub _trusted_signature_refs {
 
     my @trusted_refs;
     for my $sig ($xpath->findnodes('//dsig:Signature')) {
-        my $cert_b64 = $xpath->findvalue(
-            './dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate', $sig);
-        next unless defined $cert_b64 && $cert_b64 =~ /\S/;
-
-        # Strip whitespace from the base64 and wrap as PEM. Crypt::OpenSSL::X509
-        # expects 64-char lines.
-        $cert_b64 =~ s/\s+//g;
-        my $pem = "-----BEGIN CERTIFICATE-----\n"
-                . join("\n", $cert_b64 =~ /(.{1,64})/g) . "\n"
-                . "-----END CERTIFICATE-----\n";
-
+        my $pem = $class->get_pem_from_keynode($sig);
         my $cert_obj = eval { Crypt::OpenSSL::X509->new_from_string($pem) };
         next unless $cert_obj;
 
