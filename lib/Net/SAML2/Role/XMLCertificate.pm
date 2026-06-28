@@ -3,7 +3,7 @@ use Moose::Role;
 
 # VERSION
 
-# ABSTRACT: Common behaviour for XML language settings
+# ABSTRACT: Common behaviour for Certificates in XML
 
 =head2 B<get_pem_from_keynode>
 
