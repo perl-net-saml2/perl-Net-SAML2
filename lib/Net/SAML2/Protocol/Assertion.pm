@@ -170,9 +170,11 @@ around BUILDARGS => sub {
 };
 
 sub assert_saml_value {
-    my ($self, $xpath, $needle, $haystack) = @_;
+    my ($self, $xpath, $needle, $haystack, $ctx) = @_;
 
-    my $found = $xpath->findvalue($haystack); # findvalue WILL concat multiple values iirc
+    my $found = $ctx
+        ? $xpath->findvalue($haystack, $ctx)
+        : $xpath->findvalue($haystack); # findvalue WILL concat multiple values iirc
     die "assert_saml_value: Unable to get a value for ($haystack)" unless defined $found;
     return $found unless defined $needle;
 
@@ -186,7 +188,7 @@ sub _get_actual_destination {
     my ($class, $destination, $xpath) = @_;
 
     return $class->assert_saml_value($xpath, $destination,
-         '/samlp:Response/@Destination | /samlp:ArtifactResponse/@Destination');
+        '/samlp:Response/@Destination | /samlp:ArtifactResponse/@Destination');
 }
 
 sub _get_not_before {
@@ -259,7 +261,9 @@ sub _get_authnstatement {
 sub _get_actual_issuer {
     my ($class, $issuer, $xpath, $ctx) = @_;
 
-    return $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
+    return $ctx
+        ? $class->assert_saml_value($xpath, $issuer, 'saml:Issuer', $ctx)
+        : $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
 }
 
 sub _get_trusted_assertion {

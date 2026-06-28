@@ -70,7 +70,7 @@ throws_ok(sub { Net::SAML2::Protocol::Assertion->new_from_xml(
                     issuer => 'INCORRECT_ISSUER',
                     insecure_trust_embedded_cert => 1,
                 );},
-                qr/assert_saml_value: \(INCORRECT_ISSUER\) does not match \(http:\/\/sso\.dev\.venda\.com\/opensso\) in \(\/\/saml:Assertion\/saml:Issuer\)/,
+                qr/assert_saml_value: \(INCORRECT_ISSUER\) does not match \(http:\/\/sso\.dev\.venda\.com\/opensso\) in \(saml:Issuer\)/,
                 'Incorrect Issuer will croak'
         );
 
