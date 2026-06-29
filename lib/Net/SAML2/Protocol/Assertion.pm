@@ -193,10 +193,12 @@ sub _get_not_before {
     my ($class, $xpath, $ctx) = @_;
 
     my $not_before;
-    if (my $value = $ctx
+    my $value = $ctx
             ? $xpath->findvalue('saml:Conditions/@NotBefore', $ctx)
-            : $xpath->findvalue('//samlp:Response/saml:Assertion/saml:Conditions/@NotBefore')
-            || $xpath->findvalue('//saml:Conditions/@NotBefore')) {
+            : $xpath->findvalue('//samlp:Response/saml:Assertion/saml:Conditions/@NotBefore');
+    $value //= $xpath->findvalue('//saml:Conditions/@NotBefore');
+
+    if ($value) {
         $not_before = DateTime::Format::XSD->parse_datetime($value);
     }
     else {
@@ -209,10 +211,11 @@ sub _get_not_after {
     my ($class, $xpath, $ctx) = @_;
 
     my $not_after;
-    if (my $value = $ctx
+    my $value = $ctx
             ? $xpath->findvalue('saml:Conditions/@NotOnOrAfter', $ctx)
-            : $xpath->findvalue('//samlp:Response/saml:Assertion/saml:Conditions/@NotOnOrAfter')
-            || $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')) {
+            : $xpath->findvalue('//samlp:Response/saml:Assertion/saml:Conditions/@NotOnOrAfter');
+    $value //= $xpath->findvalue('//saml:Conditions/@NotOnOrAfter');
+    if ($value) {
         $not_after = DateTime::Format::XSD->parse_datetime($value);
     }
     else {
@@ -228,6 +231,7 @@ sub _get_nameid {
     my $nameid_nodes = $ctx
         ? $xpath->findnodes('saml:Subject/saml:NameID', $ctx)
         : $xpath->findnodes('/samlp:Response/saml:Assertion/saml:Subject/saml:NameID');
+
     if ($nameid_nodes->size) {
         $nameid = $nameid_nodes->get_node(1);
     }
@@ -245,6 +249,7 @@ sub _get_authnstatement {
     my $authn_nodes = $ctx
         ? $xpath->findnodes('saml:AuthnStatement', $ctx)
         : $xpath->findnodes('/samlp:Response/saml:Assertion/saml:AuthnStatement');
+
     if ($authn_nodes->size) {
         $authnstatement = $authn_nodes->get_node(1);
     }
