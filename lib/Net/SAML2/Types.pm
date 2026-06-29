@@ -25,6 +25,7 @@ The type xsd:ID is used for an attribute that uniquely identifies an element in 
 
 subtype XsdID, as Str,
     where {
+        return 0 unless length($_ // '');
         return 0 unless $_ =~ /^[a-zA-Z_]/;
         return 0 if $_ =~ /[^a-zA-Z0-9_\.\-]/;
         return 1;

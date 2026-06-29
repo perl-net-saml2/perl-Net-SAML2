@@ -18,6 +18,7 @@ use List::Util qw(first);
 use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
 use Carp qw(croak);
 use Net::SAML2::Types qw(XsdID);
+use Try::Tiny;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 with 'Net::SAML2::Role::VerifyXML';
@@ -304,22 +305,24 @@ sub _trusted_signature_refs {
 
     my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
 
+    # We are looking for references for trusted Signature nodes here
+    # the X509Certificate of each signature is verified against the
+    # cacert and a list of trusted references is created
     my @trusted_refs;
     for my $sig ($xpath->findnodes('//dsig:Signature')) {
         my $pem = $class->get_pem_from_keynode($sig);
-        my $cert_obj = eval { Crypt::OpenSSL::X509->new_from_string($pem) };
+        my $cert_obj = try { Crypt::OpenSSL::X509->new_from_string($pem) };
         next unless $cert_obj;
 
         # Crypt::OpenSSL::Verify->verify can both return a bool AND die on
         # parse / chain failure; treat both as untrusted.
-        my $ok = eval { $ca->verify($cert_obj)};
+        my $ok = try { $ca->verify($cert_obj) };
         next unless $ok;
 
         my $ref = $xpath->findvalue(
             './dsig:SignedInfo/dsig:Reference/@URI', $sig);
         next unless defined $ref;
         $ref =~ s/^#//;
-        next unless length $ref;
 
         next unless XsdID->check($ref);
 
@@ -334,7 +337,7 @@ sub _trusted_signature_refs {
         next unless $resolved->size == 1;
         my $node = $resolved->get_node(1);
 
-        my $genuine = eval {
+        my $genuine = try {
             Net::SAML2::XML::Sig->new({
                 cert_text          => $pem,
                 no_xml_declaration => 1,
@@ -433,14 +436,20 @@ sub new_from_xml {
             x509               => 1,
             no_xml_declaration => 1,
         });
-        my $ok = eval { $verifier->verify($xml->toString) };
-        my $err = $@;
-        unless ($ok) {
+
+        my $ok = try {
+            $verifier->verify($xml->toString)
+        } catch {
             croak(sprintf(
                 "XML signature verification failed in new_from_xml%s",
-                $err ? " ($err)" : '',
+                $_ ? " ($_)" : '',
             ));
-        }
+        };
+        # XML::Sig can croak or return 0 in event that the signature fails
+        croak(sprintf(
+            "XML signature verification failed in new_from_xml%s",
+            $_ ? " ($_)" : '',
+        )) unless $ok;
     }
 
     $xml = $class->_verify_encrypted_assertion(
