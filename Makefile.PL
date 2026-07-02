@@ -52,7 +52,7 @@ my %WriteMakefileArgs = (
     "XML::Generator" => "1.13",
     "XML::LibXML" => 0,
     "XML::LibXML::XPathContext" => 0,
-    "XML::Sig" => "0.67",
+    "XML::Sig" => "0.71",
     "namespace::autoclean" => 0
   },
   "TEST_REQUIRES" => {
@@ -127,7 +127,7 @@ my %FallbackPrereqs = (
   "XML::Generator" => "1.13",
   "XML::LibXML" => 0,
   "XML::LibXML::XPathContext" => 0,
-  "XML::Sig" => "0.67",
+  "XML::Sig" => "0.71",
   "namespace::autoclean" => 0
 );
 
