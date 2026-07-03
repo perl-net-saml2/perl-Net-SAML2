@@ -267,6 +267,47 @@ sub _get_actual_issuer {
         : $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
 }
 
+sub _get_id {
+    my $class           = shift;
+    my $xpath           = shift;
+    my $assertion_node  = shift;
+
+    return $xpath->findvalue('//saml:Assertion/@ID') unless $assertion_node;
+    return $assertion_node->getAttribute('ID');
+}
+
+sub _get_audience {
+    my $class           = shift;
+    my $xpath           = shift;
+    my $assertion_node  = shift;
+
+    return $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience') unless $assertion_node;
+    return $xpath->findvalue('saml:Conditions/saml:AudienceRestriction/saml:Audience', $assertion_node);
+}
+
+sub _get_session {
+    my $class           = shift;
+    my $xpath           = shift;
+    my $assertion_node  = shift;
+
+    return $xpath->findvalue('//saml:AuthnStatement/@SessionIndex') unless $assertion_node;
+    return $xpath->findvalue('saml:AuthnStatement/@SessionIndex', $assertion_node);
+}
+
+sub _get_in_response_to {
+    my $class           = shift;
+    my $xpath           = shift;
+    my $assertion_node  = shift;
+
+    return $xpath->findvalue(
+        '//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'
+    ) unless $assertion_node;
+
+    return $xpath->findvalue(
+        'saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo',
+        $assertion_node);
+}
+
 sub _get_trusted_assertion {
     my $class           = shift;
     my $xpath           = shift;
@@ -552,25 +593,17 @@ sub new_from_xml {
     }
 
     my $self = $class->new(
-        id             => $assertion_node
-            ? $assertion_node->getAttribute('ID')
-            : $xpath->findvalue('//saml:Assertion/@ID'),
+        id             => $class->_get_id($xpath, $assertion_node),
         issuer         => $actual_issuer,
         destination    => $actual_destination,
         attributes     => $attributes,
-        session        => $assertion_node
-            ? $xpath->findvalue('saml:AuthnStatement/@SessionIndex', $assertion_node)
-            : $xpath->findvalue('//saml:AuthnStatement/@SessionIndex'),
+        session        => $class->_get_session($xpath, $assertion_node),
         $nameid ? (nameid => $nameid) : (),
-        audience       => $assertion_node
-            ? $xpath->findvalue('saml:Conditions/saml:AudienceRestriction/saml:Audience', $assertion_node)
-            : $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience'),
+        audience       => $class->_get_audience($xpath, $assertion_node),
         not_before     => $not_before,
         not_after      => $not_after,
         xpath          => $xpath,
-        in_response_to => $assertion_node
-            ? $xpath->findvalue('saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo', $assertion_node)
-            : $xpath->findvalue('//saml:Subject/saml:SubjectConfirmation/saml:SubjectConfirmationData/@InResponseTo'),
+        in_response_to => $class->_get_in_response_to($xpath, $assertion_node),
         response_status => $status,
         $substatus ? (response_substatus => $substatus) : (),
         $authnstatement ? (authnstatement => $authnstatement) : (),
