@@ -36,7 +36,7 @@ requires "XML::Enc" => "0.13";
 requires "XML::Generator" => "1.13";
 requires "XML::LibXML" => "0";
 requires "XML::LibXML::XPathContext" => "0";
-requires "XML::Sig" => "0.71";
+requires "XML::Sig" => "0.67";
 requires "namespace::autoclean" => "0";
 requires "perl" => "5.014";
 
