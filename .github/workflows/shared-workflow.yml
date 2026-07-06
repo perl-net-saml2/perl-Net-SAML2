@@ -15,6 +15,10 @@ on:
 jobs:
   testing:
     runs-on: ubuntu-latest
+    env:
+      # Skip dependencies' live-network tests (e.g. LWP::Protocol::https
+      # hitting httpbin.org) so a flaky/down remote can't fail the build.
+      NO_NETWORK_TESTING: 1
     container:
       image: perl:${{ inputs.perl-version }}
     steps:
