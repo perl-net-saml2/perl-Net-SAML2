@@ -73,20 +73,6 @@ is intended only for local testing.> Production deployments must
 leave this false and supply C<cacert> or C<cert_text>. Has no effect
 on the binding's signing path (C<sign_xml>).
 
-=item B<cert>
-
-path to a certificate that is added to the signed XML.  It needs to be the
-certificate that includes the public key related to the B<key>
-
-=item B<cert_text>
-
-text form of the certificate in FORMAT_ASN1 or FORMAT_PEM that is used to
-verify the signed XML.
-
-=item B<key>
-
-path to a key used to sign the XML.
-
 =back
 
 =cut

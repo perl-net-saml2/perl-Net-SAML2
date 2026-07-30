@@ -170,7 +170,7 @@ around BUILDARGS => sub {
     return $self->$orig(%params);
 };
 
-sub assert_saml_value {
+sub _assert_saml_value {
     my ($self, $xpath, $needle, $haystack, $ctx) = @_;
 
     my $found = $ctx
@@ -188,7 +188,7 @@ sub assert_saml_value {
 sub _get_actual_destination {
     my ($class, $destination, $xpath) = @_;
 
-    return $class->assert_saml_value($xpath, $destination,
+    return $class->_assert_saml_value($xpath, $destination,
         '/samlp:Response/@Destination | /samlp:ArtifactResponse/@Destination');
 }
 
@@ -263,8 +263,8 @@ sub _get_actual_issuer {
     my ($class, $issuer, $xpath, $ctx) = @_;
 
     return $ctx
-        ? $class->assert_saml_value($xpath, $issuer, 'saml:Issuer', $ctx)
-        : $class->assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
+        ? $class->_assert_saml_value($xpath, $issuer, 'saml:Issuer', $ctx)
+        : $class->_assert_saml_value($xpath, $issuer, '//saml:Assertion/saml:Issuer');
 }
 
 sub _get_id {
