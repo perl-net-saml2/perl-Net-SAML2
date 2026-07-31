@@ -2,6 +2,9 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.87 -- Unreleased
+    - Version 0.86 had the the incorrect version in lin/Net/SAML2.pm
+
 0.86 -- Thu Jul 30 23:14:40 ADT 2026
 
     [Security Release]
