@@ -41,8 +41,10 @@ requires "namespace::autoclean" => "0";
 requires "perl" => "5.014";
 
 on 'test' => sub {
+  requires "File::Temp" => "0";
   requires "Import::Into" => "0";
   requires "MooseX::Test::Role" => "0";
+  requires "POSIX" => "0";
   requires "Path::Tiny" => "0";
   requires "Sub::Override" => "0";
   requires "Test::Deep" => "0";
