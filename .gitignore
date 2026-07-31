@@ -24,3 +24,4 @@ Release-*
 xt/testapp/IdPs/*/*
 /Net-SAML2-*/**
 /Net-SAML2-*.tar.gz
+/Net-SAML2-*.sigstore.json
