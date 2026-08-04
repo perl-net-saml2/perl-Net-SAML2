@@ -95,24 +95,33 @@ used by the IdP to Encrypt the response (or parts of the response)
 
 =item B<cacert>
 
-path to the CA certificate for verification.  Optional: This is only used for
-validating the certificate provided for a signed Assertion that was found
-when the EncryptedAssertion is decrypted.
+path to the CA certificate for verification.  Used both for validating the
+certificate embedded in a signed (plain or decrypted-from-Encrypted)
+C<saml:Assertion>, and the certificate provided for a signed Assertion found
+when an C<EncryptedAssertion> is decrypted.
 
-While optional it is recommended for ensuring that the Assertion in an
-EncryptedAssertion is properly validated.
+While optional it is recommended for ensuring that the Assertion is
+properly validated.
 
-C<cacert> verifies the signature against the certificate embedded in the
-document's C<KeyInfo>.  When the IdP references its signing key by
-C<KeyName> or C<RetrievalMethod> (no embedded C<X509Certificate>), use
+C<cacert> verifies that the certificate embedded in the document's
+C<KeyInfo> chains, via a real X.509 CA-verification, to the given CA
+certificate. This requires the IdP's signing certificate to actually be
+issued by (or be) that CA. It will not succeed merely because you trust
+the IdP's signing certificate directly, unless that certificate happens to
+be self-signed. For an IdP that references its signing key by C<KeyName> or
+C<RetrievalMethod> (no embedded C<X509Certificate>), or for pinning a
+CA-issued certificate directly rather than verifying a chain, use
 C<cert_text> instead.
 
 =item B<cert_text>
 
 text form of the IdP signing certificate (FORMAT_PEM) used to verify the
-assertion signature.  Unlike C<cacert>, this B<pins> a specific
-certificate: the signature is verified directly against it. One of
-C<cacert>, C<cert_text> or C<insecure_trust_embedded_cert> is required.
+assertion signature, both for a plain (or decrypted) C<saml:Assertion> and
+for a signed Assertion found when an C<EncryptedAssertion> is decrypted.
+Unlike C<cacert>, this B<pins> a specific certificate: the signature is
+trusted only when the certificate embedded in the document is byte-for-byte
+this certificate, regardless of what issued it. One of C<cacert>,
+C<cert_text> or C<insecure_trust_embedded_cert> is required.
 
 =item B<require_signed_assertion>
 
@@ -340,25 +349,47 @@ sub _get_trusted_assertion {
 }
 
 sub _trusted_signature_refs {
-    my ($class, $xpath, $cacert) = @_;
+    my ($class, $xpath, $cacert, $cert_text) = @_;
 
-    return unless $cacert;
+    return unless $cacert || $cert_text;
 
-    my $ca = Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 });
+    my $ca = $cacert
+        ? Crypt::OpenSSL::Verify->new($cacert, { strict_certs => 0 })
+        : undef;
 
-    # We are looking for references for trusted Signature nodes here
-    # the X509Certificate of each signature is verified against the
-    # cacert and a list of trusted references is created
+    # cert_text pins one specific certificate: rather than asking whether
+    # the embedded cert chains to a CA, we ask whether it *is* (byte for
+    # byte) the certificate the caller told us to trust. Comparing DER
+    # bytes sidesteps any PEM formatting/whitespace differences between
+    # what's embedded in the document and what the caller supplied.
+    my $pinned_cert_obj = $cert_text
+        ? try { Crypt::OpenSSL::X509->new_from_string($cert_text) }
+        : undef;
+
+    # We are looking for references for trusted Signature nodes here.
+    # The X509Certificate of each signature is checked against the cacert
+    # (CA-chain trust) and/or cert_text (exact pin), and a list of trusted
+    # references is created from whichever ones pass.
     my @trusted_refs;
     for my $sig ($xpath->findnodes('//dsig:Signature')) {
         my $pem = $class->get_pem_from_keynode($sig);
         my $cert_obj = try { Crypt::OpenSSL::X509->new_from_string($pem) };
         next unless $cert_obj;
 
-        # Crypt::OpenSSL::Verify->verify can both return a bool AND die on
-        # parse / chain failure; treat both as untrusted.
-        my $ok = try { $ca->verify($cert_obj) };
-        next unless $ok;
+        my $trusted = 0;
+
+        if ($ca) {
+            # Crypt::OpenSSL::Verify->verify can both return a bool AND die
+            # on parse / chain failure; treat both as untrusted.
+            $trusted ||= !!(try { $ca->verify($cert_obj) });
+        }
+
+        if (!$trusted && $pinned_cert_obj) {
+            $trusted ||= ($cert_obj->fingerprint_sha256
+                eq $pinned_cert_obj->fingerprint_sha256);
+        }
+
+        next unless $trusted;
 
         my $ref = $xpath->findvalue(
             './dsig:SignedInfo/dsig:Reference/@URI', $sig);
@@ -369,7 +400,7 @@ sub _trusted_signature_refs {
 
         my $resolved = $xpath->findnodes("//*[\@ID='$ref']");
 
-        # A CA-trusted signature whose Reference URI resolves to more than
+        # A trusted signature whose Reference URI resolves to more than
         # one element is an active XSW1 (duplicate-ID) attack - fail closed.
         die("XSW guard: trusted signature Reference URI '$ref' is "
             . "ambiguous (matched " . $resolved->size . " elements)")
@@ -472,7 +503,7 @@ sub new_from_xml {
     $xpath->setContextNode($xml);
 
     my $actual_destination = $class->_get_actual_destination($destination, $xpath);
-    if ($cacert && $xpath->findnodes('//dsig:Signature')->size > 0) {
+    if (($cacert || $cert_text) && $xpath->findnodes('//dsig:Signature')->size > 0) {
         my $verifier = Net::SAML2::XML::Sig->new({
             x509               => 1,
             no_xml_declaration => 1,
@@ -510,12 +541,13 @@ sub new_from_xml {
     );
     $xpath->setContextNode($dec);
 
-    my @trusted_refs = $class->_trusted_signature_refs($xpath, $cacert);
+    my @trusted_refs = $class->_trusted_signature_refs($xpath, $cacert, $cert_text);
     my $sig_count = $xpath->findnodes('//dsig:Signature')->size;
-    if ($cacert && $sig_count > 0 && !@trusted_refs) {
+    if (($cacert || $cert_text) && $sig_count > 0 && !@trusted_refs) {
         croak(
             "No <dsig:Signature> in the document chains to the configured "
-          . "cacert. Refusing to extract assertion content."
+          . "cacert, or matches the configured cert_text. Refusing to "
+          . "extract assertion content."
         );
     }
 
@@ -538,9 +570,9 @@ sub new_from_xml {
 
     my $assertion_node = $class->_get_trusted_assertion($xpath, \@candidate_refs);
 
-    if ($cacert && $sig_count > 0 && !$assertion_node) {
+    if (($cacert || $cert_text) && $sig_count > 0 && !$assertion_node) {
         croak(
-            "XSW guard: no CA-trusted signature anchors a <saml:Assertion>. "
+            "XSW guard: no trusted signature anchors a <saml:Assertion>. "
           . "Refusing to extract assertion content via document order."
         );
     }

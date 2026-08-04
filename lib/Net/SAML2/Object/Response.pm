@@ -74,6 +74,14 @@ validating the certificate provided for a Response.
 It is required for ensuring that the Response is properly
 validated.
 
+=head2 cert_text
+
+text form (FORMAT_PEM) of the IdP signing certificate. Unlike C<cacert>,
+this B<pins> a specific certificate rather than verifying a CA chain: an
+embedded signature is trusted only when its certificate is byte-for-byte
+this one. Propagated to C<to_assertion> the same way C<cacert> is -- see
+L<Net::SAML2::Protocol::Assertion/new_from_xml> for how it's used there.
+
 =head2 insecure_trust_embedded_cert
 
 Boolean, default false. When true, C<to_assertion> proceeds with
@@ -116,6 +124,11 @@ has 'cacert'     => (
     is => 'ro',
     required => 0);
 
+has 'cert_text'  => (
+    isa => 'Str',
+    is => 'ro',
+    required => 0);
+
 has 'insecure_trust_embedded_cert' => (
     isa       => 'Bool',
     is        => 'ro',
@@ -136,10 +149,11 @@ around BUILDARGS => sub {
 
     my %params = @_;
     unless ($params{cacert}
+         || $params{cert_text}
          || $params{insecure_trust_embedded_cert}) {
         croak(
-            "Net::SAML2::Object::Response->new() requires 'cacert' "
-          . "on the object to verify SAML response signatures. "
+            "Net::SAML2::Object::Response->new() requires 'cacert' or "
+          . "'cert_text' on the object to verify SAML response signatures. "
           . "To explicitly disable signature verification (test/dev only) "
           . ", pass insecure_trust_embedded_cert => 1 to new()."
         );
@@ -163,6 +177,7 @@ sub new_from_xml {
     my $xml            = no_comments($args{xml});
     my $destination    = delete $args{destination};
     my $cacert         = delete $args{cacert};
+    my $cert_text      = delete $args{cert_text};
     my $insecure_trust_embedded_cert    = delete $args{insecure_trust_embedded_cert};
 
     # The default may change in the future
@@ -231,6 +246,7 @@ sub new_from_xml {
         in_response_to => $response->getAttribute('InResponseTo'),
         $nodes->size ? (assertions => $nodes) : (),
         $cacert ? (cacert => $cacert) : (),
+        $cert_text ? (cert_text => $cert_text) : (),
         $insecure_trust_embedded_cert ? (insecure_trust_embedded_cert => $insecure_trust_embedded_cert) : (),
         require_signed_response => $require_signed_response,
     );
@@ -264,11 +280,13 @@ sub to_assertion {
 
     # Propagate the trust configuration from the Response so the Assertion
     # inherits the same trust anchor.  Without this the caller would have to
-    # supply cacert (or insecure_trust_embedded_cert) a second time, and a
-    # Response built with a trust anchor could silently produce an Assertion
-    # built with none.  Caller-supplied %args still override these defaults.
+    # supply cacert/cert_text (or insecure_trust_embedded_cert) a second
+    # time, and a Response built with a trust anchor could silently produce
+    # an Assertion built with none.  Caller-supplied %args still override
+    # these defaults.
     return Net::SAML2::Protocol::Assertion->new_from_xml(
         $self->cacert ? (cacert => $self->cacert) : (),
+        $self->cert_text ? (cert_text => $self->cert_text) : (),
         $self->insecure_trust_embedded_cert
             ? (insecure_trust_embedded_cert => $self->insecure_trust_embedded_cert)
             : (),
