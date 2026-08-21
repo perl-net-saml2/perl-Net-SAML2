@@ -397,13 +397,21 @@ sub _trusted_signature_refs {
         next unless $resolved->size == 1;
         my $node = $resolved->get_node(1);
 
+        # $node may rely on xmlns declarations from ancestors outside this
+        # subtree (e.g. a wrapping samlp:Response). A plain toString() does
+        # not reconcile those, so import a clone into a fresh document first
+        # to force libxml2 to make the serialized fragment self-contained.
+        my $standalone_doc = XML::LibXML::Document->new;
+        my $standalone_node = $standalone_doc->importNode($node);
+        $standalone_doc->setDocumentElement($standalone_node);
+
         my $genuine;
         for my $pem (@verify_with) {
             $genuine = try {
                 Net::SAML2::XML::Sig->new({
                     cert_text          => $pem,
                     no_xml_declaration => 1,
-                })->verify($node->toString);
+                })->verify($standalone_doc->toString);
             };
             last if $genuine;
         }
