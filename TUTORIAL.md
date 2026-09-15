@@ -415,9 +415,10 @@ The following is from Foswiki's SamlLoginContrib function:
         cacert  => $this->{Saml}{ cacert },
     );
 
+    use URN::OASIS::SAML2 qw(NAMEID_EMAIL);
     my $logoutrequest = Net::SAML2::Protocol::LogoutRequest->new(
         issuer        => $this->{Saml}{ issuer },
-        nameid_format => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+        nameid_format => NAMEID_EMAIL,
         destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         nameid      => $session->{users}->getLoginName($session->{user}),
         session     => $sessionindex,
@@ -532,10 +533,11 @@ The data that the SP requires is in the resulting Net::SAML2::Protocol::LogoutRe
 The logout response should be sent to the IdP by the SP after the local user's session has been invalidated.  The LogoutResponse is created by creating the Net::SAML2::Protocol::LogoutResponse object with the correct values.  The in_response_to is the id from the LogoutRequest.  It is the LogoutRequest to which the LogoutRespones is related.  Below shows the issue and the destination as the opposite of the same values from the LogoutRequest.  The issuer in the request is likely where the LogoutResponse should be sent (the destination).  More properly the issuer should be the $sp->{issuer} and the destination the $idp->{slo_url}->{urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}.
 
 ```
+    use URN::OASIS::SAML2 qw(STATUS_SUCCESS);
     my $logoutresponse = Net::SAML2::Protocol::LogoutResponse->new(
         issuer         => $logoutrequest->{destination},
         destination    => $logoutrequest->{issuer},
-        status         => "urn:oasis:names:tc:SAML:2.0:status:Success",
+        status         => STATUS_SUCCESS,
         in_response_to => $logoutrequest->{id},
     );
 ```
