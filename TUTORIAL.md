@@ -573,7 +573,7 @@ As it is an optional function and all web applications are different you need to
         want_assertions_signed => '0', # Optional
 
     );
-    my $xml = $sp->metatdata();
+    my $xml = $sp->metadata();
     return $xml;
 ```
 
