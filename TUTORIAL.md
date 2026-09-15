@@ -411,28 +411,28 @@ The following is from Foswiki's SamlLoginContrib function:
     my $sessionindex = $this->getSessionValue('saml_session_index');
 
     my $idp = Net::SAML2::IdP->new_from_url(
-￼        url     => $this->{Saml}{ metadata},
-￼        cacert  => $this->{Saml}{ cacert },
-￼    );
-￼
+        url     => $this->{Saml}{ metadata},
+        cacert  => $this->{Saml}{ cacert },
+    );
+
     my $logoutrequest = Net::SAML2::Protocol::LogoutRequest->new(
-￼        issuer        => $this->{Saml}{ issuer },
-￼        nameid_format => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-￼        destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼        nameid      => $session->{users}->getLoginName($session->{user}),
-￼        session     => $sessionindex,
-￼    );
-￼
-￼    my $logoutreq = $logoutrequest->as_xml;
-￼
-￼    my $redirect = Net::SAML2::Binding::Redirect->new(
-￼              key => $this->{Saml}{ sp_signing_key },
-￼              cert => $this->{Saml}{ sp_signing_cert },
-￼              destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼              param => 'SAMLRequest',
-￼              url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼    );
-￼    my $url = $redirect->sign($logoutreq);
+        issuer        => $this->{Saml}{ issuer },
+        nameid_format => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+        destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        nameid      => $session->{users}->getLoginName($session->{user}),
+        session     => $sessionindex,
+    );
+
+    my $logoutreq = $logoutrequest->as_xml;
+
+    my $redirect = Net::SAML2::Binding::Redirect->new(
+              key => $this->{Saml}{ sp_signing_key },
+              cert => $this->{Saml}{ sp_signing_cert },
+              destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+              param => 'SAMLRequest',
+              url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    );
+    my $url = $redirect->sign($logoutreq);
 
      # The $url is then sent to the browser as a redirect to initiate the logout.
 
@@ -445,11 +445,11 @@ The following is from Foswiki's SamlLoginContrib function:
 ```
     # Foswiki's SamlLoginContrib stores the Assertions session_index
     # my $sessionindex = $this->getAndClearSessionValue('saml_session_index');
-￼
-￼    my $idp = Net::SAML2::IdP->new_from_url(
-￼        url     => $this->{Saml}{metadata},
-￼        cacert  => $this->{Saml}{cacert},
-￼    );
+
+    my $idp = Net::SAML2::IdP->new_from_url(
+        url     => $this->{Saml}{metadata},
+        cacert  => $this->{Saml}{cacert},
+    );
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
@@ -459,16 +459,16 @@ The following is from Foswiki's SamlLoginContrib function:
     );
 
     my ($response, $relaystate) = $redirect->verify($uri);
-￼
+
     if ($response) {
-￼        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
-￼                        xml => $response
-￼        );
-￼
-￼        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
-￼            deleteSession(...)
-￼        }
-￼    }
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+                        xml => $response
+        );
+
+        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+            deleteSession(...)
+        }
+    }
 
 ```
 
