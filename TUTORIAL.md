@@ -465,7 +465,7 @@ The following is from Foswiki's SamlLoginContrib function:
                         xml => $response
         );
 
-        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
+        if ($logout->success) {
             deleteSession(...)
         }
     }
