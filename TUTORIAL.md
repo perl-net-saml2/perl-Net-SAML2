@@ -16,9 +16,9 @@ The metadata is provided by the Identity Provider (IdP).  Net::SAML2:IdP->new_fr
 
 ```
 my $idp = Net::SAML2::IdP->new_from_url(
-    url => $metadata,   # URL where the xml is located
-    cacert => $cacert,  # Filename of the Identity Providers CACert
-    ssl_opts =>         # Optional options supported by LWP::Protocol::https
+    url      => $metadata, # URL where the xml is located
+    cacert   => $cacert,   # Filename of the Identity Providers CACert
+    ssl_opts =>            # Optional options supported by LWP::Protocol::https
     {
         SSL_ca_file     => '/your/directory/cacert.pem',
         SSL_ca_path     => '/etc/ssl/certs',
@@ -29,7 +29,7 @@ my $idp = Net::SAML2::IdP->new_from_url(
 # or
 
 my $idp = Net::SAML2::IdP->new_from_xml(
-    xml => $metadata_string,    # xml as a string
+    xml    => $metadata_string, # xml as a string
     cacert => $cacert,          # Filename of the Identity Providers CACert
 );
 ```
@@ -165,11 +165,11 @@ In addition, it could be used to process a redirect from the IdP to process a Lo
 
 ```
 my $redirect = Net::SAML2::Binding::Redirect->new(
-    key => $sp_signing_cert,
-    cert => $idp->cert('signing'),
+    key   => $sp_signing_cert,
+    cert  => $idp->cert('signing'),
     param => 'SAMLRequest',
     # The ssl_url destination for redirect
-    url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
 );
 ```
 
@@ -421,22 +421,22 @@ The following is from Foswiki's SamlLoginContrib function:
         issuer        => $saml->{issuer},
         nameid_format => NAMEID_EMAIL,
         destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-        nameid      => $session->{users}->getLoginName($session->{user}),
-        session     => $sessionindex,
+        nameid        => $session->{users}->getLoginName($session->{user}),
+        session       => $sessionindex,
     );
 
     my $logoutreq = $logoutrequest->as_xml;
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
-              key => $saml->{sp_signing_key},
-              cert => $saml->{sp_signing_cert},
-              destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-              param => 'SAMLRequest',
-              url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        key         => $saml->{sp_signing_key},
+        cert        => $saml->{sp_signing_cert},
+        destination => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        param       => 'SAMLRequest',
+        url         => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
     );
     my $url = $redirect->sign($logoutreq);
 
-     # The $url is then sent to the browser as a redirect to initiate the logout.
+    # The $url is then sent to the browser as a redirect to initiate the logout.
 
 ```
 The IdP will respond with a LogoutResponse that is sent to the browser via a HTTP-POST or an HTTP-Redirect depending on the SP's configuration at the IdP (the SP metadata would specify the slo_url that is supported).
@@ -456,8 +456,8 @@ The following is from Foswiki's SamlLoginContrib function:
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-        key => $saml->{sp_signing_key},
-        cert => $idp->cert('signing'),
+        key   => $saml->{sp_signing_key},
+        cert  => $idp->cert('signing'),
         param => 'SAMLResponse',
     );
 
@@ -465,7 +465,7 @@ The following is from Foswiki's SamlLoginContrib function:
 
     if ($response) {
         my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
-                        xml => $response
+            xml => $response
         );
 
         if ($logout->success) {
@@ -489,8 +489,8 @@ The SP needs to create the Net::SAML2::IdP object as is done above (in this case
 
 ```
     my $idp = Net::SAML2::IdP->new_from_xml(
-            xml    => $metadata,  # URL where the xml is located
-            cacert => $cacert2,   # Filename of the Identity Providers CACert
+        xml    => $metadata,  # URL where the xml is located
+        cacert => $cacert2,   # Filename of the Identity Providers CACert
     );
 
 ```
@@ -498,12 +498,12 @@ Create the Net::SAML2::Binding::Redirect object.
 
 ```
     my $redirect = Net::SAML2::Binding::Redirect->new(
-        key => 't/sign-nopw-cert.pem',
-        cert => $idp->cert('signing'),
+        key      => 't/sign-nopw-cert.pem',
+        cert     => $idp->cert('signing'),
         sig_hash => 'sha256',
-        param => 'SAMLRequest',
+        param    => 'SAMLRequest',
         # The ssl_url destination for redirect
-        url => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        url      => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
     );
 ```
 Verify signature on the URL, decode the request and retrieve the XML request and RelayState.
