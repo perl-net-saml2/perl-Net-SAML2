@@ -529,14 +529,14 @@ The data that the SP requires is in the resulting Net::SAML2::Protocol::LogoutRe
     }, 'Net::SAML2::Protocol::LogoutRequest' );
 
 ```
-The logout response should be sent to the IdP by the SP after the local user's session has been invalidated.  The LogoutResponse is created by creating the Net::SAML2::Protocol::LogoutResponse object with the correct values.  The response_to is the id from the LogoutRequest.  It is the LogoutRequest to which the LogoutRespones is related.  Below shows the issue and the destination as the opposite of the same values from the LogoutRequest.  The issuer in the request is likely where the LogoutResponse should be sent (the destination).  More properly the issuer should be the $sp->{issuer} and the destination the $idp->{slo_url}->{urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}.
+The logout response should be sent to the IdP by the SP after the local user's session has been invalidated.  The LogoutResponse is created by creating the Net::SAML2::Protocol::LogoutResponse object with the correct values.  The in_response_to is the id from the LogoutRequest.  It is the LogoutRequest to which the LogoutRespones is related.  Below shows the issue and the destination as the opposite of the same values from the LogoutRequest.  The issuer in the request is likely where the LogoutResponse should be sent (the destination).  More properly the issuer should be the $sp->{issuer} and the destination the $idp->{slo_url}->{urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}.
 
 ```
     my $logoutresponse = Net::SAML2::Protocol::LogoutResponse->new(
-        issuer      => $logoutrequest->{destination},
-        destination => $logoutrequest->{issuer},
-        status      => "urn:oasis:names:tc:SAML:2.0:status:Success",
-        response_to => $logoutrequest->{id},
+        issuer         => $logoutrequest->{destination},
+        destination    => $logoutrequest->{issuer},
+        status         => "urn:oasis:names:tc:SAML:2.0:status:Success",
+        in_response_to => $logoutrequest->{id},
     );
 ```
 
@@ -560,7 +560,7 @@ As it is an optional function and all web applications are different you need to
 
 ```
     my $sp = Net::SAML2::SP->new(
-        id                     => $provider_name,
+        issuer                 => $issuer,
         url                    => $issuer,
         cert                   => $sp_signing_cert,
         key                    => $sp_signing_key,
