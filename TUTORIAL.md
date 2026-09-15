@@ -409,15 +409,16 @@ The following is from Foswiki's SamlLoginContrib function:
 
     # Foswiki's SamlLoginContrib stores the Assertions session_index
     my $sessionindex = $this->getSessionValue('saml_session_index');
+    my $saml = $this->{Saml};
 
     my $idp = Net::SAML2::IdP->new_from_url(
-        url     => $this->{Saml}{ metadata},
-        cacert  => $this->{Saml}{ cacert },
+        url     => $saml->{metadata},
+        cacert  => $saml->{cacert},
     );
 
     use URN::OASIS::SAML2 qw(NAMEID_EMAIL);
     my $logoutrequest = Net::SAML2::Protocol::LogoutRequest->new(
-        issuer        => $this->{Saml}{ issuer },
+        issuer        => $saml->{issuer},
         nameid_format => NAMEID_EMAIL,
         destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         nameid      => $session->{users}->getLoginName($session->{user}),
@@ -427,8 +428,8 @@ The following is from Foswiki's SamlLoginContrib function:
     my $logoutreq = $logoutrequest->as_xml;
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
-              key => $this->{Saml}{ sp_signing_key },
-              cert => $this->{Saml}{ sp_signing_cert },
+              key => $saml->{sp_signing_key},
+              cert => $saml->{sp_signing_cert},
               destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
               param => 'SAMLRequest',
               url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
@@ -446,15 +447,16 @@ The following is from Foswiki's SamlLoginContrib function:
 ```
     # Foswiki's SamlLoginContrib stores the Assertions session_index
     # my $sessionindex = $this->getAndClearSessionValue('saml_session_index');
+    my $saml = $this->{Saml};
 
     my $idp = Net::SAML2::IdP->new_from_url(
-        url     => $this->{Saml}{metadata},
-        cacert  => $this->{Saml}{cacert},
+        url     => $saml->{metadata},
+        cacert  => $saml->{cacert},
     );
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-        key => $this->{Saml}{sp_signing_key},
+        key => $saml->{sp_signing_key},
         cert => $idp->cert('signing'),
         param => 'SAMLResponse',
     );
