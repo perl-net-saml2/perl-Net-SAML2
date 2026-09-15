@@ -17,8 +17,8 @@ The metadata is provided by the Identity Provider (IdP).  Net::SAML2:IdP->new_fr
 ```
 my $idp = Net::SAML2::IdP->new_from_url(
     url      => $metadata, # URL where the xml is located
-    cacert   => $cacert,   # Filename of the Identity Providers CACert
-    ssl_opts =>            # Optional options supported by LWP::Protocol::https
+    cacert   => $cacert,   # Filename of the Identity Provider's CACert
+    ssl_opts =>            # For https, options for LWP::Protocol::https
     {
         SSL_ca_file     => '/your/directory/cacert.pem',
         SSL_ca_path     => '/etc/ssl/certs',
@@ -30,11 +30,11 @@ my $idp = Net::SAML2::IdP->new_from_url(
 
 my $idp = Net::SAML2::IdP->new_from_xml(
     xml    => $metadata_string, # xml as a string
-    cacert => $cacert,          # Filename of the Identity Providers CACert
+    cacert => $cacert,          # Filename of the Identity Provider's CACert
 );
 ```
 
-The IdP object contains the Identity Providers settings that were parse from the metadata and are then used for the rest of the calls.
+The IdP object contains the Identity Provider's settings that were parsed from the metadata and are then used for the rest of the calls.
 
 The Net::SAML2::IdP generated results in:
 
@@ -168,7 +168,7 @@ my $redirect = Net::SAML2::Binding::Redirect->new(
     key   => $sp_signing_cert,
     cert  => $idp->cert('signing'),
     param => 'SAMLRequest',
-    # The ssl_url destination for redirect
+    # The sso_url destination for redirect
     url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
 );
 ```
@@ -265,7 +265,7 @@ At this stage it is important for you to have the Service Provider SAML2 setting
 
 **Issuer** is also known as the **Entity ID**
 
-You should get the Identity Provider's login page at this point.  If you do not, you need to review the AuthnRequest settings and the Service Providers settings to ensure that they match.  It is often useful to use a separate browser to avoid automatic login skipping steps.
+You should get the Identity Provider's login page at this point.  If you do not, you need to review the AuthnRequest settings and the Service Provider's settings to ensure that they match.  It is often useful to use a separate browser to avoid automatic login skipping steps.
 
 ## Step 2: Processing the SAMLResponse
 
@@ -299,7 +299,7 @@ The security of SAML2 responses depends on trust in the Identity Provider.  Trus
 
 ```
     $post = Net::SAML2::Binding::POST->new(
-        cacert => $idp_cacert  # Filename of the Identity Providers CACert
+        cacert => $idp_cacert  # Filename of the Identity Provider's CACert
     );
 
 ```
@@ -368,7 +368,7 @@ The basic values you will need from the Assertion are contained in the following
 1. $assertion->nameid
 2. $assertion->attributes
 
-The nameid is the Identity Providers canonical userid that can be considered to be unique and is likely what you want to map to your application's user.
+The nameid is the Identity Provider's canonical userid that can be considered to be unique and is likely what you want to map to your application's user.
 
 An example assertion attributes returned by GSuite could look like:
 
@@ -490,7 +490,7 @@ The SP needs to create the Net::SAML2::IdP object as is done above (in this case
 ```
     my $idp = Net::SAML2::IdP->new_from_xml(
         xml    => $metadata,  # URL where the xml is located
-        cacert => $cacert2,   # Filename of the Identity Providers CACert
+        cacert => $cacert2,   # Filename of the Identity Provider's CACert
     );
 
 ```
@@ -502,7 +502,7 @@ Create the Net::SAML2::Binding::Redirect object.
         cert     => $idp->cert('signing'),
         sig_hash => 'sha256',
         param    => 'SAMLRequest',
-        # The ssl_url destination for redirect
+        # The sso_url destination for redirect
         url      => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
     );
 ```
