@@ -617,17 +617,17 @@ this results in the following XML
       </ds:KeyInfo>
     </md:KeyDescriptor>
     <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
-                            Location="http://localhost:3000/saml/slo-soap" />
+         Location="http://localhost:3000/saml/slo-soap" />
     <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
-                            Location="http://localhost:3000/saml/sls-redirect-response" />
+         Location="http://localhost:3000/saml/sls-redirect-response" />
     <md:AssertionConsumerService isDefault="true"
-                                 Location="http://localhost:3000/saml/consumer-post"
-                                 index="1"
-                                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" />
+         Location="http://localhost:3000/saml/consumer-post"
+         index="1"
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" />
     <md:AssertionConsumerService index="2"
-                                 Location="http://localhost:3000/saml/consumer-artifact"
-                                 isDefault="false"
-                                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" />
+         Location="http://localhost:3000/saml/consumer-artifact"
+         isDefault="false"
+         Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" />
   </md:SPSSODescriptor>
   <md:Organization>
     <md:OrganizationName xml:lang="en">Net::SAML2</md:OrganizationName>
@@ -639,5 +639,4 @@ this results in the following XML
     <md:EmailAddress>timlegge@cpan.org</md:EmailAddress>
   </md:ContactPerson>
 </md:EntityDescriptor>
-
 ```
