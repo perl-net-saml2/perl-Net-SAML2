@@ -16,9 +16,9 @@ The metadata is provided by the Identity Provider (IdP).  Net::SAML2:IdP->new_fr
 
 ```
 my $idp = Net::SAML2::IdP->new_from_url(
-    url      => $metadata, # URL where the xml is located
-    cacert   => $cacert,   # Filename of the Identity Provider's CACert
-    ssl_opts =>            # For https, options for LWP::Protocol::https
+    url      => $metadata,         # URL where the xml is located
+    cacert   => $cacert_filename,  # Filename of the Identity Provider's CACert
+    ssl_opts =>                    # For https, options for LWP::Protocol::https
     {
         SSL_ca_file     => '/your/directory/cacert.pem',
         SSL_ca_path     => '/etc/ssl/certs',
@@ -30,7 +30,7 @@ my $idp = Net::SAML2::IdP->new_from_url(
 
 my $idp = Net::SAML2::IdP->new_from_xml(
     xml    => $metadata_string, # xml as a string
-    cacert => $cacert,          # Filename of the Identity Provider's CACert
+    cacert => $cacert_filename, # Filename of the Identity Provider's CACert
 );
 ```
 
@@ -325,7 +325,7 @@ The handle_response() of the Net::SAML2::Binding::POST object processes the resp
 handle_response is pretty short but does a couple of important things:
 
 1. Calls Net::SAML2::XML::Sig (XML::Sig) to verify the signatures in the $saml_response XML
-2. Verifies that the certificate that signed the XML was signed by the $cacert
+2. Verifies that the certificate that signed the XML was signed by the $cacert_filename
 
 ### Get the Assertion from the SAMLResponse XML
 
@@ -568,7 +568,7 @@ As it is an optional function and all web applications are different you need to
         url                    => $issuer,
         cert                   => $sp_signing_cert,
         key                    => $sp_signing_key,
-        cacert                 => $cacert,
+        cacert                 => $cacert_filename,
         org_contact            => 'timlegge@cpan.org',
         org_name               => 'Net::SAML2',
         org_url                => 'https://metacpan.org/pod/Net::SAML2',
