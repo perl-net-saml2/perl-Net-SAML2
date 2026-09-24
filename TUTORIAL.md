@@ -411,28 +411,28 @@ The following is from Foswiki's SamlLoginContrib function:
     my $sessionindex = $this->getSessionValue('saml_session_index');
 
     my $idp = Net::SAML2::IdP->new_from_url(
-￼        url     => $this->{Saml}{ metadata},
-￼        cacert  => $this->{Saml}{ cacert },
-￼    );
-￼
+        url     => $this->{Saml}{ metadata},
+        cacert  => $this->{Saml}{ cacert },
+    );
+
     my $logoutrequest = Net::SAML2::Protocol::LogoutRequest->new(
-￼        issuer        => $this->{Saml}{ issuer },
-￼        nameid_format => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-￼        destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼        nameid      => $session->{users}->getLoginName($session->{user}),
-￼        session     => $sessionindex,
-￼    );
-￼
-￼    my $logoutreq = $logoutrequest->as_xml;
-￼
-￼    my $redirect = Net::SAML2::Binding::Redirect->new(
-￼              key => $this->{Saml}{ sp_signing_key },
-￼              cert => $this->{Saml}{ sp_signing_cert },
-￼              destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼              param => 'SAMLRequest',
-￼              url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
-￼    );
-￼    my $url = $redirect->sign($logoutreq);
+        issuer        => $this->{Saml}{ issuer },
+        nameid_format => 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+        destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+        nameid      => $session->{users}->getLoginName($session->{user}),
+        session     => $sessionindex,
+    );
+
+    my $logoutreq = $logoutrequest->as_xml;
+
+    my $redirect = Net::SAML2::Binding::Redirect->new(
+              key => $this->{Saml}{ sp_signing_key },
+              cert => $this->{Saml}{ sp_signing_cert },
+              destination   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+              param => 'SAMLRequest',
+              url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
+    );
+    my $url = $redirect->sign($logoutreq);
 
      # The $url is then sent to the browser as a redirect to initiate the logout.
 
@@ -445,11 +445,11 @@ The following is from Foswiki's SamlLoginContrib function:
 ```
     # Foswiki's SamlLoginContrib stores the Assertions session_index
     # my $sessionindex = $this->getAndClearSessionValue('saml_session_index');
-￼
-￼    my $idp = Net::SAML2::IdP->new_from_url(
-￼        url     => $this->{Saml}{metadata},
-￼        cacert  => $this->{Saml}{cacert},
-￼    );
+
+    my $idp = Net::SAML2::IdP->new_from_url(
+        url     => $this->{Saml}{metadata},
+        cacert  => $this->{Saml}{cacert},
+    );
 
     my $redirect = Net::SAML2::Binding::Redirect->new(
         url   => $idp->slo_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
@@ -459,16 +459,16 @@ The following is from Foswiki's SamlLoginContrib function:
     );
 
     my ($response, $relaystate) = $redirect->verify($uri);
-￼
+
     if ($response) {
-￼        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
-￼                        xml => $response
-￼        );
-￼
-￼        if ($logout->status eq 'urn:oasis:names:tc:SAML:2.0:status:Success') {
-￼            deleteSession(...)
-￼        }
-￼    }
+        my $logout = Net::SAML2::Protocol::LogoutResponse->new_from_xml(
+                        xml => $response
+        );
+
+        if ($logout->success) {
+            deleteSession(...)
+        }
+    }
 
 ```
 
@@ -529,14 +529,14 @@ The data that the SP requires is in the resulting Net::SAML2::Protocol::LogoutRe
     }, 'Net::SAML2::Protocol::LogoutRequest' );
 
 ```
-The logout response should be sent to the IdP by the SP after the local user's session has been invalidated.  The LogoutResponse is created by creating the Net::SAML2::Protocol::LogoutResponse object with the correct values.  The response_to is the id from the LogoutRequest.  It is the LogoutRequest to which the LogoutRespones is related.  Below shows the issue and the destination as the opposite of the same values from the LogoutRequest.  The issuer in the request is likely where the LogoutResponse should be sent (the destination).  More properly the issuer should be the $sp->{issuer} and the destination the $idp->{slo_url}->{urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}.
+The logout response should be sent to the IdP by the SP after the local user's session has been invalidated.  The LogoutResponse is created by creating the Net::SAML2::Protocol::LogoutResponse object with the correct values.  The in_response_to is the id from the LogoutRequest.  It is the LogoutRequest to which the LogoutRespones is related.  Below shows the issue and the destination as the opposite of the same values from the LogoutRequest.  The issuer in the request is likely where the LogoutResponse should be sent (the destination).  More properly the issuer should be the $sp->{issuer} and the destination the $idp->{slo_url}->{urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect}.
 
 ```
     my $logoutresponse = Net::SAML2::Protocol::LogoutResponse->new(
-        issuer      => $logoutrequest->{destination},
-        destination => $logoutrequest->{issuer},
-        status      => "urn:oasis:names:tc:SAML:2.0:status:Success",
-        response_to => $logoutrequest->{id},
+        issuer         => $logoutrequest->{destination},
+        destination    => $logoutrequest->{issuer},
+        status         => "urn:oasis:names:tc:SAML:2.0:status:Success",
+        in_response_to => $logoutrequest->{id},
     );
 ```
 
@@ -560,7 +560,7 @@ As it is an optional function and all web applications are different you need to
 
 ```
     my $sp = Net::SAML2::SP->new(
-        id                     => $provider_name,
+        issuer                 => $issuer,
         url                    => $issuer,
         cert                   => $sp_signing_cert,
         key                    => $sp_signing_key,
@@ -573,7 +573,7 @@ As it is an optional function and all web applications are different you need to
         want_assertions_signed => '0', # Optional
 
     );
-    my $xml = $sp->metatdata();
+    my $xml = $sp->metadata();
     return $xml;
 ```
 
